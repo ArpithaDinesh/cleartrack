@@ -130,6 +130,7 @@ const getDepartmentPending = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No department assigned.' });
     }
 
+    // First get all requests pending for this department
     const requests = await ClearanceRequest.find({
       'departmentApprovals': {
         $elemMatch: { department: dept, status: 'pending' }
@@ -138,7 +139,23 @@ const getDepartmentPending = async (req, res) => {
       .sort({ submittedAt: 1 })
       .populate('student', 'fullName universityNumber rollNumber department classYear admissionNumber');
 
-    res.json({ success: true, requests });
+    // If class teacher: additionally filter by matching department AND year
+    let filtered = requests;
+    if (dept === 'class_teacher') {
+      const { classDepartment, classYear } = req.user;
+      if (classDepartment && classYear) {
+        filtered = requests.filter(r =>
+          r.student &&
+          r.student.department === classDepartment &&
+          r.student.classYear === classYear
+        );
+      } else {
+        // Teacher has no class assigned - show nothing
+        filtered = [];
+      }
+    }
+
+    res.json({ success: true, requests: filtered });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

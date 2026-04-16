@@ -58,7 +58,7 @@ const registerStaff = async (req, res) => {
 // @route POST /api/auth/register/staff-public
 const registerStaffPublic = async (req, res) => {
   try {
-    const { fullName, email, password, phone, staffId, department, role } = req.body;
+    const { fullName, email, password, phone, staffId, department, role, assignedDepartment, classDepartment, classYear } = req.body;
 
     if (!['staff', 'admin'].includes(role)) {
       return res.status(400).json({ success: false, message: 'Invalid role. Must be staff or admin.' });
@@ -70,7 +70,10 @@ const registerStaffPublic = async (req, res) => {
     }
 
     const user = await User.create({
-      fullName, email, password, phone, role, staffId, department
+      fullName, email, password, phone, role, staffId, department,
+      assignedDepartment: assignedDepartment || null,
+      classDepartment: classDepartment || null,
+      classYear: classYear || null
     });
 
     const token = generateToken(user._id);

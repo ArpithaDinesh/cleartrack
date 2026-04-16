@@ -45,6 +45,9 @@ const userSchema = new mongoose.Schema({
     enum: ['tuition', 'bus', 'hostel', 'exam', 'class_teacher', null, ''],
     default: null
   },
+  // Class teacher specific fields
+  classDepartment: { type: String, trim: true, default: null },
+  classYear: { type: String, trim: true, default: null },
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 
