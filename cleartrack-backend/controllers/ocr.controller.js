@@ -176,7 +176,10 @@ const processOCR = async (req, res) => {
 
     // Step 2: Run tesseract.js (pure JS — no system install needed)
     console.log('Running tesseract.js OCR on:', ocrInputPath);
-    const worker = await createWorker('eng');
+    const worker = await createWorker('eng', 1, {
+      cachePath: '/tmp',
+      logger: m => { if (m.status) console.log('Tesseract:', m.status, Math.round((m.progress||0)*100) + '%'); }
+    });
     const { data: { text: rawText } } = await worker.recognize(ocrInputPath);
     await worker.terminate();
 
