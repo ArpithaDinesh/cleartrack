@@ -13,10 +13,10 @@ export default function AdminDashboard() {
   const [userRoleFilter, setUserRoleFilter] = useState('all')
   const [departmentFilter, setDepartmentFilter] = useState('all')
   const [activeTab, setActiveTab] = useState('overview')
-  const [newStaff, setNewStaff] = useState({ fullName:'', email:'', password:'', phone:'', staffId:'', department:'', assignedDepartment:'tuition' })
+
   const [newStudent, setNewStudent] = useState({ fullName:'', email:'', password:'', phone:'', admissionNumber:'', universityNumber:'', rollNumber:'', department:'', classYear:'' })
   const [feeForm, setFeeForm] = useState({ department:'', classYear:'', tuitionFee:'', hostelFee:'', busFee:'' })
-  const [staffMsg, setStaffMsg] = useState('')
+
   const [studentMsg, setStudentMsg] = useState('')
   const [feeMsg, setFeeMsg] = useState('')
   const [loading, setLoading] = useState(true)
