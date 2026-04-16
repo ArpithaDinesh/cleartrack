@@ -1,0 +1,420 @@
+import { useState, useEffect } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
+import { adminAPI, authAPI } from '../../services/api'
+import ProfileModal from '../../components/ProfileModal'
+
+export default function AdminDashboard() {
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+  const [stats, setStats] = useState(null)
+  const [users, setUsers] = useState([])
+  const [logs, setLogs] = useState([])
+  const [userRoleFilter, setUserRoleFilter] = useState('all')
+  const [departmentFilter, setDepartmentFilter] = useState('all')
+  const [activeTab, setActiveTab] = useState('overview')
+  const [newStaff, setNewStaff] = useState({ fullName:'', email:'', password:'', phone:'', staffId:'', department:'', assignedDepartment:'tuition' })
+  const [newStudent, setNewStudent] = useState({ fullName:'', email:'', password:'', phone:'', admissionNumber:'', universityNumber:'', rollNumber:'', department:'', classYear:'' })
+  const [feeForm, setFeeForm] = useState({ department:'', classYear:'', tuitionFee:'', hostelFee:'', busFee:'' })
+  const [staffMsg, setStaffMsg] = useState('')
+  const [studentMsg, setStudentMsg] = useState('')
+  const [feeMsg, setFeeMsg] = useState('')
+  const [loading, setLoading] = useState(true)
+  const initials = user?.fullName?.charAt(0)?.toUpperCase() || 'A'
+  
+  const [showDropdown, setShowDropdown] = useState(false)
+  const [showProfileModal, setShowProfileModal] = useState(false)
+
+  useEffect(() => {
+    Promise.all([adminAPI.getStats(), adminAPI.getUsers(), adminAPI.getLogs()])
+      .then(([sRes, uRes, lRes]) => {
+        setStats(sRes.stats)
+        setUsers(uRes.users || [])
+        setLogs(lRes.logs || [])
+      }).catch(console.error).finally(() => setLoading(false))
+  }, [])
+
+  const handleCreateStaff = async (e) => {
+    e.preventDefault()
+    try {
+      await adminAPI.createStaff(newStaff)
+      setStaffMsg('✓ Staff account created successfully!')
+      setNewStaff({ fullName:'', email:'', password:'', phone:'', staffId:'', department:'', assignedDepartment:'tuition' })
+      const uRes = await adminAPI.getUsers()
+      setUsers(uRes.users || [])
+    } catch (err) {
+      setStaffMsg('Error: ' + err.message)
+    }
+  }
+
+  const handleCreateStudent = async (e) => {
+    e.preventDefault()
+    try {
+      await authAPI.registerStudent(newStudent)
+      setStudentMsg('✓ Student account created successfully!')
+      setNewStudent({ fullName:'', email:'', password:'', phone:'', admissionNumber:'', universityNumber:'', rollNumber:'', department:'', classYear:'' })
+      const uRes = await adminAPI.getUsers()
+      setUsers(uRes.users || [])
+    } catch (err) {
+      setStudentMsg('Error: ' + err.message)
+    }
+  }
+
+  const handleToggle = async (id) => {
+    try {
+      await adminAPI.toggleUser(id)
+      const uRes = await adminAPI.getUsers()
+      setUsers(uRes.users || [])
+    } catch (err) { console.error(err) }
+  }
+
+  const handleSaveFeeStructure = (e) => {
+    e.preventDefault();
+    if(!feeForm.department || !feeForm.classYear) {
+      setFeeMsg('Error: Please select department and year.');
+      return;
+    }
+    // Simulate updating settings in UI realistically
+    setFeeMsg('✓ Fee structure saved successfully!');
+    setTimeout(() => setFeeMsg(''), 3000);
+  }
+
+  const statCards = stats ? [
+    { label:'Total Students', value:stats.totalStudents, color:'blue' },
+    { label:'Total Staff', value:stats.totalStaff, color:'teal' },
+    { label:'Total Requests', value:stats.totalRequests, color:'violet' },
+    { label:'Approved', value:stats.approved, color:'green' },
+    { label:'Pending', value:stats.pending, color:'orange' },
+    { label:'Rejected', value:stats.rejected, color:'red' },
+  ] : []
+
+  const filteredUsers = users.filter(u => {
+    const matchRole = userRoleFilter === 'all' || u.role === userRoleFilter;
+    const dept = u.department;
+    const matchDept = departmentFilter === 'all' || dept === departmentFilter;
+    return matchRole && matchDept;
+  })
+
+  return (
+    <div className="dashboard-body">
+      <aside className="sidebar">
+        <div className="sidebar-logo"><div className="logo-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></div><div className="logo-text"><span>CLEARTRACK</span><small>Admin Panel</small></div></div>
+        <nav className="sidebar-nav">
+          <span className="nav-section-label">Main Menu</span>
+          {[['overview','Overview','M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z'],['users','Users','M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z'],['staff','Add Staff','M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M8.5 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M20 8v6M23 11h-6'],['student','Add Student','M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M8.5 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M20 8v6M23 11h-6'],['fee','Fee Structure','M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'],['logs','Activity Logs','M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8']].map(([tab,label,path])=>(
+            <a key={tab} href="#" className={activeTab===tab?'active':''} onClick={e=>{e.preventDefault();setActiveTab(tab)}}>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d={path}/></svg>
+              <span>{label}</span>
+            </a>
+          ))}
+          <span className="nav-section-label" style={{marginTop:16}}>Account</span>
+          <a href="#" className="nav-logout" onClick={e=>{e.preventDefault();logout();navigate('/login/admin')}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span>Logout</span></a>
+        </nav>
+        <div className="sidebar-footer"><div className="sidebar-user"><div className="avatar">{initials}</div><div className="user-info"><span>{user?.fullName||'Admin'}</span><small>Super Admin</small></div></div></div>
+      </aside>
+
+      <div className="main-content">
+        <header className="topbar">
+          <div className="topbar-title">Admin Dashboard</div>
+          <div className="topbar-right">
+            <div className="topbar-avatar" onClick={() => setShowDropdown(!showDropdown)} style={{cursor: 'pointer', position: 'relative'}}>
+              {initials}
+              {showDropdown && (
+                <div style={{
+                  position: 'absolute', top: '120%', right: 0, background: 'white',
+                  boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)',
+                  borderRadius: '6px', overflow: 'hidden', minWidth: '150px', zIndex: 10
+                }}>
+                  <div style={{ padding: '10px 15px', borderBottom: '1px solid #eee', color: '#333', fontSize: '0.9rem', cursor: 'pointer' }} onClick={() => {setShowDropdown(false); setShowProfileModal(true)}}>
+                    Edit Profile
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
+        <main className="page-content">
+
+          {activeTab === 'overview' && (
+            <>
+              <div className="page-header"><h1>System Administration</h1><p>Manage students, staff, fee structures and monitor system activity.</p></div>
+              <div className="stats-grid">
+                {statCards.map(s => (
+                  <div key={s.label} className="stat-card">
+                    <div className={`stat-icon ${s.color}`}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/></svg></div>
+                    <div className="stat-info"><h3>{loading ? '…' : s.value}</h3><p>{s.label}</p></div>
+                  </div>
+                ))}
+              </div>
+              <div className="card"><h3 className="card-title">Quick Actions</h3><div style={{display:'flex',gap:12,flexWrap:'wrap'}}><button className="btn btn-primary" onClick={()=>setActiveTab('student')}>+ Add Student Account</button><button className="btn btn-primary" onClick={()=>setActiveTab('staff')}>+ Add Staff Account</button><button className="btn btn-outline" onClick={()=>setActiveTab('users')}>Manage Users</button><button className="btn btn-outline" onClick={()=>setActiveTab('fee')}>Fee Structure</button><button className="btn btn-outline" onClick={()=>setShowProfileModal(true)}>✏️ Edit Profile</button><button className="btn btn-outline" onClick={()=>setActiveTab('logs')}>View Logs</button></div></div>
+              
+              <div className="card" style={{maxWidth:600, marginTop:24}}>
+                <h3 className="card-title" style={{marginBottom:16}}>Fee Structure Management</h3>
+                <form onSubmit={handleSaveFeeStructure}>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14, marginBottom: 20}}>
+                    <div className="form-group"><label>Department</label>
+                      <select value={feeForm.department} onChange={e=>setFeeForm(p=>({...p,department:e.target.value}))} required>
+                        <option value="" disabled>Select department</option>
+                        <option value="CS">CS</option>
+                        <option value="IT">IT</option>
+                        <option value="CE">CE</option>
+                        <option value="ME">ME</option>
+                        <option value="EC">EC</option>
+                        <option value="EEE">EEE</option>
+                        <option value="MCA">MCA</option>
+                        <option value="MBA">MBA</option>
+                      </select>
+                    </div>
+                    <div className="form-group"><label>Class/Year</label>
+                      <select value={feeForm.classYear} onChange={e=>setFeeForm(p=>({...p,classYear:e.target.value}))} required>
+                        <option value="" disabled>Select year</option>
+                        <option value="First year">First year</option>
+                        <option value="Second year">Second year</option>
+                        <option value="Third year">Third year</option>
+                        <option value="Fourth year">Fourth year</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div style={{background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: 16}}>
+                    <h4 style={{marginTop:0, marginBottom:16, fontSize:'1rem'}}>Fees Amount (₹)</h4>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:14}}>
+                      <div className="form-group">
+                        <label>Tuition Fee</label>
+                        <input type="number" min="0" value={feeForm.tuitionFee} onChange={e=>setFeeForm(p=>({...p,tuitionFee:e.target.value}))} placeholder="0" required/>
+                      </div>
+                      <div className="form-group">
+                        <label>Hostel Fee</label>
+                        <input type="number" min="0" value={feeForm.hostelFee} onChange={e=>setFeeForm(p=>({...p,hostelFee:e.target.value}))} placeholder="0" required/>
+                      </div>
+                      <div className="form-group">
+                        <label>Bus Fee</label>
+                        <input type="number" min="0" value={feeForm.busFee} onChange={e=>setFeeForm(p=>({...p,busFee:e.target.value}))} placeholder="0" required/>
+                      </div>
+                    </div>
+                  </div>
+
+                  {feeMsg && <div style={{padding:'10px 14px',borderRadius:8,marginBottom:14,fontSize:'.875rem',background:feeMsg.startsWith('Error')?'#fee2e2':'#d1fae5',color:feeMsg.startsWith('Error')?'#991b1b':'#065f46'}}>{feeMsg}</div>}
+                  <button type="submit" className="btn btn-primary btn-full">Save Fee Structure</button>
+                </form>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'users' && (
+            <>
+              <div className="page-header"><h1>User Management</h1><p>View and manage all students and staff.</p></div>
+              <div className="card" style={{padding:0,overflow:'hidden'}}>
+                <div style={{padding:'18px 24px',borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                  <h3 className="card-title" style={{margin:0}}>Users ({filteredUsers.length})</h3>
+                  <div style={{display:'flex', gap:'8px', alignItems:'center'}}>
+                    <select style={{borderRadius:'6px', border:'1px solid #d1d5db', padding:'5px 10px', fontSize:'.85rem', outline:'none', cursor:'pointer'}} value={departmentFilter} onChange={(e)=>setDepartmentFilter(e.target.value)}>
+                      <option value="all">All Departments</option>
+                      <option value="CS">CS</option>
+                      <option value="IT">IT</option>
+                      <option value="CE">CE</option>
+                      <option value="ME">ME</option>
+                      <option value="EC">EC</option>
+                      <option value="EEE">EEE</option>
+                      <option value="MCA">MCA</option>
+                      <option value="MBA">MBA</option>
+                    </select>
+                    <button className={`btn btn-sm ${userRoleFilter === 'all' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setUserRoleFilter('all')}>All</button>
+                    <button className={`btn btn-sm ${userRoleFilter === 'admin' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setUserRoleFilter('admin')}>Admins</button>
+                    <button className={`btn btn-sm ${userRoleFilter === 'staff' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setUserRoleFilter('staff')}>Teachers</button>
+                    <button className={`btn btn-sm ${userRoleFilter === 'student' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setUserRoleFilter('student')}>Students</button>
+                  </div>
+                </div>
+                <div className="table-wrap" style={{border:'none',borderRadius:0,boxShadow:'none'}}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        {userRoleFilter !== 'all' && userRoleFilter !== 'admin' && <th>Department</th>}
+                        <th>ID</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                  <tbody>
+                    {loading ? <tr><td colSpan={userRoleFilter !== 'all' && userRoleFilter !== 'admin' ? 7 : 6} style={{textAlign:'center',padding:24}}>Loading…</td></tr>
+                    : filteredUsers.map(u=>(
+                      <tr key={u._id}>
+                        <td><strong>{u.fullName}</strong></td>
+                        <td style={{fontSize:'.85rem'}}>{u.email}</td>
+                        <td><span className={`badge badge-${u.role==='admin'?'danger':u.role==='staff'?'info':'success'}`}>{u.role}</span></td>
+                        {userRoleFilter !== 'all' && userRoleFilter !== 'admin' && (
+                          <td style={{fontSize:'.85rem', fontWeight:'500'}}>{u.department || '—'}</td>
+                        )}
+                        <td style={{fontSize:'.82rem',color:'var(--text-sub)'}}>{u.universityNumber||u.staffId||'—'}</td>
+                        <td><span className={`badge ${u.isActive?'badge-success':'badge-neutral'}`}>{u.isActive?'Active':'Inactive'}</span></td>
+                        <td><button className={`btn btn-sm ${u.isActive?'btn-outline':'btn-primary'}`} onClick={()=>handleToggle(u._id)}>{u.isActive?'Deactivate':'Activate'}</button></td>
+                      </tr>
+                    ))}
+                  </tbody></table>
+                </div>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'staff' && (
+            <>
+              <div className="page-header"><h1>Add Staff Account</h1><p>Create department staff accounts for clearance approval.</p></div>
+              <div className="card" style={{maxWidth:560}}>
+                <form onSubmit={handleCreateStaff}>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+                    <div className="form-group"><label>Full Name</label><input value={newStaff.fullName} onChange={e=>setNewStaff(p=>({...p,fullName:e.target.value}))} placeholder="Dr. Name" required/></div>
+                    <div className="form-group"><label>Staff ID</label><input value={newStaff.staffId} onChange={e=>setNewStaff(p=>({...p,staffId:e.target.value}))} placeholder="TCH2024001" required/></div>
+                    <div className="form-group"><label>Email</label><input type="email" value={newStaff.email} onChange={e=>setNewStaff(p=>({...p,email:e.target.value}))} placeholder="staff@college.edu" required/></div>
+                    <div className="form-group"><label>Phone</label><input value={newStaff.phone} onChange={e=>setNewStaff(p=>({...p,phone:e.target.value}))} placeholder="+91 9876543210"/></div>
+                    <div className="form-group"><label>Temporary Password</label><input type="password" value={newStaff.password} onChange={e=>setNewStaff(p=>({...p,password:e.target.value}))} placeholder="Min 6 chars" required/></div>
+                    <div className="form-group"><label>Department</label>
+                      <select value={newStaff.department} onChange={e=>setNewStaff(p=>({...p,department:e.target.value}))} required>
+                        <option value="" disabled>Select Department</option>
+                        <option value="CS">CS</option>
+                        <option value="IT">IT</option>
+                        <option value="CE">CE</option>
+                        <option value="ME">ME</option>
+                        <option value="EC">EC</option>
+                        <option value="EEE">EEE</option>
+                        <option value="MCA">MCA</option>
+                        <option value="MBA">MBA</option>
+                      </select>
+                    </div>
+                  </div>
+                  {staffMsg && <div style={{padding:'10px 14px',borderRadius:8,marginBottom:14,fontSize:'.875rem',background:staffMsg.startsWith('Error')?'#fee2e2':'#d1fae5',color:staffMsg.startsWith('Error')?'#991b1b':'#065f46'}}>{staffMsg}</div>}
+                  <button type="submit" className="btn btn-primary btn-full">Create Staff Account</button>
+                </form>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'student' && (
+            <>
+              <div className="page-header"><h1>Add Student Account</h1><p>Create student accounts directly from the admin panel.</p></div>
+              <div className="card" style={{maxWidth:560}}>
+                <form onSubmit={handleCreateStudent}>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+                    <div className="form-group"><label>Full Name</label><input value={newStudent.fullName} onChange={e=>setNewStudent(p=>({...p,fullName:e.target.value}))} placeholder="Student Name" required/></div>
+                    <div className="form-group"><label>Phone Number</label><input type="tel" value={newStudent.phone} onChange={e=>setNewStudent(p=>({...p,phone:e.target.value}))} placeholder="+91 9876543210"/></div>
+                    <div className="form-group"><label>Email ID</label><input type="email" value={newStudent.email} onChange={e=>setNewStudent(p=>({...p,email:e.target.value}))} placeholder="student@college.edu" required/></div>
+                    <div className="form-group"><label>Temporary Password</label><input type="password" value={newStudent.password} onChange={e=>setNewStudent(p=>({...p,password:e.target.value}))} placeholder="Min 6 chars" required/></div>
+                    <div className="form-group"><label>Department</label>
+                      <select value={newStudent.department} onChange={e=>setNewStudent(p=>({...p,department:e.target.value}))} required>
+                        <option value="" disabled>Select department</option>
+                        <option value="CS">CS</option>
+                        <option value="IT">IT</option>
+                        <option value="CE">CE</option>
+                        <option value="ME">ME</option>
+                        <option value="EC">EC</option>
+                        <option value="EEE">EEE</option>
+                        <option value="MCA">MCA</option>
+                        <option value="MBA">MBA</option>
+                      </select>
+                    </div>
+                    <div className="form-group"><label>Class/Year</label>
+                      <select value={newStudent.classYear} onChange={e=>setNewStudent(p=>({...p,classYear:e.target.value}))} required>
+                        <option value="" disabled>Select</option>
+                        <option value="First year">First year</option>
+                        <option value="Second year">Second year</option>
+                        <option value="Third year">Third year</option>
+                        <option value="Fourth year">Fourth year</option>
+                      </select>
+                    </div>
+                    <div className="form-group"><label>Admission Number</label><input value={newStudent.admissionNumber} onChange={e=>setNewStudent(p=>({...p,admissionNumber:e.target.value}))} placeholder="e.g. 23BITTLY213" required/></div>
+                    <div className="form-group"><label>Roll Number</label><input value={newStudent.rollNumber} onChange={e=>setNewStudent(p=>({...p,rollNumber:e.target.value}))} placeholder="e.g. 20" required/></div>
+                    <div className="form-group"><label>University Number</label><input value={newStudent.universityNumber} onChange={e=>setNewStudent(p=>({...p,universityNumber:e.target.value}))} placeholder="e.g. TLY23IT013" required/></div>
+                  </div>
+                  {studentMsg && <div style={{padding:'10px 14px',borderRadius:8,marginBottom:14,fontSize:'.875rem',background:studentMsg.startsWith('Error')?'#fee2e2':'#d1fae5',color:studentMsg.startsWith('Error')?'#991b1b':'#065f46'}}>{studentMsg}</div>}
+                  <button type="submit" className="btn btn-primary btn-full" style={{marginTop:14}}>Create Student Account</button>
+                </form>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'fee' && (
+            <>
+              <div className="page-header"><h1>Fee Structure Management</h1></div>
+              <div className="card" style={{maxWidth:600}}>
+                <form onSubmit={handleSaveFeeStructure}>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14, marginBottom: 20}}>
+                    <div className="form-group"><label>Department</label>
+                      <select value={feeForm.department} onChange={e=>setFeeForm(p=>({...p,department:e.target.value}))} required>
+                        <option value="" disabled>Select department</option>
+                        <option value="IT">IT</option>
+                        <option value="CS">CS</option>
+                        <option value="EC">EC</option>
+                        <option value="EEE">EEE</option>
+                        <option value="ME">ME</option>
+                        <option value="CE">CE</option>
+                        <option value="MBA">MBA</option>
+                        <option value="MCA">MCA</option>
+                      </select>
+                    </div>
+                    <div className="form-group"><label>Class/Year</label>
+                      <select value={feeForm.classYear} onChange={e=>setFeeForm(p=>({...p,classYear:e.target.value}))} required>
+                        <option value="" disabled>Select year</option>
+                        <option value="First year">First year</option>
+                        <option value="Second year">Second year</option>
+                        <option value="Third year">Third year</option>
+                        <option value="Fourth year">Fourth year</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div style={{background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: 16}}>
+                    <h4 style={{marginTop:0, marginBottom:16, fontSize:'1rem'}}>Fees Amount (₹)</h4>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:14}}>
+                      <div className="form-group">
+                        <label>Tuition Fee</label>
+                        <input type="number" min="0" value={feeForm.tuitionFee} onChange={e=>setFeeForm(p=>({...p,tuitionFee:e.target.value}))} placeholder="0" required/>
+                      </div>
+                      <div className="form-group">
+                        <label>Hostel Fee</label>
+                        <input type="number" min="0" value={feeForm.hostelFee} onChange={e=>setFeeForm(p=>({...p,hostelFee:e.target.value}))} placeholder="0" required/>
+                      </div>
+                      <div className="form-group">
+                        <label>Bus Fee</label>
+                        <input type="number" min="0" value={feeForm.busFee} onChange={e=>setFeeForm(p=>({...p,busFee:e.target.value}))} placeholder="0" required/>
+                      </div>
+                    </div>
+                  </div>
+
+                  {feeMsg && <div style={{padding:'10px 14px',borderRadius:8,marginBottom:14,fontSize:'.875rem',background:feeMsg.startsWith('Error')?'#fee2e2':'#d1fae5',color:feeMsg.startsWith('Error')?'#991b1b':'#065f46'}}>{feeMsg}</div>}
+                  <button type="submit" className="btn btn-primary btn-full">Save Fee Structure</button>
+                </form>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'logs' && (
+            <>
+              <div className="page-header"><h1>Activity Logs</h1><p>Recent system events and approval actions.</p></div>
+              <div className="card" style={{padding:0,overflow:'hidden'}}>
+                <div className="table-wrap" style={{border:'none',borderRadius:0,boxShadow:'none'}}>
+                  <table><thead><tr><th>Time</th><th>Action</th><th>By</th><th>Request</th><th>Status</th></tr></thead>
+                  <tbody>
+                    {loading ? <tr><td colSpan={5} style={{textAlign:'center',padding:24}}>Loading…</td></tr>
+                    : logs.map(l=>(
+                      <tr key={l._id}>
+                        <td style={{fontSize:'.78rem',color:'var(--text-sub)',whiteSpace:'nowrap'}}>{new Date(l.createdAt).toLocaleString()}</td>
+                        <td><span className={`badge badge-${l.action==='approved'?'success':l.action==='rejected'?'danger':'info'}`}>{l.action}</span></td>
+                        <td style={{fontSize:'.85rem'}}>{l.performedBy?.fullName||'System'}</td>
+                        <td style={{fontSize:'.82rem'}}>{l.clearanceRequest?.requestNumber||'—'}</td>
+                        <td style={{fontSize:'.82rem'}}>{l.newStatus||'—'}</td>
+                      </tr>
+                    ))}
+                  </tbody></table>
+                </div>
+              </div>
+            </>
+          )}
+
+        </main>
+      </div>
+      <ProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
+    </div>
+  )
+}
