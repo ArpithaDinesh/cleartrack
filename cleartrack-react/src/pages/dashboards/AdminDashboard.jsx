@@ -34,18 +34,7 @@ export default function AdminDashboard() {
       }).catch(console.error).finally(() => setLoading(false))
   }, [])
 
-  const handleCreateStaff = async (e) => {
-    e.preventDefault()
-    try {
-      await adminAPI.createStaff(newStaff)
-      setStaffMsg('✓ Staff account created successfully!')
-      setNewStaff({ fullName:'', email:'', password:'', phone:'', staffId:'', department:'', assignedDepartment:'tuition' })
-      const uRes = await adminAPI.getUsers()
-      setUsers(uRes.users || [])
-    } catch (err) {
-      setStaffMsg('Error: ' + err.message)
-    }
-  }
+
 
   const handleCreateStudent = async (e) => {
     e.preventDefault()
@@ -101,7 +90,7 @@ export default function AdminDashboard() {
         <div className="sidebar-logo"><div className="logo-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></div><div className="logo-text"><span>CLEARTRACK</span><small>Admin Panel</small></div></div>
         <nav className="sidebar-nav">
           <span className="nav-section-label">Main Menu</span>
-          {[['overview','Overview','M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z'],['users','Users','M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z'],['staff','Add Staff','M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M8.5 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M20 8v6M23 11h-6'],['student','Add Student','M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M8.5 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M20 8v6M23 11h-6'],['fee','Fee Structure','M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'],['logs','Activity Logs','M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8']].map(([tab,label,path])=>(
+          {[['overview','Overview','M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z'],['users','Users','M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z'],['student','Add Student','M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M8.5 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M20 8v6M23 11h-6'],['fee','Fee Structure','M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'],['logs','Activity Logs','M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8']].map(([tab,label,path])=>(
             <a key={tab} href="#" className={activeTab===tab?'active':''} onClick={e=>{e.preventDefault();setActiveTab(tab)}}>
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d={path}/></svg>
               <span>{label}</span>
@@ -146,7 +135,7 @@ export default function AdminDashboard() {
                   </div>
                 ))}
               </div>
-              <div className="card"><h3 className="card-title">Quick Actions</h3><div style={{display:'flex',gap:12,flexWrap:'wrap'}}><button className="btn btn-primary" onClick={()=>setActiveTab('student')}>+ Add Student Account</button><button className="btn btn-primary" onClick={()=>setActiveTab('staff')}>+ Add Staff Account</button><button className="btn btn-outline" onClick={()=>setActiveTab('users')}>Manage Users</button><button className="btn btn-outline" onClick={()=>setActiveTab('fee')}>Fee Structure</button><button className="btn btn-outline" onClick={()=>setShowProfileModal(true)}>✏️ Edit Profile</button><button className="btn btn-outline" onClick={()=>setActiveTab('logs')}>View Logs</button></div></div>
+              <div className="card"><h3 className="card-title">Quick Actions</h3><div style={{display:'flex',gap:12,flexWrap:'wrap'}}><button className="btn btn-primary" onClick={()=>setActiveTab('student')}>+ Add Student Account</button><button className="btn btn-outline" onClick={()=>setActiveTab('users')}>Manage Users</button><button className="btn btn-outline" onClick={()=>setActiveTab('fee')}>Fee Structure</button><button className="btn btn-outline" onClick={()=>setShowProfileModal(true)}>✏️ Edit Profile</button><button className="btn btn-outline" onClick={()=>setActiveTab('logs')}>View Logs</button></div></div>
               
               <div className="card" style={{maxWidth:600, marginTop:24}}>
                 <h3 className="card-title" style={{marginBottom:16}}>Fee Structure Management</h3>
@@ -259,37 +248,7 @@ export default function AdminDashboard() {
             </>
           )}
 
-          {activeTab === 'staff' && (
-            <>
-              <div className="page-header"><h1>Add Staff Account</h1><p>Create department staff accounts for clearance approval.</p></div>
-              <div className="card" style={{maxWidth:560}}>
-                <form onSubmit={handleCreateStaff}>
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
-                    <div className="form-group"><label>Full Name</label><input value={newStaff.fullName} onChange={e=>setNewStaff(p=>({...p,fullName:e.target.value}))} placeholder="Dr. Name" required/></div>
-                    <div className="form-group"><label>Staff ID</label><input value={newStaff.staffId} onChange={e=>setNewStaff(p=>({...p,staffId:e.target.value}))} placeholder="TCH2024001" required/></div>
-                    <div className="form-group"><label>Email</label><input type="email" value={newStaff.email} onChange={e=>setNewStaff(p=>({...p,email:e.target.value}))} placeholder="staff@college.edu" required/></div>
-                    <div className="form-group"><label>Phone</label><input value={newStaff.phone} onChange={e=>setNewStaff(p=>({...p,phone:e.target.value}))} placeholder="+91 9876543210"/></div>
-                    <div className="form-group"><label>Temporary Password</label><input type="password" value={newStaff.password} onChange={e=>setNewStaff(p=>({...p,password:e.target.value}))} placeholder="Min 6 chars" required/></div>
-                    <div className="form-group"><label>Department</label>
-                      <select value={newStaff.department} onChange={e=>setNewStaff(p=>({...p,department:e.target.value}))} required>
-                        <option value="" disabled>Select Department</option>
-                        <option value="CS">CS</option>
-                        <option value="IT">IT</option>
-                        <option value="CE">CE</option>
-                        <option value="ME">ME</option>
-                        <option value="EC">EC</option>
-                        <option value="EEE">EEE</option>
-                        <option value="MCA">MCA</option>
-                        <option value="MBA">MBA</option>
-                      </select>
-                    </div>
-                  </div>
-                  {staffMsg && <div style={{padding:'10px 14px',borderRadius:8,marginBottom:14,fontSize:'.875rem',background:staffMsg.startsWith('Error')?'#fee2e2':'#d1fae5',color:staffMsg.startsWith('Error')?'#991b1b':'#065f46'}}>{staffMsg}</div>}
-                  <button type="submit" className="btn btn-primary btn-full">Create Staff Account</button>
-                </form>
-              </div>
-            </>
-          )}
+
 
           {activeTab === 'student' && (
             <>
