@@ -1,5 +1,8 @@
 const path = require('path');
 const fs = require('fs');
+const { execFile } = require('child_process');
+const util = require('util');
+const execFileAsync = util.promisify(execFile);
 
 // OCR using node-tesseract-ocr
 let tesseract;
@@ -10,6 +13,20 @@ try {
 }
 
 const ClearanceRequest = require('../models/ClearanceRequest');
+
+// Run Python OpenCV preprocessor on the image, returns path to cleaned image
+const runOpenCVPreprocess = async (inputPath) => {
+  const ext = path.extname(inputPath);
+  const cleanedPath = inputPath.replace(ext, '_cleaned' + ext);
+  const scriptPath = path.join(__dirname, '..', 'preprocess.py');
+  try {
+    await execFileAsync('python', [scriptPath, inputPath, cleanedPath]);
+    return cleanedPath;
+  } catch (err) {
+    console.warn('OpenCV preprocess failed, using original image:', err.message);
+    return inputPath; // fallback to original if python fails
+  }
+};
 
 // Parse key fields from OCR raw text
 const parseOCRFields = (rawText) => {
@@ -161,7 +178,19 @@ const processOCR = async (req, res) => {
     let ocrData = {};
 
     if (tesseract) {
-      // Run Tesseract OCR
+      // Step 1: Run OpenCV preprocessing to clean the image
+      let ocrInputPath = filePath;
+      let preprocessedPath = null;
+      try {
+        console.log('Running OpenCV preprocessing...');
+        preprocessedPath = await runOpenCVPreprocess(filePath);
+        ocrInputPath = preprocessedPath;
+        console.log('OpenCV preprocessing done. Using:', ocrInputPath);
+      } catch (e) {
+        console.warn('Skipping OpenCV step:', e.message);
+      }
+
+      // Step 2: Run Tesseract OCR on the cleaned image
       const config = {
         lang: 'eng',
         oem: 1,
@@ -170,15 +199,12 @@ const processOCR = async (req, res) => {
       };
 
       try {
-        console.log('Running true OCR on file:', filePath);
-        
-        rawText = await tesseract.recognize(filePath, config);
-
+        console.log('Running Tesseract OCR on file:', ocrInputPath);
+        rawText = await tesseract.recognize(ocrInputPath, config);
         console.log('OCR Output length:', rawText.length);
         ocrData = parseOCRFields(rawText);
       } catch (ocrErr) {
         console.error('OCR error (Full):', ocrErr);
-        // Fallback to demo data if the image extraction fails
         rawText = 'OCR_FALLBACK: Tesseract threw an error during extraction.';
         ocrData = {
           transactionId: 'TXN' + Date.now(),
@@ -189,6 +215,11 @@ const processOCR = async (req, res) => {
           paymentMode: 'Online Transfer',
           rawText
         };
+      } finally {
+        // Clean up the temp preprocessed file
+        if (preprocessedPath && preprocessedPath !== filePath && fs.existsSync(preprocessedPath)) {
+          fs.unlinkSync(preprocessedPath);
+        }
       }
     } else {
       // Tesseract not installed — return simulated data
