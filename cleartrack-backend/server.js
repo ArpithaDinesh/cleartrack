@@ -26,6 +26,18 @@ app.use('/api/departments', require('./routes/department.routes'));
 app.use('/api/admin', require('./routes/admin.routes'));
 
 // Health check
+app.get('/', (req, res) => {
+  res.send(`
+    <html>
+      <body style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2>✅ CLEARTRACK Backend API is running!</h2>
+        <p>The server is running successfully.</p>
+        <p>API Endpoint: <a href="/api/health">/api/health</a></p>
+      </body>
+    </html>
+  `);
+});
+
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'CLEARTRACK API is running', timestamp: new Date() });
 });
