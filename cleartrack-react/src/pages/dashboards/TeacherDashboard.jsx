@@ -12,6 +12,7 @@ const badgeMap = {
 export default function TeacherDashboard() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const [pending, setPending] = useState([])
   const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadingStudents, setLoadingStudents] = useState(true)
