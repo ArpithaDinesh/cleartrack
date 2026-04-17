@@ -73,3 +73,12 @@ export const adminAPI = {
   createStaff: (data) => request('POST', '/admin/staff', data),
   getLogs: () => request('GET', '/admin/logs'),
 };
+
+// Bus Routes
+export const busAPI = {
+  getRoutes: () => request('GET', '/bus-routes'),
+  createRoute: (data) => request('POST', '/bus-routes', data),
+  updateRoute: (id, data) => request('PUT', `/bus-routes/${id}`, data),
+  deleteRoute: (id) => request('DELETE', `/bus-routes/${id}`),
+  seedRoutes: () => request('POST', '/bus-routes/seed')
+};

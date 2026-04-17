@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { adminAPI, authAPI } from '../../services/api'
+import { adminAPI, authAPI, busAPI } from '../../services/api'
 import ProfileModal from '../../components/ProfileModal'
 
 export default function AdminDashboard() {
@@ -17,6 +17,11 @@ export default function AdminDashboard() {
   const [feeForm, setFeeForm] = useState({ department:'', classYear:'', tuitionFee:'', hostelFee:'', busFee:'' })
   const [studentMsg, setStudentMsg] = useState('')
   const [feeMsg, setFeeMsg] = useState('')
+  const [busRoutes, setBusRoutes] = useState([])
+  const [selectedBusGroup, setSelectedBusGroup] = useState('')
+  const [filteredLocations, setFilteredLocations] = useState([])
+  const [showRouteManager, setShowRouteManager] = useState(false)
+  const [newRoute, setNewRoute] = useState({ group: 'Kannur', location: '', fee: 0 })
   const [loading, setLoading] = useState(true)
   const initials = user?.fullName?.charAt(0)?.toUpperCase() || 'A'
   
@@ -24,11 +29,12 @@ export default function AdminDashboard() {
   const [showProfileModal, setShowProfileModal] = useState(false)
 
   useEffect(() => {
-    Promise.all([adminAPI.getStats(), adminAPI.getUsers(), adminAPI.getLogs()])
-      .then(([sRes, uRes, lRes]) => {
+    Promise.all([adminAPI.getStats(), adminAPI.getUsers(), adminAPI.getLogs(), busAPI.getRoutes()])
+      .then(([sRes, uRes, lRes, bRes]) => {
         setStats(sRes.stats)
         setUsers(uRes.users || [])
         setLogs(lRes.logs || [])
+        setBusRoutes(bRes.routes || [])
       }).catch(console.error).finally(() => setLoading(false))
   }, [])
 
@@ -64,6 +70,51 @@ export default function AdminDashboard() {
     setFeeMsg('✓ Fee structure saved successfully!');
     setTimeout(() => setFeeMsg(''), 3000);
   }
+
+  const handleGroupChange = (group) => {
+    setSelectedBusGroup(group);
+    setSelectedBusLocation('');
+    setFeeForm(p => ({ ...p, busFee: '' }));
+    setFilteredLocations(busRoutes.filter(r => r.group === group));
+  };
+
+  const handleLocationChange = (locId) => {
+    setSelectedBusLocation(locId);
+    const route = busRoutes.find(r => r._id === locId);
+    if (route) {
+      setFeeForm(p => ({ ...p, busFee: route.fee }));
+    }
+  };
+
+  const handleAddRoute = async (e) => {
+    e.preventDefault();
+    try {
+      await busAPI.createRoute(newRoute);
+      const bRes = await busAPI.getRoutes();
+      setBusRoutes(bRes.routes || []);
+      setNewRoute({ group: 'Kannur', location: '', fee: 0 });
+      setFeeMsg('✓ Route added successfully!');
+    } catch (err) { setFeeMsg('Error: ' + err.message); }
+  };
+
+  const handleDeleteRoute = async (id) => {
+    if (!window.confirm('Are you sure?')) return;
+    try {
+      await busAPI.deleteRoute(id);
+      const bRes = await busAPI.getRoutes();
+      setBusRoutes(bRes.routes || []);
+    } catch (err) { console.error(err); }
+  };
+
+  const handleSeedRoutes = async () => {
+    if (!window.confirm('This will reset all routes to default. Proceed?')) return;
+    try {
+      await busAPI.seedRoutes();
+      const bRes = await busAPI.getRoutes();
+      setBusRoutes(bRes.routes || []);
+      setFeeMsg('✓ Routes seeded successfully!');
+    } catch (err) { setFeeMsg('Error: ' + err.message); }
+  };
 
   const statCards = stats ? [
     { label:'Total Students', value:stats.totalStudents, color:'blue' },
@@ -170,7 +221,7 @@ export default function AdminDashboard() {
                   
                   <div style={{background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: 16}}>
                     <h4 style={{marginTop:0, marginBottom:16, fontSize:'1rem'}}>Fees Amount (₹)</h4>
-                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:14}}>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14, marginBottom: 14}}>
                       <div className="form-group">
                         <label>Tuition Fee</label>
                         <input type="number" min="0" value={feeForm.tuitionFee} onChange={e=>setFeeForm(p=>({...p,tuitionFee:e.target.value}))} placeholder="0" required/>
@@ -179,9 +230,33 @@ export default function AdminDashboard() {
                         <label>Hostel Fee</label>
                         <input type="number" min="0" value={feeForm.hostelFee} onChange={e=>setFeeForm(p=>({...p,hostelFee:e.target.value}))} placeholder="0" required/>
                       </div>
-                      <div className="form-group">
-                        <label>Bus Fee</label>
-                        <input type="number" min="0" value={feeForm.busFee} onChange={e=>setFeeForm(p=>({...p,busFee:e.target.value}))} placeholder="0" required/>
+                    </div>
+
+                    <div style={{borderTop:'1px solid #e2e8f0', paddingTop:14}}>
+                      <h5 style={{margin:'0 0 10px 0', fontSize:'.85rem', color:'#64748b'}}>Bus Fee Configuration</h5>
+                      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+                        <div className="form-group">
+                          <label>Bus Route Group</label>
+                          <select value={selectedBusGroup} onChange={e=>handleGroupChange(e.target.value)}>
+                            <option value="">Select Group</option>
+                            <option value="Kannur">Kannur</option>
+                            <option value="Mattannur">Mattannur</option>
+                            <option value="Thalassery">Thalassery</option>
+                          </select>
+                        </div>
+                        <div className="form-group">
+                          <label>Sub Location</label>
+                          <select value={selectedBusLocation} onChange={e=>handleLocationChange(e.target.value)} disabled={!selectedBusGroup}>
+                            <option value="">Select Location</option>
+                            {filteredLocations.map(r => (
+                              <option key={r._id} value={r._id}>{r.location} (₹{r.fee})</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="form-group" style={{marginTop:10}}>
+                        <label>Calculated Bus Fee</label>
+                        <input type="number" value={feeForm.busFee} readOnly style={{background:'#f1f5f9'}}/>
                       </div>
                     </div>
                   </div>
@@ -327,7 +402,7 @@ export default function AdminDashboard() {
                   
                   <div style={{background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: 16}}>
                     <h4 style={{marginTop:0, marginBottom:16, fontSize:'1rem'}}>Fees Amount (₹)</h4>
-                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:14}}>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14, marginBottom: 14}}>
                       <div className="form-group">
                         <label>Tuition Fee</label>
                         <input type="number" min="0" value={feeForm.tuitionFee} onChange={e=>setFeeForm(p=>({...p,tuitionFee:e.target.value}))} placeholder="0" required/>
@@ -336,17 +411,90 @@ export default function AdminDashboard() {
                         <label>Hostel Fee</label>
                         <input type="number" min="0" value={feeForm.hostelFee} onChange={e=>setFeeForm(p=>({...p,hostelFee:e.target.value}))} placeholder="0" required/>
                       </div>
-                      <div className="form-group">
-                        <label>Bus Fee</label>
-                        <input type="number" min="0" value={feeForm.busFee} onChange={e=>setFeeForm(p=>({...p,busFee:e.target.value}))} placeholder="0" required/>
+                    </div>
+
+                    <div style={{borderTop:'1px solid #e2e8f0', paddingTop:14}}>
+                      <h5 style={{margin:'0 0 10px 0', fontSize:'.85rem', color:'#64748b'}}>Bus Fee Configuration</h5>
+                      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+                        <div className="form-group">
+                          <label>Bus Route Group</label>
+                          <select value={selectedBusGroup} onChange={e=>handleGroupChange(e.target.value)}>
+                            <option value="">Select Group</option>
+                            <option value="Kannur">Kannur</option>
+                            <option value="Mattannur">Mattannur</option>
+                            <option value="Thalassery">Thalassery</option>
+                          </select>
+                        </div>
+                        <div className="form-group">
+                          <label>Sub Location</label>
+                          <select value={selectedBusLocation} onChange={e=>handleLocationChange(e.target.value)} disabled={!selectedBusGroup}>
+                            <option value="">Select Location</option>
+                            {filteredLocations.map(r => (
+                              <option key={r._id} value={r._id}>{r.location} (₹{r.fee})</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="form-group" style={{marginTop:10}}>
+                        <label>Calculated Bus Fee</label>
+                        <input type="number" value={feeForm.busFee} readOnly style={{background:'#f1f5f9'}}/>
                       </div>
                     </div>
                   </div>
 
                   {feeMsg && <div style={{padding:'10px 14px',borderRadius:8,marginBottom:14,fontSize:'.875rem',background:feeMsg.startsWith('Error')?'#fee2e2':'#d1fae5',color:feeMsg.startsWith('Error')?'#991b1b':'#065f46'}}>{feeMsg}</div>}
-                  <button type="submit" className="btn btn-primary btn-full">Save Fee Structure</button>
+                  <div style={{display:'flex', gap:10}}>
+                    <button type="submit" className="btn btn-primary" style={{flex:1}}>Save Fee Structure</button>
+                    <button type="button" className="btn btn-outline" onClick={()=>setShowRouteManager(!showRouteManager)}>
+                      {showRouteManager ? 'Hide Route Manager' : '⚙ Manage Routes'}
+                    </button>
+                  </div>
                 </form>
               </div>
+
+              {showRouteManager && (
+                <div className="card" style={{marginTop:24}}>
+                  <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20}}>
+                    <h3 className="card-title" style={{margin:0}}>Manage Bus Routes</h3>
+                    <button className="btn btn-outline btn-sm" onClick={handleSeedRoutes}>Reset to Defaults</button>
+                  </div>
+
+                  <form onSubmit={handleAddRoute} style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr auto', gap:10, alignItems:'end', marginBottom:20, padding:15, background:'#f8fafc', borderRadius:8}}>
+                    <div className="form-group" style={{margin:0}}><label>Group</label>
+                      <select value={newRoute.group} onChange={e=>setNewRoute(p=>({...p,group:e.target.value}))}>
+                        <option value="Kannur">Kannur</option>
+                        <option value="Mattannur">Mattannur</option>
+                        <option value="Thalassery">Thalassery</option>
+                      </select>
+                    </div>
+                    <div className="form-group" style={{margin:0}}><label>Location</label>
+                      <input value={newRoute.location} onChange={e=>setNewRoute(p=>({...p,location:e.target.value}))} placeholder="e.g. Chala" required/>
+                    </div>
+                    <div className="form-group" style={{margin:0}}><label>Fee (₹)</label>
+                      <input type="number" value={newRoute.fee} onChange={e=>setNewRoute(p=>({...p,fee:e.target.value}))} required/>
+                    </div>
+                    <button type="submit" className="btn btn-primary btn-sm" style={{height:38}}>Add Route</button>
+                  </form>
+
+                  <div className="table-wrap" style={{maxHeight:400, overflow:'auto'}}>
+                    <table>
+                      <thead><tr><th>Group</th><th>Location</th><th>Fee (₹)</th><th>Action</th></tr></thead>
+                      <tbody>
+                        {busRoutes.length === 0 ? (
+                          <tr><td colSpan="4" style={{textAlign:'center', padding:20}}>No routes found. Click "Reset to Defaults" to seed data.</td></tr>
+                        ) : busRoutes.map(r => (
+                          <tr key={r._id}>
+                            <td>{r.group}</td>
+                            <td>{r.location}</td>
+                            <td>₹{r.fee}</td>
+                            <td><button className="btn btn-sm btn-outline" style={{color:'#ef4444', borderColor:'#fecaca'}} onClick={()=>handleDeleteRoute(r._id)}>Delete</button></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </>
           )}
 
