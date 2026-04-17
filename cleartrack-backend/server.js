@@ -48,8 +48,8 @@ app.use(async (req, res, next) => {
   }
 });
 
-// Static file serving for uploads
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Static file serving for uploads - Using /tmp for Vercel compatibility
+app.use('/uploads', express.static(path.join('/tmp', 'uploads')));
 
 // Routes
 app.use('/api/auth', require('./routes/auth.routes'));
