@@ -17,7 +17,6 @@ export default function AdminDashboard() {
   const [feeForm, setFeeForm] = useState({ department:'', classYear:'', tuitionFee:'', hostelFee:'', busFee:'' })
   const [studentMsg, setStudentMsg] = useState('')
   const [feeMsg, setFeeMsg] = useState('')
-  const [feeMsg, setFeeMsg] = useState('')
   const [loading, setLoading] = useState(true)
   const initials = user?.fullName?.charAt(0)?.toUpperCase() || 'A'
   
