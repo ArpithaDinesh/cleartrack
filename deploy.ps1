@@ -28,22 +28,33 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "GitHub push successful!" -ForegroundColor Green
 Write-Host ""
 
-# --- Step 2: Deploy Frontend to Vercel ---
-Write-Host "[2/2] Deploying frontend to Vercel..." -ForegroundColor Yellow
+# --- Step 2: Deploy Backend to Vercel ---
+Write-Host "[2/3] Deploying backend to Vercel..." -ForegroundColor Yellow
+
+Set-Location "$ROOT\cleartrack-backend"
+npx vercel --prod --yes
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "ERROR: Backend Vercel deploy failed!" -ForegroundColor Red
+    exit 1
+}
+
+# --- Step 3: Deploy Frontend to Vercel ---
+Write-Host "[3/3] Deploying frontend to Vercel..." -ForegroundColor Yellow
 
 Set-Location "$ROOT\cleartrack-react"
 npx vercel --prod --yes
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "ERROR: Vercel deploy failed!" -ForegroundColor Red
+    Write-Host "ERROR: Frontend Vercel deploy failed!" -ForegroundColor Red
     exit 1
 }
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
 Write-Host "  All Done! Changes are now LIVE." -ForegroundColor Green
+Write-Host "  Backend:  (Check Vercel Dashboard for URL)" -ForegroundColor Green
 Write-Host "  Frontend: https://cleartrack-react.vercel.app" -ForegroundColor Green
-Write-Host "  Backend:  https://cleartrack-z0s4.onrender.com" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
 
