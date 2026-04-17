@@ -67,7 +67,7 @@ export default function TeacherDashboard() {
           </div>
         </header>
         <main className="page-content">
-          <div className="page-header"><h1>Faculty Overview</h1><p>Monitor clearance requests for your department: <strong style={{color:'var(--primary)',textTransform:'capitalize'}}>{user?.assignedDepartment}</strong></p></div>
+          <div className="page-header"><h1>Faculty Overview</h1></div>
 
           {/* Profile */}
           <div className="profile-card" style={{flexDirection:'column',gap:0,marginBottom:28}}>
@@ -80,7 +80,6 @@ export default function TeacherDashboard() {
                 <p className="profile-id">Teacher ID: {user?.staffId}</p>
                 <div className="profile-tags" style={{marginTop:8}}>
                   <span className="profile-tag">{user?.department || 'Department not set'}</span>
-                  <span className="profile-tag">{user?.assignedDepartment ? (user.assignedDepartment.charAt(0).toUpperCase() + user.assignedDepartment.slice(1) + ' Department') : 'No fee dept assigned'}</span>
                 </div>
               </div>
             </div>

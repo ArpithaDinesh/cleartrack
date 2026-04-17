@@ -147,17 +147,6 @@ export default function ProfileModal({ isOpen, onClose }) {
               </div>
             )}
 
-            {user?.role === 'staff' && (
-              <div className="form-group">
-                <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-sub)' }}>Assigned Department</label>
-                <select style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #e5e7eb', background: '#fff' }} value={form.assignedDepartment} onChange={set('assignedDepartment')}>
-                  <option value="tuition">Tuition / Academic</option>
-                  <option value="bus">Bus</option>
-                  <option value="hostel">Hostel</option>
-                  <option value="exam">Exam</option>
-                </select>
-              </div>
-            )}
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
