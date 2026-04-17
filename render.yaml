@@ -2,11 +2,10 @@ services:
   - type: web
     name: cleartrack-backend
     env: node
-    plan: free
     region: singapore
+    rootDir: cleartrack-backend
     buildCommand: npm install
     startCommand: npm start
-    rootDir: cleartrack-backend
     envVars:
       - key: PORT
         value: "10000"
@@ -14,6 +13,5 @@ services:
         value: "20"
       - key: MONGODB_URI
       - key: JWT_SECRET
-        generateValue: true
       - key: FRONTEND_URL
         value: https://cleartrack-react.vercel.app
