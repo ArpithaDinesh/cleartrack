@@ -6,7 +6,6 @@ services:
     region: singapore
     buildCommand: npm install
     startCommand: npm start
-    protocol: http
     rootDir: cleartrack-backend
     envVars:
       - key: PORT
