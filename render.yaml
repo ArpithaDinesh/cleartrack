@@ -12,6 +12,8 @@ services:
       - key: NODE_VERSION
         value: "20"
       - key: MONGODB_URI
+        value: "REPLACE_WITH_YOUR_MONGODB_ATLAS_URI"
       - key: JWT_SECRET
+        generateValue: true
       - key: FRONTEND_URL
         value: https://cleartrack-react.vercel.app
