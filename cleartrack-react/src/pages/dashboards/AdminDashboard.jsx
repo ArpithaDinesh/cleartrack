@@ -19,6 +19,7 @@ export default function AdminDashboard() {
   const [feeMsg, setFeeMsg] = useState('')
   const [busRoutes, setBusRoutes] = useState([])
   const [selectedBusGroup, setSelectedBusGroup] = useState('')
+  const [selectedBusLocation, setSelectedBusLocation] = useState('')
   const [filteredLocations, setFilteredLocations] = useState([])
   const [showRouteManager, setShowRouteManager] = useState(false)
   const [newRoute, setNewRoute] = useState({ group: 'Kannur', location: '', fee: 0 })
