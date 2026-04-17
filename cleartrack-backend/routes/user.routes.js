@@ -21,4 +21,28 @@ router.patch('/profile', protect, async (req, res) => {
   }
 });
 
+// @desc  Get students assigned to this teacher (class teacher)
+router.get('/my-students', protect, async (req, res) => {
+  try {
+    if (req.user.role !== 'staff') {
+      return res.status(403).json({ success: false, message: 'Access denied. Teachers only.' });
+    }
+
+    const { classDepartment, classYear } = req.user;
+    if (!classDepartment || !classYear) {
+      return res.json({ success: true, students: [] });
+    }
+
+    const students = await User.find({
+      role: 'student',
+      department: classDepartment,
+      classYear: classYear
+    }).select('fullName email phone universityNumber rollNumber admissionNumber section isActive');
+
+    res.json({ success: true, students });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 module.exports = router;

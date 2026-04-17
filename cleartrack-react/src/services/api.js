@@ -58,7 +58,8 @@ export const ocrAPI = {
 // User API (Profile)
 export const userAPI = {
   getProfile: () => request('GET', '/users/profile'), // fallback to auth/me if /users/profile doesn't exist
-  updateProfile: (data) => request('PATCH', '/users/profile', data)
+  updateProfile: (data) => request('PATCH', '/users/profile', data),
+  getMyStudents: () => request('GET', '/users/my-students')
 };
 
 // Admin

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { clearanceAPI } from '../../services/api'
+import { clearanceAPI, userAPI } from '../../services/api'
 import ProfileModal from '../../components/ProfileModal'
 
 const badgeMap = {
@@ -12,18 +12,26 @@ const badgeMap = {
 export default function TeacherDashboard() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const [pending, setPending] = useState([])
+  const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadingStudents, setLoadingStudents] = useState(true)
   const initials = user?.fullName?.charAt(0)?.toUpperCase() || 'T'
   
   const [showDropdown, setShowDropdown] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
 
   useEffect(() => {
+    // Fetch pending requests
     clearanceAPI.getDepartmentPending()
       .then(d => setPending(d.requests || []))
       .catch(console.error)
       .finally(() => setLoading(false))
+
+    // Fetch assigned students
+    userAPI.getMyStudents()
+      .then(d => setStudents(d.students || []))
+      .catch(console.error)
+      .finally(() => setLoadingStudents(false))
   }, [])
 
   return (
@@ -118,6 +126,48 @@ export default function TeacherDashboard() {
                 {pending.length > 3 && <div style={{textAlign:'center',paddingTop:8}}><Link to="/staff/pending" className="btn btn-outline btn-sm">View {pending.length-3} more…</Link></div>}
               </div>
             )}
+          </div>
+          {/* My Students Section */}
+          <div className="card" style={{marginTop:28, padding:0, overflow:'hidden'}}>
+            <div style={{padding:'18px 24px 14px', borderBottom:'1px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+              <h3 className="card-title" style={{margin:0}}>My Students ({user?.classDepartment} {user?.classYear})</h3>
+              <span style={{fontSize:'.85rem', color:'var(--text-sub)'}}>{students.length} Total</span>
+            </div>
+            
+            <div className="table-wrap" style={{border:'none', borderRadius:0, boxShadow:'none'}}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Student Name</th>
+                    <th>Univ Number</th>
+                    <th>Roll No</th>
+                    <th>Section</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loadingStudents ? (
+                    <tr><td colSpan="5" style={{textAlign:'center', padding:24}}>Loading students...</td></tr>
+                  ) : students.length === 0 ? (
+                    <tr><td colSpan="5" style={{textAlign:'center', padding:24, color:'var(--text-sub)'}}>No students found for this class.</td></tr>
+                  ) : (
+                    students.map(s => (
+                      <tr key={s._id}>
+                        <td><strong>{s.fullName}</strong></td>
+                        <td style={{fontSize:'.85rem'}}>{s.universityNumber || '—'}</td>
+                        <td style={{fontSize:'.85rem'}}>{s.rollNumber || '—'}</td>
+                        <td style={{fontSize:'.85rem'}}>{s.section || '—'}</td>
+                        <td>
+                          <span className={`badge ${s.isActive ? 'badge-success' : 'badge-neutral'}`}>
+                            {s.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </main>
       </div>
