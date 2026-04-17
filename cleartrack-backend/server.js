@@ -48,6 +48,11 @@ let isConnected = false;
 const connectDB = async () => {
   if (isConnected) return;
   try {
+    if (MONGODB_URI.includes('localhost')) {
+      console.warn('⚠️ WARNING: MONGODB_URI is using localhost! This will NOT work on Vercel. Please check your Environment Variables.');
+    } else {
+      console.log('📡 Attempting to connect to MongoDB...');
+    }
     await mongoose.connect(MONGODB_URI);
     isConnected = true;
     console.log('✅ MongoDB connected');
