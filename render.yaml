@@ -13,3 +13,9 @@ services:
         value: 10000
       - key: NODE_VERSION
         value: 20
+      - key: MONGODB_URI
+        sync: false # Render will ask you for this value
+      - key: JWT_SECRET
+        generateValue: true # Render will generate a random secret
+      - key: FRONTEND_URL
+        value: https://cleartrack-react.vercel.app
