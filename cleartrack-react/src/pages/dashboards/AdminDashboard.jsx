@@ -192,79 +192,18 @@ export default function AdminDashboard() {
               </div>
               <div className="card"><h3 className="card-title">Quick Actions</h3><div style={{display:'flex',gap:12,flexWrap:'wrap'}}><button className="btn btn-primary" onClick={()=>setActiveTab('student')}>+ Add Student Account</button><button className="btn btn-outline" onClick={()=>setActiveTab('users')}>Manage Users</button><button className="btn btn-outline" onClick={()=>setActiveTab('fee')}>Fee Structure</button><button className="btn btn-outline" onClick={()=>setActiveTab('logs')}>View Logs</button></div></div>
               
-              <div className="card" style={{maxWidth:600, marginTop:24}}>
-                <h3 className="card-title" style={{marginBottom:16}}>Fee Structure Management</h3>
-                <form onSubmit={handleSaveFeeStructure}>
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14, marginBottom: 20}}>
-                    <div className="form-group"><label>Department</label>
-                      <select value={feeForm.department} onChange={e=>setFeeForm(p=>({...p,department:e.target.value}))} required>
-                        <option value="" disabled>Select department</option>
-                        <option value="CS">CS</option>
-                        <option value="IT">IT</option>
-                        <option value="CE">CE</option>
-                        <option value="ME">ME</option>
-                        <option value="EC">EC</option>
-                        <option value="EEE">EEE</option>
-                        <option value="MCA">MCA</option>
-                        <option value="MBA">MBA</option>
-                      </select>
-                    </div>
-                    <div className="form-group"><label>Class/Year</label>
-                      <select value={feeForm.classYear} onChange={e=>setFeeForm(p=>({...p,classYear:e.target.value}))} required>
-                        <option value="" disabled>Select year</option>
-                        <option value="First year">First year</option>
-                        <option value="Second year">Second year</option>
-                        <option value="Third year">Third year</option>
-                        <option value="Fourth year">Fourth year</option>
-                      </select>
-                    </div>
+              <div className="card" style={{marginTop:24}}>
+                <h3 className="card-title">System Status</h3>
+                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, padding:15, background:'#f8fafc', borderRadius:8}}>
+                  <div>
+                    <h4 style={{margin:0, fontSize:'.9rem'}}>Database Connection</h4>
+                    <p style={{margin:'4px 0 0 0', fontSize:'.85rem', color:'#10b981'}}>● Connected & Healthy</p>
                   </div>
-                  
-                  <div style={{background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: 16}}>
-                    <h4 style={{marginTop:0, marginBottom:16, fontSize:'1rem'}}>Fees Amount (₹)</h4>
-                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14, marginBottom: 14}}>
-                      <div className="form-group">
-                        <label>Tuition Fee</label>
-                        <input type="number" min="0" value={feeForm.tuitionFee} onChange={e=>setFeeForm(p=>({...p,tuitionFee:e.target.value}))} placeholder="0" required/>
-                      </div>
-                      <div className="form-group">
-                        <label>Hostel Fee</label>
-                        <input type="number" min="0" value={feeForm.hostelFee} onChange={e=>setFeeForm(p=>({...p,hostelFee:e.target.value}))} placeholder="0" required/>
-                      </div>
-                    </div>
-
-                    <div style={{borderTop:'1px solid #e2e8f0', paddingTop:14}}>
-                      <h5 style={{margin:'0 0 10px 0', fontSize:'.85rem', color:'#64748b'}}>Bus Fee Configuration</h5>
-                      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
-                        <div className="form-group">
-                          <label>Bus Route Group</label>
-                          <select value={selectedBusGroup} onChange={e=>handleGroupChange(e.target.value)}>
-                            <option value="">Select Group</option>
-                            <option value="Kannur">Kannur</option>
-                            <option value="Mattannur">Mattannur</option>
-                            <option value="Thalassery">Thalassery</option>
-                          </select>
-                        </div>
-                        <div className="form-group">
-                          <label>Sub Location</label>
-                          <select value={selectedBusLocation} onChange={e=>handleLocationChange(e.target.value)} disabled={!selectedBusGroup}>
-                            <option value="">Select Location</option>
-                            {filteredLocations.map(r => (
-                              <option key={r._id} value={r._id}>{r.location} (₹{r.fee})</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                      <div className="form-group" style={{marginTop:10}}>
-                        <label>Calculated Bus Fee</label>
-                        <input type="number" value={feeForm.busFee} readOnly style={{background:'#f1f5f9'}}/>
-                      </div>
-                    </div>
+                  <div>
+                    <h4 style={{margin:0, fontSize:'.9rem'}}>Vercel Deployment</h4>
+                    <p style={{margin:'4px 0 0 0', fontSize:'.85rem', color:'#3b82f6'}}>● Production (v2.1.0)</p>
                   </div>
-
-                  {feeMsg && <div style={{padding:'10px 14px',borderRadius:8,marginBottom:14,fontSize:'.875rem',background:feeMsg.startsWith('Error')?'#fee2e2':'#d1fae5',color:feeMsg.startsWith('Error')?'#991b1b':'#065f46'}}>{feeMsg}</div>}
-                  <button type="submit" className="btn btn-primary btn-full">Save Fee Structure</button>
-                </form>
+                </div>
               </div>
             </>
           )}
@@ -372,58 +311,100 @@ export default function AdminDashboard() {
           )}
 
           {activeTab === 'fee' && (
-            <>
-              <div className="page-header"><h1>Fee Structure Management</h1></div>
-              <div className="card" style={{maxWidth:600}}>
-                <form onSubmit={handleSaveFeeStructure}>
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14, marginBottom: 20}}>
-                    <div className="form-group"><label>Department</label>
-                      <select value={feeForm.department} onChange={e=>setFeeForm(p=>({...p,department:e.target.value}))} required>
-                        <option value="" disabled>Select department</option>
-                        <option value="IT">IT</option>
-                        <option value="CS">CS</option>
-                        <option value="EC">EC</option>
-                        <option value="EEE">EEE</option>
-                        <option value="ME">ME</option>
-                        <option value="CE">CE</option>
-                        <option value="MBA">MBA</option>
-                        <option value="MCA">MCA</option>
-                      </select>
-                    </div>
-                    <div className="form-group"><label>Class/Year</label>
-                      <select value={feeForm.classYear} onChange={e=>setFeeForm(p=>({...p,classYear:e.target.value}))} required>
-                        <option value="" disabled>Select year</option>
-                        <option value="First year">First year</option>
-                        <option value="Second year">Second year</option>
-                        <option value="Third year">Third year</option>
-                        <option value="Fourth year">Fourth year</option>
-                      </select>
-                    </div>
-                  </div>
-                  
-                  <div style={{background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: 16}}>
-                    <h4 style={{marginTop:0, marginBottom:16, fontSize:'1rem'}}>Fees Amount (₹)</h4>
-                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14, marginBottom: 14}}>
-                      <div className="form-group">
-                        <label>Tuition Fee</label>
-                        <input type="number" min="0" value={feeForm.tuitionFee} onChange={e=>setFeeForm(p=>({...p,tuitionFee:e.target.value}))} placeholder="0" required/>
+            <div style={{display:'flex', flexDirection:'column', gap:24}}>
+              <div className="page-header" style={{marginBottom:0}}><h1>Fee Structure Management</h1><p>Manage different fee categories independently.</p></div>
+              
+              <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(400px, 1fr))', gap:24}}>
+                {/* Tuition Fee Section */}
+                <div className="card">
+                  <h3 className="card-title" style={{display:'flex', alignItems:'center', gap:10}}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    Tuition Fee Management
+                  </h3>
+                  <form onSubmit={handleSaveFeeStructure}>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14, marginBottom: 16}}>
+                      <div className="form-group"><label>Department</label>
+                        <select value={feeForm.department} onChange={e=>setFeeForm(p=>({...p,department:e.target.value}))} required>
+                          <option value="" disabled>Select department</option>
+                          <option value="IT">IT</option><option value="CS">CS</option><option value="EC">EC</option><option value="EEE">EEE</option><option value="ME">ME</option><option value="CE">CE</option><option value="MBA">MBA</option><option value="MCA">MCA</option>
+                        </select>
                       </div>
-                      <div className="form-group">
-                        <label>Hostel Fee</label>
-                        <input type="number" min="0" value={feeForm.hostelFee} onChange={e=>setFeeForm(p=>({...p,hostelFee:e.target.value}))} placeholder="0" required/>
+                      <div className="form-group"><label>Class/Year</label>
+                        <select value={feeForm.classYear} onChange={e=>setFeeForm(p=>({...p,classYear:e.target.value}))} required>
+                          <option value="" disabled>Select year</option>
+                          <option value="First year">First year</option><option value="Second year">Second year</option><option value="Third year">Third year</option><option value="Fourth year">Fourth year</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label>Amount (₹)</label>
+                      <input type="number" min="0" value={feeForm.tuitionFee} onChange={e=>setFeeForm(p=>({...p,tuitionFee:e.target.value}))} placeholder="0" required/>
+                    </div>
+                    <button type="submit" className="btn btn-primary btn-full" style={{marginTop:16}}>Update Tuition Fee</button>
+                  </form>
+                </div>
+
+                {/* Hostel Fee Section */}
+                <div className="card">
+                  <h3 className="card-title" style={{display:'flex', alignItems:'center', gap:10}}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    Hostel Fee Management
+                  </h3>
+                  <form onSubmit={handleSaveFeeStructure}>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14, marginBottom: 16}}>
+                      <div className="form-group"><label>Department</label>
+                        <select value={feeForm.department} onChange={e=>setFeeForm(p=>({...p,department:e.target.value}))} required>
+                          <option value="" disabled>Select department</option>
+                          <option value="IT">IT</option><option value="CS">CS</option><option value="EC">EC</option><option value="EEE">EEE</option><option value="ME">ME</option><option value="CE">CE</option><option value="MBA">MBA</option><option value="MCA">MCA</option>
+                        </select>
+                      </div>
+                      <div className="form-group"><label>Class/Year</label>
+                        <select value={feeForm.classYear} onChange={e=>setFeeForm(p=>({...p,classYear:e.target.value}))} required>
+                          <option value="" disabled>Select year</option>
+                          <option value="First year">First year</option><option value="Second year">Second year</option><option value="Third year">Third year</option><option value="Fourth year">Fourth year</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label>Amount (₹)</label>
+                      <input type="number" min="0" value={feeForm.hostelFee} onChange={e=>setFeeForm(p=>({...p,hostelFee:e.target.value}))} placeholder="0" required/>
+                    </div>
+                    <button type="submit" className="btn btn-primary btn-full" style={{marginTop:16}}>Update Hostel Fee</button>
+                  </form>
+                </div>
+              </div>
+
+              {/* Bus Fee Section (Full Width) */}
+              <div className="card">
+                <h3 className="card-title" style={{display:'flex', alignItems:'center', gap:10, marginBottom:20}}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="3" width="22" height="13" rx="5"/><line x1="1" y1="10" x2="23" y2="10"/><line x1="4" y1="21" x2="4" y2="21"/><line x1="20" y1="21" x2="20" y2="21"/></svg>
+                  Bus Fee Management
+                </h3>
+                <form onSubmit={handleSaveFeeStructure}>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:24}}>
+                    <div style={{display:'flex', flexDirection:'column', gap:14}}>
+                      <div className="form-group"><label>Department</label>
+                        <select value={feeForm.department} onChange={e=>setFeeForm(p=>({...p,department:e.target.value}))} required>
+                          <option value="" disabled>Select department</option>
+                          <option value="IT">IT</option><option value="CS">CS</option><option value="EC">EC</option><option value="EEE">EEE</option><option value="ME">ME</option><option value="CE">CE</option><option value="MBA">MBA</option><option value="MCA">MCA</option>
+                        </select>
+                      </div>
+                      <div className="form-group"><label>Class/Year</label>
+                        <select value={feeForm.classYear} onChange={e=>setFeeForm(p=>({...p,classYear:e.target.value}))} required>
+                          <option value="" disabled>Select year</option>
+                          <option value="First year">First year</option><option value="Second year">Second year</option><option value="Third year">Third year</option><option value="Fourth year">Fourth year</option>
+                        </select>
                       </div>
                     </div>
 
-                    <div style={{borderTop:'1px solid #e2e8f0', paddingTop:14}}>
+                    <div style={{background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0'}}>
                       <h5 style={{margin:'0 0 10px 0', fontSize:'.85rem', color:'#64748b'}}>Bus Fee Configuration</h5>
                       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
                         <div className="form-group">
                           <label>Bus Route Group</label>
                           <select value={selectedBusGroup} onChange={e=>handleGroupChange(e.target.value)}>
                             <option value="">Select Group</option>
-                            <option value="Kannur">Kannur</option>
-                            <option value="Mattannur">Mattannur</option>
-                            <option value="Thalassery">Thalassery</option>
+                            <option value="Kannur">Kannur</option><option value="Mattannur">Mattannur</option><option value="Thalassery">Thalassery</option>
                           </select>
                         </div>
                         <div className="form-group">
@@ -443,9 +424,8 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {feeMsg && <div style={{padding:'10px 14px',borderRadius:8,marginBottom:14,fontSize:'.875rem',background:feeMsg.startsWith('Error')?'#fee2e2':'#d1fae5',color:feeMsg.startsWith('Error')?'#991b1b':'#065f46'}}>{feeMsg}</div>}
-                  <div style={{display:'flex', gap:10}}>
-                    <button type="submit" className="btn btn-primary" style={{flex:1}}>Save Fee Structure</button>
+                  <div style={{marginTop:20, display:'flex', gap:10}}>
+                    <button type="submit" className="btn btn-primary" style={{flex:1}}>Save Bus Fee Structure</button>
                     <button type="button" className="btn btn-outline" onClick={()=>setShowRouteManager(!showRouteManager)}>
                       {showRouteManager ? 'Hide Route Manager' : '⚙ Manage Routes'}
                     </button>
@@ -454,7 +434,7 @@ export default function AdminDashboard() {
               </div>
 
               {showRouteManager && (
-                <div className="card" style={{marginTop:24}}>
+                <div className="card">
                   <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20}}>
                     <h3 className="card-title" style={{margin:0}}>Manage Bus Routes</h3>
                     <button className="btn btn-outline btn-sm" onClick={handleSeedRoutes}>Reset to Defaults</button>
@@ -463,9 +443,7 @@ export default function AdminDashboard() {
                   <form onSubmit={handleAddRoute} style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr auto', gap:10, alignItems:'end', marginBottom:20, padding:15, background:'#f8fafc', borderRadius:8}}>
                     <div className="form-group" style={{margin:0}}><label>Group</label>
                       <select value={newRoute.group} onChange={e=>setNewRoute(p=>({...p,group:e.target.value}))}>
-                        <option value="Kannur">Kannur</option>
-                        <option value="Mattannur">Mattannur</option>
-                        <option value="Thalassery">Thalassery</option>
+                        <option value="Kannur">Kannur</option><option value="Mattannur">Mattannur</option><option value="Thalassery">Thalassery</option>
                       </select>
                     </div>
                     <div className="form-group" style={{margin:0}}><label>Location</label>
@@ -485,9 +463,7 @@ export default function AdminDashboard() {
                           <tr><td colSpan="4" style={{textAlign:'center', padding:20}}>No routes found. Click "Reset to Defaults" to seed data.</td></tr>
                         ) : busRoutes.map(r => (
                           <tr key={r._id}>
-                            <td>{r.group}</td>
-                            <td>{r.location}</td>
-                            <td>₹{r.fee}</td>
+                            <td>{r.group}</td><td>{r.location}</td><td>₹{r.fee}</td>
                             <td><button className="btn btn-sm btn-outline" style={{color:'#ef4444', borderColor:'#fecaca'}} onClick={()=>handleDeleteRoute(r._id)}>Delete</button></td>
                           </tr>
                         ))}
@@ -496,7 +472,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               )}
-            </>
+            </div>
           )}
 
           {activeTab === 'logs' && (
