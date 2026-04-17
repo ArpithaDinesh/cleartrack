@@ -14,6 +14,40 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const PORT = process.env.PORT || 5000;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/cleartrack';
+
+// Database connection state
+let isConnected = false;
+
+const connectDB = async () => {
+  if (isConnected) return;
+  try {
+    if (MONGODB_URI.includes('localhost')) {
+      console.warn('⚠️ WARNING: MONGODB_URI is using localhost! This will NOT work on Vercel. Please check your Environment Variables.');
+    } else {
+      console.log('📡 Attempting to connect to MongoDB...');
+    }
+    await mongoose.connect(MONGODB_URI);
+    isConnected = true;
+    console.log('✅ MongoDB connected');
+  } catch (err) {
+    console.error('❌ MongoDB connection error:', err.message);
+    if (require.main === module) process.exit(1);
+    throw err;
+  }
+};
+
+// Middleware to ensure DB connection
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Static file serving for uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -39,40 +73,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/cleartrack';
-
-// Database connection state
-let isConnected = false;
-
-const connectDB = async () => {
-  if (isConnected) return;
-  try {
-    if (MONGODB_URI.includes('localhost')) {
-      console.warn('⚠️ WARNING: MONGODB_URI is using localhost! This will NOT work on Vercel. Please check your Environment Variables.');
-    } else {
-      console.log('📡 Attempting to connect to MongoDB...');
-    }
-    await mongoose.connect(MONGODB_URI);
-    isConnected = true;
-    console.log('✅ MongoDB connected');
-  } catch (err) {
-    console.error('❌ MongoDB connection error:', err.message);
-    // Don't exit in serverless environment, let the request fail
-    if (require.main === module) process.exit(1);
-    throw err;
-  }
-};
-
-// Middleware to ensure DB connection
-app.use(async (req, res, next) => {
-  try {
-    await connectDB();
-    next();
-  } catch (err) {
-    next(err);
-  }
-});
+// End of middleware/routes
 
 // Start server if run directly
 if (require.main === module) {
