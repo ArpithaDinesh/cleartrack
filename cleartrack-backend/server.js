@@ -39,20 +39,43 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Connect to MongoDB
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/cleartrack';
 
-mongoose.connect(MONGODB_URI)
-  .then(() => {
+// Database connection state
+let isConnected = false;
+
+const connectDB = async () => {
+  if (isConnected) return;
+  try {
+    await mongoose.connect(MONGODB_URI);
+    isConnected = true;
     console.log('✅ MongoDB connected');
+  } catch (err) {
+    console.error('❌ MongoDB connection error:', err.message);
+    // Don't exit in serverless environment, let the request fail
+    if (require.main === module) process.exit(1);
+    throw err;
+  }
+};
+
+// Middleware to ensure DB connection
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Start server if run directly
+if (require.main === module) {
+  connectDB().then(() => {
     app.listen(PORT, () => {
       console.log(`🚀 CLEARTRACK API running on http://localhost:${PORT}`);
     });
-  })
-  .catch(err => {
-    console.error('❌ MongoDB connection error:', err.message);
-    process.exit(1);
   });
+}
 
 module.exports = app;
