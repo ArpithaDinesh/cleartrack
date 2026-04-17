@@ -28,7 +28,7 @@ const connectDB = async () => {
     } else {
       console.log('📡 Attempting to connect to MongoDB...');
     }
-    await mongoose.connect(MONGODB_URI);
+    await mongoose.connect(MONGODB_URI, { dbName: 'cleartrack' });
     isConnected = true;
     console.log('✅ MongoDB connected');
   } catch (err) {
