@@ -240,6 +240,8 @@ export default function StudentDashboard() {
                         {ocrStates.tuition.status === 'success' && ocrStates.tuition.ocrData && (
                           <div className="ocr-fields">
                             <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Student Name</label><span>{ocrStates.tuition.ocrData.studentName || '—'}</span></div>
+                            <div className="ocr-field"><label>Department</label><span>{ocrStates.tuition.ocrData.department || '—'}</span></div>
+                            <div className="ocr-field"><label>Fee Category</label><span>{ocrStates.tuition.ocrData.feeCategory || '—'}</span></div>
                             <div className="ocr-field"><label>Transaction ID</label><span>{ocrStates.tuition.ocrData.transactionId || '—'}</span></div>
                             <div className="ocr-field"><label>Amount Paid</label><span>{ocrStates.tuition.ocrData.amount || '—'}</span></div>
                             <div className="ocr-field"><label>Payment Date</label><span>{ocrStates.tuition.ocrData.paymentDate || '—'}</span></div>
@@ -348,6 +350,8 @@ export default function StudentDashboard() {
                             {ocrStates.bus.status === 'success' && ocrStates.bus.ocrData && (
                               <div className="ocr-fields">
                                 <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Student Name</label><span>{ocrStates.bus.ocrData.studentName || '—'}</span></div>
+                                <div className="ocr-field"><label>Department</label><span>{ocrStates.bus.ocrData.department || '—'}</span></div>
+                                <div className="ocr-field"><label>Fee Category</label><span>{ocrStates.bus.ocrData.feeCategory || '—'}</span></div>
                                 <div className="ocr-field"><label>Transaction ID</label><span>{ocrStates.bus.ocrData.transactionId || '—'}</span></div>
                                 <div className="ocr-field"><label>Amount Paid</label><span>{ocrStates.bus.ocrData.amount || '—'}</span></div>
                                 <div className="ocr-field"><label>Payment Date</label><span>{ocrStates.bus.ocrData.paymentDate || '—'}</span></div>
@@ -452,6 +456,8 @@ export default function StudentDashboard() {
                             {ocrStates.hostel.status === 'success' && ocrStates.hostel.ocrData && (
                               <div className="ocr-fields">
                                 <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Student Name</label><span>{ocrStates.hostel.ocrData.studentName || '—'}</span></div>
+                                <div className="ocr-field"><label>Department</label><span>{ocrStates.hostel.ocrData.department || '—'}</span></div>
+                                <div className="ocr-field"><label>Fee Category</label><span>{ocrStates.hostel.ocrData.feeCategory || '—'}</span></div>
                                 <div className="ocr-field"><label>Transaction ID</label><span>{ocrStates.hostel.ocrData.transactionId || '—'}</span></div>
                                 <div className="ocr-field"><label>Amount Paid</label><span>{ocrStates.hostel.ocrData.amount || '—'}</span></div>
                                 <div className="ocr-field"><label>Payment Date</label><span>{ocrStates.hostel.ocrData.paymentDate || '—'}</span></div>

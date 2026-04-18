@@ -31,6 +31,8 @@ const parseOCRFields = (rawText) => {
   const text = rawText.toUpperCase();
   const result = {
     studentName: '',
+    department: '',
+    feeCategory: '',
     transactionId: '',
     amount: '',
     paymentDate: '',
@@ -40,21 +42,33 @@ const parseOCRFields = (rawText) => {
     rawText
   };
 
-  // 1. Student Name patterns - More robust
-  const namePatterns = [
-    /(?:NAME|CUSTOMER|STUDENT)[\s:#]*([A-Z.\s]{3,})/i,
-    /([A-Z\s]{3,})\s*(?:S[1-8]|S\s*[1-8]|SEM|IV|VI|VIII|II)/i,
-    /REMITTED\s+BY\s+([A-Z\s]{3,})/i
-  ];
-  const ignorePhrases = ['COLLEGE', 'ENGINEERING', 'OFFICER', 'REMITTED', 'BANK', 'SERVICE', 'COOPERATIVE', 'THALASSERY', 'KANNUR', 'KADIRUR', 'TRANSFER', 'RECEIPT', 'CASHIER', 'AUTHORISED'];
-  for (const p of namePatterns) {
-    const m = rawText.match(p);
-    if (m && m[1]) {
-      let cleanName = m[1].replace(/College of Engineering/ig, '').trim();
-      const isInvalid = ignorePhrases.some(phrase => cleanName.toUpperCase().includes(phrase));
-      if (cleanName.length > 2 && !isInvalid) {
-        result.studentName = cleanName.replace(/\d+/g, '').trim();
-        break;
+  // 1. Specialized "Particulars" parsing for Kadirur/College receipts
+  // Format: "By Cash [Name] [Dept] [Fee Type]"
+  const particularsMatch = rawText.match(/BY\s+CASH\s+([A-Z.\s]{3,})\s+(IT|CSE|ME|EE|EC|MCA|MBA|CIVIL|ECE|ADMISSION|EEE)\b\s*(.*)/i);
+  if (particularsMatch) {
+    result.studentName = particularsMatch[1].trim();
+    result.department = particularsMatch[2].trim();
+    result.feeCategory = particularsMatch[3].trim();
+    result.paymentMode = 'Cash';
+  }
+
+  // 1b. Fallback Student Name patterns
+  if (!result.studentName) {
+    const namePatterns = [
+      /(?:NAME|CUSTOMER|STUDENT)[\s:#]*([A-Z.\s]{3,})/i,
+      /([A-Z\s]{3,})\s*(?:S[1-8]|S\s*[1-8]|SEM|IV|VI|VIII|II)/i,
+      /REMITTED\s+BY\s+([A-Z\s]{3,})/i
+    ];
+    const ignorePhrases = ['COLLEGE', 'ENGINEERING', 'OFFICER', 'REMITTED', 'BANK', 'SERVICE', 'COOPERATIVE', 'THALASSERY', 'KANNUR', 'KADIRUR', 'TRANSFER', 'RECEIPT', 'CASHIER', 'AUTHORISED'];
+    for (const p of namePatterns) {
+      const m = rawText.match(p);
+      if (m && m[1]) {
+        let cleanName = m[1].replace(/College of Engineering/ig, '').trim();
+        const isInvalid = ignorePhrases.some(phrase => cleanName.toUpperCase().includes(phrase));
+        if (cleanName.length > 2 && !isInvalid) {
+          result.studentName = cleanName.replace(/\d+/g, '').trim();
+          break;
+        }
       }
     }
   }
@@ -119,11 +133,13 @@ const parseOCRFields = (rawText) => {
     if (text.includes(b)) { result.bankName = b + ' Bank'; break; }
   }
 
-  // 6. Payment mode
-  if (/UPI/i.test(rawText)) result.paymentMode = 'UPI';
-  else if (/NEFT|RTGS|IMPS/i.test(rawText)) result.paymentMode = rawText.match(/NEFT|RTGS|IMPS/i)[0];
-  else if (/CHALAN|CHALLAN|CHALAN/i.test(rawText)) result.paymentMode = 'DD / Challan';
-  else if (/ONLINE|TRANSFER/i.test(rawText)) result.paymentMode = 'Transfer';
+  // 6. Payment mode (if not already set by particulars)
+  if (!result.paymentMode) {
+    if (/UPI/i.test(rawText)) result.paymentMode = 'UPI';
+    else if (/NEFT|RTGS|IMPS/i.test(rawText)) result.paymentMode = rawText.match(/NEFT|RTGS|IMPS/i)[0];
+    else if (/CHALAN|CHALLAN|CHALAN/i.test(rawText)) result.paymentMode = 'DD / Challan';
+    else if (/ONLINE|TRANSFER/i.test(rawText)) result.paymentMode = 'Transfer';
+  }
 
   return result;
 };

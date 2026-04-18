@@ -21,6 +21,9 @@ const departmentApprovalSchema = new mongoose.Schema({
 });
 
 const ocrDataSchema = new mongoose.Schema({
+  studentName: { type: String, default: '' },
+  department: { type: String, default: '' },
+  feeCategory: { type: String, default: '' },
   transactionId: { type: String, default: '' },
   amount: { type: String, default: '' },
   paymentDate: { type: String, default: '' },
