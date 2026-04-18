@@ -40,12 +40,13 @@ const parseOCRFields = (rawText) => {
     rawText
   };
 
-  // Student Name patterns
+  // 1. Student Name patterns - More robust
   const namePatterns = [
-    /(?:NAME|CUSTOMER|STUDENT)[\s:#]*([A-Z\s]{3,})/i,
-    /([A-Z\s]{3,})\s*(?:S[1-8]|S\s*[1-8]|SEM)/i,
+    /(?:NAME|CUSTOMER|STUDENT)[\s:#]*([A-Z.\s]{3,})/i,
+    /([A-Z\s]{3,})\s*(?:S[1-8]|S\s*[1-8]|SEM|IV|VI|VIII|II)/i,
+    /REMITTED\s+BY\s+([A-Z\s]{3,})/i
   ];
-  const ignorePhrases = ['COLLEGE', 'ENGINEERING', 'OFFICER', 'REMITTED', 'BANK', 'SERVICE', 'COOPERATIVE', 'THALASSERY', 'KANNUR', 'KADIRUR', 'TRANSFER', 'RECEIPT'];
+  const ignorePhrases = ['COLLEGE', 'ENGINEERING', 'OFFICER', 'REMITTED', 'BANK', 'SERVICE', 'COOPERATIVE', 'THALASSERY', 'KANNUR', 'KADIRUR', 'TRANSFER', 'RECEIPT', 'CASHIER', 'AUTHORISED'];
   for (const p of namePatterns) {
     const m = rawText.match(p);
     if (m && m[1]) {
@@ -58,61 +59,50 @@ const parseOCRFields = (rawText) => {
     }
   }
 
-  // Transaction ID patterns
+  // 2. Transaction ID patterns - Optimized for India
   const txnPatterns = [
-    /TXN[A-Z0-9]+/i,
-    /TRANSACTION[\s:#]*([A-Z0-9\-]+)/i,
+    /TXN[\s:#]*([A-Z0-9]+)/i,
+    /TRANSACTION[\s:#]*ID[\s:]*([A-Z0-9\-]+)/i,
     /REF[\s:#]*([A-Z0-9\-]+)/i,
-    /UTR[\s:#]*([A-Z0-9\-]+)/i,
+    /UTR[\s:#]*([A-Z0-9\-]{12,})/i,
     /CHALAN\s*\/\s*VR\.\s*NO[\s:]*([A-Z0-9\/\-]{4,})/i,
-    /(\d{10,})/
+    /JOURNAL[\s:]*([A-Z0-9]+)/i,
+    /(\d{10,18})/ // Catch long numeric IDs (like UPI/UTR)
   ];
   for (const p of txnPatterns) {
     const m = rawText.match(p);
     if (m) {
       const val = m[1] || m[0];
-      if (!/DATE|AMOUNT|RS|INR/i.test(val)) {
-        result.transactionId = val.replace(/\s/g, '');
+      if (!/DATE|AMOUNT|RS|INR|BANK|CE/i.test(val) && val.length > 5) {
+        result.transactionId = val.replace(/\s/g, '').toUpperCase();
         break;
       }
     }
   }
 
-  // Amount patterns
-  const amountMatches = rawText.match(/([0-9LS\s]*[0-9LS]+\s*[\.\/,4\s]\s*[0-9LS]{2})/ig);
-  if (amountMatches) {
-    for (let m of amountMatches) {
-      let clean = m.replace(/\s/g, '').replace(/L/g, '1').replace(/S/g, '5').replace(/O/g, '0').replace(/4/g, '.').replace(/,/g, '.');
-      const val = parseFloat(clean);
-      if (val > 10 && val < 200000) {
-        result.amount = '₹' + clean;
-        break;
-      }
-    }
+  // 3. Amount patterns - Handling OCR misreads (S->5, L->1, etc.)
+  const amountPattern = /(?:RS|AMT|AMOUNT|TOTAL|NET)[\s:.]*([0-9LS\s,.]{3,10})/i;
+  const amtMatch = rawText.match(amountPattern);
+  if (amtMatch) {
+    let clean = amtMatch[1].replace(/\s/g, '').replace(/L/g, '1').replace(/S/g, '5').replace(/O/g, '0').replace(/[,]/g, '');
+    if (!isNaN(parseFloat(clean))) result.amount = '₹' + clean;
   }
 
-  // Backup: Amount in words
   if (!result.amount) {
-    const wordsLine = rawText.match(/(?:Rupees|Words)[^a-z]*([A-Za-z\s]+)(?:Only|Rupees)/i);
-    if (wordsLine) {
-      const words = wordsLine[1].toLowerCase();
-      let total = 0;
-      const dict = { 'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10,'eleven':11,'twelve':12,'thirteen':13,'fourteen':14,'fifteen':15,'sixteen':16,'seventeen':17,'eighteen':18,'nineteen':19,'twenty':20,'thirty':30,'forty':40,'fifty':50,'sixty':60,'seventy':70,'eighty':80,'ninety':90,'hundred':100,'thousand':1000 };
-      const parts = words.split(/\s+/);
-      let sub = 0;
-      parts.forEach(p => {
-        if (dict[p]) {
-          if (p === 'thousand') { total += (sub || 1) * 1000; sub = 0; }
-          else if (p === 'hundred') { sub = (sub || 1) * 100; }
-          else { sub += dict[p]; }
+    const amountMatches = rawText.match(/([0-9LS\s]*[0-9LS]+\s*[\.\/,4]\s*[0-9LS]{2})/ig);
+    if (amountMatches) {
+      for (let m of amountMatches) {
+        let clean = m.replace(/\s/g, '').replace(/L/g, '1').replace(/S/g, '5').replace(/O/g, '0').replace(/4/g, '.').replace(/,/g, '');
+        const val = parseFloat(clean);
+        if (val > 10 && val < 200000) {
+          result.amount = '₹' + clean;
+          break;
         }
-      });
-      total += sub;
-      if (total > 0) result.amount = '₹' + total + '.00';
+      }
     }
   }
 
-  // Date patterns
+  // 4. Date patterns
   const datePatterns = [
     /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/,
     /(\d{1,2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\w*\s+\d{2,4})/i,
@@ -123,29 +113,17 @@ const parseOCRFields = (rawText) => {
     if (m) { result.paymentDate = m[1].trim(); break; }
   }
 
-  // Receipt number
-  const rcptPatterns = [
-    /RECEIPT[\s#:]*([A-Z0-9\-]{4,})/i,
-    /REC[\s#:]*([A-Z0-9\-]{4,})/i,
-    /NO[\s.:]*([A-Z0-9\-]{5,})/i
-  ];
-  for (const p of rcptPatterns) {
-    const m = rawText.match(p);
-    if (m && m[1] && !/DATE|AMOUNT/i.test(m[1])) { result.receiptNumber = m[1].trim(); break; }
-  }
-
-  // Bank name
-  const bankKeywords = ['SBI', 'HDFC', 'ICICI', 'AXIS', 'PNB', 'BOB', 'CANARA', 'UNION', 'KOTAK', 'CO-OPERATIVE', 'COOPERATIVE', 'KADIRUR', 'FEDERAL', 'SOUTH INDIAN'];
+  // 5. Bank name
+  const bankKeywords = ['SBI', 'HDFC', 'ICICI', 'AXIS', 'PNB', 'BOB', 'CANARA', 'UNION', 'KOTAK', 'CO-OPERATIVE', 'COOPERATIVE', 'KADIRUR', 'FEDERAL', 'SOUTH INDIAN', 'KERALA BANK'];
   for (const b of bankKeywords) {
     if (text.includes(b)) { result.bankName = b + ' Bank'; break; }
   }
 
-  // Payment mode
+  // 6. Payment mode
   if (/UPI/i.test(rawText)) result.paymentMode = 'UPI';
   else if (/NEFT|RTGS|IMPS/i.test(rawText)) result.paymentMode = rawText.match(/NEFT|RTGS|IMPS/i)[0];
-  else if (/CHALAN|CHALLAN/i.test(rawText)) result.paymentMode = 'DD / Challan';
-  else if (/ONLINE|NETBANKING/i.test(rawText)) result.paymentMode = 'Online Transfer';
-  else if (/CASH|DEPOSIT/i.test(rawText)) result.paymentMode = 'Cash Deposit';
+  else if (/CHALAN|CHALLAN|CHALAN/i.test(rawText)) result.paymentMode = 'DD / Challan';
+  else if (/ONLINE|TRANSFER/i.test(rawText)) result.paymentMode = 'Transfer';
 
   return result;
 };
@@ -170,11 +148,15 @@ const processOCRInternal = async (request, user) => {
       console.warn('Skipping preprocessing step:', e.message);
     }
 
-    // Step 2: Run tesseract.js
+    // Step 2: Run tesseract.js with optimized config
     console.log('Running tesseract.js OCR on:', ocrInputPath);
     const worker = await createWorker('eng', 1, {
       cachePath: path.join(os.tmpdir(), 'tessdata'),
-      logger: m => { if (m.status) console.log('Tesseract:', m.status, Math.round((m.progress||0)*100) + '%'); }
+      logger: m => { 
+        if (m.status === 'recognizing text') {
+          console.log(`OCR Progress: ${Math.round((m.progress || 0) * 100)}%`);
+        }
+      }
     });
     const { data: { text: rawText } } = await worker.recognize(ocrInputPath);
     await worker.terminate();
