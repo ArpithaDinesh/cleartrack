@@ -2,8 +2,10 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Ensure uploads directory exists - Using /tmp for Vercel compatibility
-const uploadDir = path.join('/tmp', 'uploads');
+const os = require('os');
+
+// Ensure uploads directory exists - Using system temp for Vercel/Local compatibility
+const uploadDir = path.join(os.tmpdir(), 'cleartrack-uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }

@@ -1,6 +1,8 @@
-const ClearanceRequest = require('../models/ClearanceRequest');
-const ApprovalLog = require('../models/ApprovalLog');
+const path = require('path');
+const fs = require('fs');
+const os = require('os');
 const { v4: uuidv4 } = require('uuid');
+const { processOCRInternal } = require('./ocr.controller');
 
 // Helper: build department approvals based on fee type and student profile
 const buildApprovals = (feeType, student) => {
@@ -79,7 +81,18 @@ const submitRequest = async (req, res) => {
       newStatus: 'submitted'
     });
 
-    res.status(201).json({ success: true, request });
+    // Automatically trigger OCR processing right after upload
+    // This is much safer on Vercel as the file is guaranteed to exist in /tmp
+    let ocrData = null;
+    try {
+      console.log('Auto-triggering OCR for request:', request._id);
+      const ocrResult = await processOCRInternal(request, req.user);
+      ocrData = ocrResult.ocrData;
+    } catch (ocrErr) {
+      console.warn('Auto-OCR failed, student will need to retry:', ocrErr.message);
+    }
+
+    res.status(201).json({ success: true, request, ocrData });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }

@@ -1,23 +1,27 @@
 const path = require('path');
 const fs = require('fs');
-const { execFile } = require('child_process');
+const os = require('os');
+const sharp = require('sharp');
 const util = require('util');
-const execFileAsync = util.promisify(execFile);
 const { createWorker } = require('tesseract.js');
 
 const ClearanceRequest = require('../models/ClearanceRequest');
 
-// Run Python OpenCV preprocessor on the image, returns path to cleaned image
-const runOpenCVPreprocess = async (inputPath) => {
+// Use sharp (built-in JS) for preprocessing — much faster and works on Vercel
+const runSharpPreprocess = async (inputPath) => {
   const ext = path.extname(inputPath);
-  const cleanedPath = inputPath.replace(ext, '_cleaned' + ext);
-  const scriptPath = path.join(__dirname, '..', 'preprocess.py');
+  const cleanedPath = path.join(os.tmpdir(), `cleaned-${Date.now()}${ext}`);
   try {
-    await execFileAsync('python', [scriptPath, inputPath, cleanedPath]);
-    console.log('OpenCV preprocessing done. Using cleaned image.');
+    console.log('Running sharp preprocessing...');
+    await sharp(inputPath)
+      .grayscale() // OCR works better on grayscale
+      .resize(2000, null, { withoutEnlargement: true }) // Upscale if needed for better character recognition
+      .normalize() // Enhances contrast
+      .toFile(cleanedPath);
+    console.log('Sharp preprocessing done.');
     return cleanedPath;
   } catch (err) {
-    console.warn('OpenCV preprocess skipped:', err.message);
+    console.warn('Sharp preprocess skipped:', err.message);
     return inputPath;
   }
 };
@@ -148,8 +152,52 @@ const parseOCRFields = (rawText) => {
 
 // @desc  Process OCR on uploaded receipt
 // @route POST /api/ocr/process/:requestId
-const processOCR = async (req, res) => {
+// Internal helper to process OCR — shared by routes and auto-trigger
+const processOCRInternal = async (request, user) => {
   let preprocessedPath = null;
+  try {
+    const filePath = request.receiptFile?.path;
+    if (!filePath || !fs.existsSync(filePath)) {
+      throw new Error('Receipt file not found on server.');
+    }
+
+    // Step 1: Image preprocessing
+    let ocrInputPath = filePath;
+    try {
+      preprocessedPath = await runSharpPreprocess(filePath);
+      ocrInputPath = preprocessedPath;
+    } catch (e) {
+      console.warn('Skipping preprocessing step:', e.message);
+    }
+
+    // Step 2: Run tesseract.js
+    console.log('Running tesseract.js OCR on:', ocrInputPath);
+    const worker = await createWorker('eng', 1, {
+      cachePath: path.join(os.tmpdir(), 'tessdata'),
+      logger: m => { if (m.status) console.log('Tesseract:', m.status, Math.round((m.progress||0)*100) + '%'); }
+    });
+    const { data: { text: rawText } } = await worker.recognize(ocrInputPath);
+    await worker.terminate();
+
+    const ocrData = parseOCRFields(rawText);
+
+    // Step 3: Save to DB
+    request.ocrData = ocrData;
+    request.overallStatus = request.overallStatus === 'submitted' ? 'under_review' : request.overallStatus;
+    await request.save();
+
+    return { ocrData, rawText };
+
+  } finally {
+    if (preprocessedPath && fs.existsSync(preprocessedPath)) {
+      try { fs.unlinkSync(preprocessedPath); } catch(e) {}
+    }
+  }
+};
+
+// @desc  Process OCR on uploaded receipt
+// @route POST /api/ocr/process/:requestId
+const processOCR = async (req, res) => {
   try {
     const request = await ClearanceRequest.findById(req.params.requestId);
     if (!request) {
@@ -160,50 +208,12 @@ const processOCR = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Access denied.' });
     }
 
-    const filePath = request.receiptFile?.path;
-    if (!filePath || !fs.existsSync(filePath)) {
-      return res.status(400).json({ success: false, message: 'Receipt file not found on server.' });
-    }
-
-    // Step 1: OpenCV preprocessing (if Python available)
-    let ocrInputPath = filePath;
-    try {
-      preprocessedPath = await runOpenCVPreprocess(filePath);
-      ocrInputPath = preprocessedPath;
-    } catch (e) {
-      console.warn('Skipping OpenCV step:', e.message);
-    }
-
-    // Step 2: Run tesseract.js (pure JS — no system install needed)
-    console.log('Running tesseract.js OCR on:', ocrInputPath);
-    const worker = await createWorker('eng', 1, {
-      cachePath: '/tmp',
-      logger: m => { if (m.status) console.log('Tesseract:', m.status, Math.round((m.progress||0)*100) + '%'); }
-    });
-    const { data: { text: rawText } } = await worker.recognize(ocrInputPath);
-    await worker.terminate();
-
-    console.log('OCR raw text length:', rawText.length);
-    console.log('OCR raw text preview:', rawText.substring(0, 300));
-
-    const ocrData = parseOCRFields(rawText);
-
-    // Step 3: Save to DB
-    request.ocrData = ocrData;
-    request.overallStatus = request.overallStatus === 'submitted' ? 'under_review' : request.overallStatus;
-    await request.save();
-
-    console.log('Parsed OCR data:', ocrData);
+    const { ocrData, rawText } = await processOCRInternal(request, req.user);
     res.json({ success: true, ocrData, requestId: request._id, rawText });
 
   } catch (err) {
     console.error('OCR Route Error:', err);
     res.status(500).json({ success: false, message: 'OCR processing failed: ' + err.message });
-  } finally {
-    // Clean up preprocessed image temp file
-    if (preprocessedPath && preprocessedPath !== require('./ocr.controller.js') && fs.existsSync(preprocessedPath)) {
-      try { fs.unlinkSync(preprocessedPath); } catch(e) {}
-    }
   }
 };
 
@@ -237,4 +247,4 @@ const confirmOCR = async (req, res) => {
   }
 };
 
-module.exports = { processOCR, confirmOCR };
+module.exports = { processOCR, confirmOCR, processOCRInternal };

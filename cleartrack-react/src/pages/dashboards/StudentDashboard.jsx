@@ -40,12 +40,16 @@ export default function StudentDashboard() {
 
       const submitRes = await clearanceAPI.submitRequest(formData);
       const requestId = submitRes.request._id;
+      const autoOcrData = submitRes.ocrData;
 
-      // 2. Process OCR
-      setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], message: 'Extracting details via OCR...' } }))
-      const ocrRes = await ocrAPI.processOCR(requestId);
-      
-      setOcrStates(prev => ({ ...prev, [feeType]: { status: 'success', ocrData: ocrRes.ocrData, requestId, message: '' } }))
+      // 2. Process OCR (Fallback if auto-OCR didn't run or wasn't included)
+      if (autoOcrData) {
+        setOcrStates(prev => ({ ...prev, [feeType]: { status: 'success', ocrData: autoOcrData, requestId, message: '' } }))
+      } else {
+        setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], message: 'Extracting details via OCR...' } }))
+        const ocrRes = await ocrAPI.processOCR(requestId);
+        setOcrStates(prev => ({ ...prev, [feeType]: { status: 'success', ocrData: ocrRes.ocrData, requestId, message: '' } }))
+      }
     } catch (err) {
       setOcrStates(prev => ({ ...prev, [feeType]: { status: 'error', ocrData: null, requestId: null, message: err.message || 'OCR Processing failed.' } }))
     }

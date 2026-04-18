@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const os = require('os');
 require('dotenv').config();
 
 const app = express();
@@ -48,8 +49,8 @@ app.use(async (req, res, next) => {
   }
 });
 
-// Static file serving for uploads - Using /tmp for Vercel compatibility
-app.use('/uploads', express.static(path.join('/tmp', 'uploads')));
+// Static file serving for uploads - Using system temp for Vercel/Local compatibility
+app.use('/uploads', express.static(path.join(os.tmpdir(), 'cleartrack-uploads')));
 
 // Routes
 app.use('/api/auth', require('./routes/auth.routes'));
