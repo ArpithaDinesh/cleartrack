@@ -2,6 +2,8 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const { v4: uuidv4 } = require('uuid');
+const ClearanceRequest = require('../models/ClearanceRequest');
+const ApprovalLog = require('../models/ApprovalLog');
 const { processOCRInternal } = require('./ocr.controller');
 
 // Helper: build department approvals based on fee type and student profile
