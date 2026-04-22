@@ -35,6 +35,7 @@ export default function OCRConfirm() {
 
   useEffect(() => {
     let pollInterval;
+    let retryCount = 0;
 
     const fetchData = async () => {
       try {
@@ -47,28 +48,24 @@ export default function OCRConfirm() {
           setLoading(false);
           if (pollInterval) clearInterval(pollInterval);
         } else if (d.ocrStatus === 'failed') {
-          setError('OCR analysis failed. Please try uploading a clearer image.');
+          setError('OCR analysis failed. Please try again with a clearer image.');
           setLoading(false);
           if (pollInterval) clearInterval(pollInterval);
-        } else if (d.ocrStatus === 'processing') {
-          // Keep loading=true, and poll if not already polling
-          if (!pollInterval) {
-            pollInterval = setInterval(fetchData, 2500);
-          }
         } else {
-          // Status is 'idle' or legacy record without status
-          if (d.transactionId || d.amount || d.rawText) {
-            applyOcrData(d, d.rawText);
-            setLoading(false);
-          } else {
-            // No data and not processing -> trigger manually as fallback
-            const res2 = await ocrAPI.processOCR(requestId);
-            applyOcrData(res2.ocrData || {}, res2.rawText);
-            setLoading(false);
+          // Status is 'processing' or 'idle'
+          if (!pollInterval) {
+            pollInterval = setInterval(fetchData, 3000);
           }
+          // If idle, the background process might have crashed/timed out on Vercel
+          // Manual trigger if it stays idle for too long could be added here
         }
       } catch (err) {
-        setError(err.message || 'Failed to load OCR data.');
+        if (err.message.includes('Failed to fetch') && retryCount < 3) {
+          retryCount++;
+          console.log(`🔄 Retrying fetch (${retryCount}/3)...`);
+          return; // Next interval will try again
+        }
+        setError('Connection lost. Please check your internet or try refreshing.');
         setLoading(false);
         if (pollInterval) clearInterval(pollInterval);
       }
@@ -77,6 +74,22 @@ export default function OCRConfirm() {
     fetchData();
     return () => { if (pollInterval) clearInterval(pollInterval); };
   }, [requestId]);
+
+  const handleManualRetry = () => {
+    setError('');
+    setLoading(true);
+    // This will trigger the useEffect again or we can call ocrAPI.processOCR directly
+    ocrAPI.processOCR(requestId)
+      .then(res => {
+        applyOcrData(res.ocrData || {}, res.rawText);
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err.message);
+        setLoading(false);
+      });
+  };
+
 
   const handleConfirm = async (e) => {
     e.preventDefault()
@@ -127,7 +140,10 @@ export default function OCRConfirm() {
           ) : error ? (
             <div className="card" style={{textAlign:'center',padding:48}}>
               <p style={{color:'var(--danger)',marginBottom:16}}>{error}</p>
-              <Link to="/upload-receipt" className="btn btn-primary">Try Again</Link>
+              <div style={{display:'flex',gap:12,justifyContent:'center'}}>
+                <button onClick={handleManualRetry} className="btn btn-primary">Try OCR Again</button>
+                <Link to="/upload-receipt" className="btn btn-outline">Re-upload File</Link>
+              </div>
             </div>
           ) : (
             <form onSubmit={handleConfirm}>
