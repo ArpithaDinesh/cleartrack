@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { ocrAPI } from '../../services/api'
+import { ocrAPI, clearanceAPI } from '../../services/api'
 
 export default function OCRConfirm() {
   const { user, logout } = useAuth()
@@ -18,25 +18,39 @@ export default function OCRConfirm() {
   const [error, setError] = useState('')
   const initials = user?.fullName?.charAt(0)?.toUpperCase() || 'S'
 
+  const applyOcrData = (d, rt) => {
+    setOcr({
+      studentName:   d.studentName   || '',
+      department:    d.department    || '',
+      feeCategory:   d.feeCategory   || '',
+      transactionId: d.transactionId || '',
+      amount:        d.amount        || '',
+      paymentDate:   d.paymentDate   || '',
+      receiptNumber: d.receiptNumber || '',
+      bankName:      d.bankName      || '',
+      paymentMode:   d.paymentMode   || '',
+    })
+    setRawText(rt || d.rawText || '')
+  }
+
   useEffect(() => {
-    ocrAPI.processOCR(requestId)
+    // Step 1: Fetch already-processed OCR data saved during upload (avoids re-running OCR on a deleted temp file)
+    clearanceAPI.getRequest(requestId)
       .then(data => {
-        const d = data.ocrData || {}
-        setOcr({
-          studentName:   d.studentName   || '',
-          department:    d.department    || '',
-          feeCategory:   d.feeCategory   || '',
-          transactionId: d.transactionId || '',
-          amount:        d.amount        || '',
-          paymentDate:   d.paymentDate   || '',
-          receiptNumber: d.receiptNumber || '',
-          bankName:      d.bankName      || '',
-          paymentMode:   d.paymentMode   || '',
-        })
-        // rawText is returned as a top-level field AND inside ocrData.rawText
-        setRawText(data.rawText || d.rawText || '')
+        const req = data.request || {}
+        const d = req.ocrData || {}
+        if (d && (d.transactionId || d.amount || d.rawText || d.studentName)) {
+          // OCR data already exists in DB — use it directly
+          applyOcrData(d, d.rawText)
+        } else {
+          // OCR data missing — attempt to run it now (file still available)
+          return ocrAPI.processOCR(requestId).then(res2 => {
+            const d2 = res2.ocrData || {}
+            applyOcrData(d2, res2.rawText)
+          })
+        }
       })
-      .catch(err => setError(err.message))
+      .catch(err => setError(err.message || 'Failed to load OCR data. Please try uploading again.'))
       .finally(() => setLoading(false))
   }, [requestId])
 
