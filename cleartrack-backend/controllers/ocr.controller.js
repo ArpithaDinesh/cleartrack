@@ -21,7 +21,7 @@ const runSharpPreprocess = async (inputPath) => {
     console.log('Running sharp preprocessing...');
     await sharp(inputPath)
       .rotate()                               // auto-rotate EXIF
-      .resize({ width: 2400, withoutEnlargement: false }) // force upscale to 2400px wide
+      .resize({ width: 1600, withoutEnlargement: false }) // 1600px is the sweet spot for OCR speed vs accuracy
       .grayscale()
       .normalise()                            // stretch contrast to full range
       .linear(1.6, -(1.6 * 128 - 128))       // boost midtone contrast
@@ -301,9 +301,9 @@ const processOCRInternal = async (request, user) => {
     }
 
     // Step 2: Run tesseract.js with receipt-optimised config
-    console.log('Running tesseract.js OCR on:', ocrInputPath);
+    console.log('Initializing Tesseract worker...');
     const worker = await createWorker('eng', 1, {
-      cachePath: path.join(os.tmpdir(), 'tessdata'),
+      cachePath: path.join(__dirname, '..', 'tessdata'), // Use local folder for persistence
       logger: m => {
         if (m.status === 'recognizing text') {
           console.log(`OCR Progress: ${Math.round((m.progress || 0) * 100)}%`);
@@ -320,7 +320,14 @@ const processOCRInternal = async (request, user) => {
     const { data: { text: rawText } } = await worker.recognize(ocrInputPath);
     await worker.terminate();
 
+    if (!rawText || rawText.trim().length === 0) {
+      console.warn('⚠️ OCR produced zero text. Check if the image is clear and not too dark.');
+    } else {
+      console.log(`✅ OCR successful. Extracted ${rawText.length} characters.`);
+    }
+
     const ocrData = parseOCRFields(rawText);
+    ocrData.ocrStatus = 'completed';
 
     // Step 3: Save to DB
     request.ocrData = ocrData;

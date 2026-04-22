@@ -34,25 +34,49 @@ export default function OCRConfirm() {
   }
 
   useEffect(() => {
-    // Step 1: Fetch already-processed OCR data saved during upload (avoids re-running OCR on a deleted temp file)
-    clearanceAPI.getRequest(requestId)
-      .then(data => {
-        const req = data.request || {}
-        const d = req.ocrData || {}
-        if (d && (d.transactionId || d.amount || d.rawText || d.studentName)) {
-          // OCR data already exists in DB — use it directly
-          applyOcrData(d, d.rawText)
+    let pollInterval;
+
+    const fetchData = async () => {
+      try {
+        const data = await clearanceAPI.getRequest(requestId);
+        const req = data.request || {};
+        const d = req.ocrData || {};
+
+        if (d.ocrStatus === 'completed') {
+          applyOcrData(d, d.rawText);
+          setLoading(false);
+          if (pollInterval) clearInterval(pollInterval);
+        } else if (d.ocrStatus === 'failed') {
+          setError('OCR analysis failed. Please try uploading a clearer image.');
+          setLoading(false);
+          if (pollInterval) clearInterval(pollInterval);
+        } else if (d.ocrStatus === 'processing') {
+          // Keep loading=true, and poll if not already polling
+          if (!pollInterval) {
+            pollInterval = setInterval(fetchData, 2500);
+          }
         } else {
-          // OCR data missing — attempt to run it now (file still available)
-          return ocrAPI.processOCR(requestId).then(res2 => {
-            const d2 = res2.ocrData || {}
-            applyOcrData(d2, res2.rawText)
-          })
+          // Status is 'idle' or legacy record without status
+          if (d.transactionId || d.amount || d.rawText) {
+            applyOcrData(d, d.rawText);
+            setLoading(false);
+          } else {
+            // No data and not processing -> trigger manually as fallback
+            const res2 = await ocrAPI.processOCR(requestId);
+            applyOcrData(res2.ocrData || {}, res2.rawText);
+            setLoading(false);
+          }
         }
-      })
-      .catch(err => setError(err.message || 'Failed to load OCR data. Please try uploading again.'))
-      .finally(() => setLoading(false))
-  }, [requestId])
+      } catch (err) {
+        setError(err.message || 'Failed to load OCR data.');
+        setLoading(false);
+        if (pollInterval) clearInterval(pollInterval);
+      }
+    };
+
+    fetchData();
+    return () => { if (pollInterval) clearInterval(pollInterval); };
+  }, [requestId]);
 
   const handleConfirm = async (e) => {
     e.preventDefault()

@@ -83,18 +83,24 @@ const submitRequest = async (req, res) => {
       newStatus: 'submitted'
     });
 
-    // Automatically trigger OCR processing right after upload
-    // This is much safer on Vercel as the file is guaranteed to exist in /tmp
-    let ocrData = null;
-    try {
-      console.log('Auto-triggering OCR for request:', request._id);
-      const ocrResult = await processOCRInternal(request, req.user);
-      ocrData = ocrResult.ocrData;
-    } catch (ocrErr) {
-      console.warn('Auto-OCR failed, student will need to retry:', ocrErr.message);
-    }
+    // Automatically trigger OCR processing in the background
+    // This makes the response instant while OCR runs silently
+    request.ocrData = { ocrStatus: 'processing' };
+    await request.save();
 
-    res.status(201).json({ success: true, request, ocrData });
+    // Trigger background process without awaiting
+    processOCRInternal(request, req.user)
+      .then(() => {
+        console.log(`✅ Background OCR completed for ${request._id}`);
+        // Update status to completed
+        return ClearanceRequest.findByIdAndUpdate(request._id, { 'ocrData.ocrStatus': 'completed' });
+      })
+      .catch(err => {
+        console.error(`❌ Background OCR failed for ${request._id}:`, err.message);
+        return ClearanceRequest.findByIdAndUpdate(request._id, { 'ocrData.ocrStatus': 'failed' });
+      });
+
+    res.status(201).json({ success: true, request });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }

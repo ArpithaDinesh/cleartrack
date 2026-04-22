@@ -31,6 +31,11 @@ const ocrDataSchema = new mongoose.Schema({
   bankName: { type: String, default: '' },
   paymentMode: { type: String, default: '' },
   rawText: { type: String, default: '' },
+  ocrStatus: {
+    type: String,
+    enum: ['idle', 'processing', 'completed', 'failed'],
+    default: 'idle'
+  },
   studentConfirmed: { type: Boolean, default: false },
   confirmedAt: { type: Date, default: null }
 });
