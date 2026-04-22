@@ -285,6 +285,8 @@ const parseOCRFields = (rawText) => {
 // Internal helper to process OCR — shared by routes and auto-trigger
 const processOCRInternal = async (request, user) => {
   let preprocessedPath = null;
+  const timeoutGuard = setTimeout(() => { throw new Error('OCR operation timed out.'); }, 9500);
+
   try {
     const filePath = request.receiptFile?.path;
     if (!filePath || !fs.existsSync(filePath)) {
@@ -293,25 +295,29 @@ const processOCRInternal = async (request, user) => {
 
     // Step 1: Image preprocessing
     let ocrInputPath = filePath;
-    try {
-      preprocessedPath = await runSharpPreprocess(filePath);
-      ocrInputPath = preprocessedPath;
-    } catch (e) {
-      console.warn('Skipping preprocessing step:', e.message);
+    if (!process.env.VERCEL) {
+      try {
+        preprocessedPath = await runSharpPreprocess(filePath);
+        ocrInputPath = preprocessedPath;
+      } catch (e) {
+        console.warn('Skipping preprocessing step:', e.message);
+      }
     }
 
     // Step 2: Run tesseract.js with receipt-optimised config
-    console.log('Initializing Tesseract worker...');
+    const startTime = Date.now();
+    console.log(`Initializing Tesseract worker (Request: ${request._id})...`);
+    
     const worker = await createWorker('eng', 1, {
-      cachePath: path.join(__dirname, '..', 'tessdata'), // Use local folder for persistence
+      cachePath: path.join(__dirname, '..', 'tessdata'),
       logger: m => {
         if (m.status === 'recognizing text') {
-          console.log(`OCR Progress: ${Math.round((m.progress || 0) * 100)}%`);
+          const elapsed = (Date.now() - startTime) / 1000;
+          console.log(`[${elapsed.toFixed(1)}s] OCR Progress: ${Math.round((m.progress || 0) * 100)}%`);
         }
       }
     });
-    // PSM 6 = assume a single uniform block of text (best for receipts)
-    // OEM 1 = LSTM neural net only (most accurate)
+
     await worker.setParameters({
       tessedit_pageseg_mode: '6',
       tessedit_ocr_engine_mode: '1',
