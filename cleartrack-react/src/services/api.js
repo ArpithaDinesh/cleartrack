@@ -1,5 +1,6 @@
 export const API_ROOT = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:5000';
 export const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+console.log('📡 ClearTrack API Base URL:', BASE_URL);
 
 // Helper: get auth headers
 const authHeaders = () => {
