@@ -7,7 +7,11 @@ export default function OCRConfirm() {
   const { user, logout } = useAuth()
   const { requestId } = useParams()
   const navigate = useNavigate()
-  const [ocr, setOcr] = useState({ transactionId:'', amount:'', paymentDate:'', receiptNumber:'', bankName:'', paymentMode:'' })
+  const [ocr, setOcr] = useState({
+    studentName:'', department:'', feeCategory:'',
+    transactionId:'', amount:'', paymentDate:'',
+    receiptNumber:'', bankName:'', paymentMode:''
+  })
   const [rawText, setRawText] = useState('')
   const [loading, setLoading] = useState(true)
   const [confirming, setConfirming] = useState(false)
@@ -17,8 +21,20 @@ export default function OCRConfirm() {
   useEffect(() => {
     ocrAPI.processOCR(requestId)
       .then(data => {
-        setOcr({ transactionId:data.ocrData.transactionId||'', amount:data.ocrData.amount||'', paymentDate:data.ocrData.paymentDate||'', receiptNumber:data.ocrData.receiptNumber||'', bankName:data.ocrData.bankName||'', paymentMode:data.ocrData.paymentMode||'' })
-        setRawText(data.ocrData.rawText || '')
+        const d = data.ocrData || {}
+        setOcr({
+          studentName:   d.studentName   || '',
+          department:    d.department    || '',
+          feeCategory:   d.feeCategory   || '',
+          transactionId: d.transactionId || '',
+          amount:        d.amount        || '',
+          paymentDate:   d.paymentDate   || '',
+          receiptNumber: d.receiptNumber || '',
+          bankName:      d.bankName      || '',
+          paymentMode:   d.paymentMode   || '',
+        })
+        // rawText is returned as a top-level field AND inside ocrData.rawText
+        setRawText(data.rawText || d.rawText || '')
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
@@ -83,10 +99,18 @@ export default function OCRConfirm() {
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{width:18,height:18}}><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
                     OCR Extracted Fields
                   </h3>
-                  <div style={{background:'#fff7ed',border:'1px solid #fed7aa',borderRadius:8,padding:'8px 12px',marginBottom:16,fontSize:'.78rem',color:'#92400e'}}>
-                    ⚠ OCR values may not be 100% accurate. Please verify and correct before confirming.
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
+                    <div style={{background:'#fff7ed',border:'1px solid #fed7aa',borderRadius:8,padding:'8px 12px',fontSize:'.78rem',color:'#92400e',flex:1}}>
+                      ⚠ OCR values may not be 100% accurate. Please verify and correct before confirming.
+                    </div>
+                    <div style={{marginLeft:12,background:'#dbeafe',color:'#1d4ed8',borderRadius:20,padding:'4px 12px',fontSize:'.75rem',fontWeight:600,whiteSpace:'nowrap'}}>
+                      {Object.values(ocr).filter(v=>v).length} / 9 fields detected
+                    </div>
                   </div>
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12}}>
+                    <Field label="Student Name" field="studentName"/>
+                    <Field label="Department" field="department"/>
+                    <Field label="Fee Category" field="feeCategory"/>
                     <Field label="Transaction ID" field="transactionId"/>
                     <Field label="Amount Paid" field="amount"/>
                     <Field label="Payment Date" field="paymentDate"/>

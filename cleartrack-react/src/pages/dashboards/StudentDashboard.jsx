@@ -73,16 +73,16 @@ export default function StudentDashboard() {
     try {
       const confirmedCount = Object.values(ocrStates).filter(s => s.status === 'success').length;
       if (confirmedCount === 0) {
-        alert("⚠️ Please upload and confirm at least one fee receipt first.");
+        alert(" Please upload and confirm at least one fee receipt first.");
         return;
       }
 
       setSubmitLoading(true);
       await clearanceAPI.submitAllRequests();
-      alert("🚀 Success! All your fee clearance requests have been sent to your Teacher Dashboard for approval.");
+      alert(" Success! All your fee clearance requests have been sent to your Teacher Dashboard for approval.");
       window.location.reload();
     } catch (err) {
-      alert("❌ Submission failed: " + (err.message || "Unknown error"));
+      alert(" Submission failed: " + (err.message || "Unknown error"));
     } finally {
       setSubmitLoading(false);
     }
@@ -251,7 +251,7 @@ export default function StudentDashboard() {
 
                         {ocrStates.tuition.status === 'idle' && (
                           <div style={{ padding: '18px 0', textAlign: 'center', color: 'var(--text-sub)', fontSize: '.82rem' }}>
-                            📂 Upload a receipt to extract details via OCR
+                             Upload a receipt to extract details via OCR
                           </div>
                         )}
 
@@ -264,12 +264,12 @@ export default function StudentDashboard() {
                           <button type="button" className="btn btn-success" style={{ flex: 1, fontSize: '.8rem', padding: '8px 10px' }} 
                             disabled={ocrStates.tuition.status !== 'success'}
                             onClick={() => handleConfirmDetails('tuition')}>
-                            ✓ Confirm Details
+                             Confirm Details
                           </button>
                           <button type="button" className="btn btn-outline" style={{ fontSize: '.8rem', padding: '8px 10px' }} 
                             disabled={ocrStates.tuition.status === 'processing'}
                             onClick={() => { setTuitionFile(null); setOcrStates(prev => ({...prev, tuition: {status: 'idle', ocrData: null, requestId: null, message: ''}})) }}>
-                            ↺ Re-upload
+                             Re-upload
                           </button>
                         </div>
                       </div>
@@ -361,7 +361,7 @@ export default function StudentDashboard() {
 
                             {ocrStates.bus.status === 'idle' && (
                               <div style={{ padding: '18px 0', textAlign: 'center', color: 'var(--text-sub)', fontSize: '.82rem' }}>
-                                📂 Upload a receipt to extract details via OCR
+                                 Upload a receipt to extract details via OCR
                               </div>
                             )}
 
@@ -518,7 +518,7 @@ export default function StudentDashboard() {
             {/* Final Clearance Certificate */}
             <div className="clearance-form-card">
               <div className="cf-header">
-                <h3>📄 Final Clearance Certificate</h3>
+                <h3> Final Clearance Certificate</h3>
               </div>
               <div className="cf-body">
                 <p style={{ fontSize: '.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--text-sub)', marginBottom: '12px' }}>Student Details</p>

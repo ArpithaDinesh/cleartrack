@@ -227,7 +227,10 @@ const confirmOCR = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Access denied.' });
     }
 
-    const { transactionId, amount, paymentDate, receiptNumber, bankName, paymentMode } = req.body;
+    const { studentName, department, feeCategory, transactionId, amount, paymentDate, receiptNumber, bankName, paymentMode } = req.body;
+    if (studentName) request.ocrData.studentName = studentName;
+    if (department) request.ocrData.department = department;
+    if (feeCategory) request.ocrData.feeCategory = feeCategory;
     if (transactionId) request.ocrData.transactionId = transactionId;
     if (amount) request.ocrData.amount = amount;
     if (paymentDate) request.ocrData.paymentDate = paymentDate;
