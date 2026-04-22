@@ -1,14 +1,21 @@
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
-const sharp = require('sharp');
 const util = require('util');
 const { createWorker } = require('tesseract.js');
 
 const ClearanceRequest = require('../models/ClearanceRequest');
 
+// Try to load sharp — it may not be available on all Node versions
+let sharp = null;
+try { sharp = require('sharp'); } catch (e) {
+  console.warn('⚠️  sharp not available — OCR will run without image preprocessing.');
+}
+
 // Aggressive image preprocessing for dot-matrix/thermal receipts
+// Returns original path if sharp is unavailable or fails
 const runSharpPreprocess = async (inputPath) => {
+  if (!sharp) return inputPath;   // graceful no-op
   const cleanedPath = path.join(os.tmpdir(), `cleaned-${Date.now()}.png`);
   try {
     console.log('Running sharp preprocessing...');
@@ -29,6 +36,7 @@ const runSharpPreprocess = async (inputPath) => {
     return inputPath;
   }
 };
+
 
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -53,6 +61,26 @@ const normalizeFeeCategory = (raw = '') => {
   if (/EXAM/i.test(up))               return 'Exam Fee';
   if (/RE.?ADMI/i.test(up))           return 'Re-Admission Fee';
   return t.length > 1 ? t : raw.trim();
+};
+
+// Helper: extract the cleanest person-name tokens from a garbled OCR string
+// e.g. "DEVIKA kR SG" → "Devika"  |  "Arpitha Dinesh" → "Arpitha Dinesh"
+const extractCleanName = (raw = '') => {
+  const IGNORE = new Set(['COLLEGE','ENGINEERING','BANK','SERVICE','CO','OP',
+    'COOPERATIVE','KADIRUR','CASHIER','OFFICER','REMITTED','TRANSFER',
+    'RECEIPT','DEPOSIT','SAVINGS','AUTHORISED','AUTHORIZ']);
+
+  // Keep only tokens that look like name words: start with letter, mostly letters
+  const tokens = raw.split(/\s+/).filter(t => {
+    if (t.length < 2) return false;
+    if (/\d/.test(t)) return false;           // skip tokens with digits
+    if (IGNORE.has(t.toUpperCase())) return false;
+    const letterRatio = (t.match(/[A-Za-z]/g) || []).length / t.length;
+    return letterRatio >= 0.7;                // at least 70% letters
+  });
+
+  // Take up to 3 tokens (first name + middle + last at most)
+  return tokens.slice(0, 3).map(t => t.charAt(0).toUpperCase() + t.slice(1).toLowerCase()).join(' ');
 };
 
 // ─── Main Parser ─────────────────────────────────────────────────────────────
@@ -251,30 +279,6 @@ const parseOCRFields = (rawText) => {
 
   return result;
 };
-
-// Helper: extract the cleanest person-name tokens from a garbled OCR string
-// e.g. "DEVIKA kR SG" → "Devika"  |  "Arpitha Dinesh" → "Arpitha Dinesh"
-const extractCleanName = (raw = '') => {
-  const IGNORE = new Set(['COLLEGE','ENGINEERING','BANK','SERVICE','CO','OP',
-    'COOPERATIVE','KADIRUR','CASHIER','OFFICER','REMITTED','TRANSFER',
-    'RECEIPT','DEPOSIT','SAVINGS','AUTHORISED','AUTHORIZ']);
-
-  // Keep only tokens that look like name words: start with letter, mostly letters
-  const tokens = raw.split(/\s+/).filter(t => {
-    if (t.length < 2) return false;
-    if (/\d/.test(t)) return false;           // skip tokens with digits
-    if (IGNORE.has(t.toUpperCase())) return false;
-    const letterRatio = (t.match(/[A-Za-z]/g) || []).length / t.length;
-    return letterRatio >= 0.7;                // at least 70% letters
-  });
-
-  // Take up to 3 tokens (first name + middle + last at most)
-  const name = tokens.slice(0, 3).map(t => t.charAt(0).toUpperCase() + t.slice(1).toLowerCase()).join(' ');
-  return name;
-};
-
-
-
 
 // @desc  Process OCR on uploaded receipt
 // @route POST /api/ocr/process/:requestId
