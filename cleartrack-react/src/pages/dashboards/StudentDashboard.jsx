@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Sidebar from '../../components/Sidebar'
 import { useAuth } from '../../context/AuthContext'
-import { clearanceAPI, ocrAPI } from '../../services/api'
+import { clearanceAPI, ocrAPI, busAPI } from '../../services/api'
 import ProfileModal from '../../components/ProfileModal'
 import './StudentDashboard.css'
 
@@ -25,6 +25,19 @@ export default function StudentDashboard() {
   const [showDropdown, setShowDropdown] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [submitLoading, setSubmitLoading] = useState(false)
+
+  // Bus Fee States
+  const [busRoutes, setBusRoutes] = useState([])
+  const [selectedBusGroup, setSelectedBusGroup] = useState('')
+  const [selectedSubLocationId, setSelectedSubLocationId] = useState('')
+  const [isHalfFee, setIsHalfFee] = useState(false)
+
+  useEffect(() => {
+    busAPI.getRoutes().then(res => setBusRoutes(res.routes || [])).catch(console.error)
+  }, [])
+
+  const selectedSubLocation = busRoutes.find(r => r._id === selectedSubLocationId)
+  const calculatedBusFee = selectedSubLocation ? (isHalfFee ? selectedSubLocation.fee / 2 : selectedSubLocation.fee) : 0
 
   const handleOCRProcess = async (feeType, file) => {
     if (!file) return;
@@ -304,78 +317,124 @@ export default function StudentDashboard() {
                     </label>
                   </div>
                   {busOpted && (
-                    <div>
-                      <label className="field-label">Payment Mode</label>
-                      <div className="radio-grp">
-                        <label className="radio-opt"><input type="radio" name="bus-mode" value="fully" defaultChecked /> Fully Paid</label>
-                        <label className="radio-opt"><input type="radio" name="bus-mode" value="partially" /> Partially Paid</label>
-                      </div>
-                      <div className="inner-grid">
-                        <div>
-                          <label className="field-label">Upload Receipt</label>
-                          <label htmlFor="bus-file" className="upload-zone">
-                            <div className="upload-icon-wrap" style={{ background: '#d1fae5', color: 'var(--success)' }}>
-                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                <polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
-                              </svg>
+                    <div style={{marginTop: 15, display: 'flex', flexDirection: 'column', gap: 20}}>
+                      <div className="inner-grid" style={{gridTemplateColumns: '1fr', gap: 15}}>
+                        <div style={{background: '#f8fafc', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0'}}>
+                          <label className="field-label" style={{marginBottom: 10, display: 'block'}}>1. Select Main Location</label>
+                          <div className="radio-grp" style={{marginBottom: 15}}>
+                            {['Kannur', 'Mattannur', 'Thalassery'].map(loc => (
+                              <label key={loc} className="radio-opt" style={{padding: '6px 12px', background: selectedBusGroup === loc ? '#eff6ff' : 'white', borderRadius: '6px', border: '1px solid', borderColor: selectedBusGroup === loc ? '#3b82f6' : '#cbd5e1'}}>
+                                <input type="radio" name="bus-group" value={loc} checked={selectedBusGroup === loc} onChange={e => { setSelectedBusGroup(e.target.value); setSelectedSubLocationId(''); }} /> {loc}
+                              </label>
+                            ))}
+                          </div>
+
+                          <label className="field-label" style={{marginBottom: 5, display: 'block'}}>2. Select Sub Location</label>
+                          <select 
+                            className="form-control" 
+                            style={{width: '100%', marginBottom: 15, padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1'}}
+                            value={selectedSubLocationId}
+                            onChange={e => setSelectedSubLocationId(e.target.value)}
+                            disabled={!selectedBusGroup}
+                          >
+                            <option value="">{selectedBusGroup ? 'Choose your stop...' : 'Select Main Location first'}</option>
+                            {busRoutes.filter(r => r.group === selectedBusGroup).map(r => (
+                              <option key={r._id} value={r._id}>{r.location} (₹{r.fee.toLocaleString()})</option>
+                            ))}
+                          </select>
+
+                          <label className="field-label" style={{marginBottom: 10, display: 'block'}}>3. Fee Structure</label>
+                          <div className="radio-grp">
+                            <label className="radio-opt">
+                              <input type="radio" name="bus-fee-type" checked={!isHalfFee} onChange={() => setIsHalfFee(false)} /> Full Fee
+                            </label>
+                            <label className="radio-opt">
+                              <input type="radio" name="bus-fee-type" checked={isHalfFee} onChange={() => setIsHalfFee(true)} /> Half Fee
+                            </label>
+                          </div>
+
+                          {selectedSubLocation && (
+                            <div style={{marginTop: 15, padding: '12px', background: '#ecfdf5', borderRadius: '8px', border: '1px solid #10b981', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                              <span style={{fontWeight: 500, color: '#065f46'}}>Your Calculated Bus Fee:</span>
+                              <span style={{fontWeight: 700, color: '#047857', fontSize: '1.1rem'}}>₹{calculatedBusFee.toLocaleString()}</span>
                             </div>
-                            <h4>{busFile ? busFile.name : 'Click to upload receipt'}</h4>
-                            <p>JPG, PNG, PDF — max 10 MB</p>
-                            <input type="file" id="bus-file" accept="image/*,.pdf" onChange={e => setBusFile(e.target.files[0])} />
-                          </label>
-                          <button type="button" className="btn btn-primary btn-full" style={{ marginTop: '10px' }} 
-                            disabled={!busFile || ocrStates.bus.status === 'processing' || ocrStates.bus.status === 'success'}
-                            onClick={() => handleOCRProcess('bus', busFile)}>
-                            {ocrStates.bus.status === 'processing' ? 'Processing...' : 'Upload & Process via OCR'}
-                          </button>
+                          )}
                         </div>
-                        <div>
-                          <div className="field-label">OCR Extracted Details</div>
-                          <div className="ocr-panel">
-                            <div className="ocr-ptitle">Extracted from Receipt</div>
-                            
-                            {ocrStates.bus.status === 'processing' && (
-                              <div className="ocr-fields" style={{ justifyContent: 'center', padding: '20px' }}>
-                                <span style={{ color: 'var(--accent)', fontWeight: 500 }}>⏳ {ocrStates.bus.message}</span>
-                              </div>
-                            )}
-                            
-                            {ocrStates.bus.status === 'error' && (
-                              <div className="ocr-fields" style={{ justifyContent: 'center', padding: '20px' }}>
-                                <span style={{ color: '#dc2626', fontWeight: 500 }}>❌ {ocrStates.bus.message}</span>
-                              </div>
-                            )}
+                      </div>
 
-                            {ocrStates.bus.status === 'success' && ocrStates.bus.ocrData && (
-                              <div className="ocr-fields">
-                                <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Student Name</label><span>{ocrStates.bus.ocrData.studentName || '—'}</span></div>
-                                <div className="ocr-field"><label>Department</label><span>{ocrStates.bus.ocrData.department || '—'}</span></div>
-                                <div className="ocr-field"><label>Fee Category</label><span>{ocrStates.bus.ocrData.feeCategory || '—'}</span></div>
-                                <div className="ocr-field"><label>Transaction ID</label><span>{ocrStates.bus.ocrData.transactionId || '—'}</span></div>
-                                <div className="ocr-field"><label>Amount Paid</label><span>{ocrStates.bus.ocrData.amount || '—'}</span></div>
-                                <div className="ocr-field"><label>Payment Date</label><span>{ocrStates.bus.ocrData.paymentDate || '—'}</span></div>
-                                <div className="ocr-field"><label>Bank / Mode</label><span>{ocrStates.bus.ocrData.bankName || ocrStates.bus.ocrData.paymentMode || '—'}</span></div>
+                      <div style={{borderTop: '1px solid #e2e8f0', paddingTop: 20}}>
+                        <label className="field-label">4. Payment Mode & Receipt</label>
+                        <div className="radio-grp" style={{marginBottom: 15}}>
+                          <label className="radio-opt"><input type="radio" name="bus-mode" value="fully" defaultChecked /> Fully Paid</label>
+                          <label className="radio-opt"><input type="radio" name="bus-mode" value="partially" /> Partially Paid</label>
+                        </div>
+                        <div className="inner-grid">
+                          <div>
+                            <label className="field-label">Upload Receipt</label>
+                            <label htmlFor="bus-file" className="upload-zone">
+                              <div className="upload-icon-wrap" style={{ background: '#d1fae5', color: 'var(--success)' }}>
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                  <polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
                               </div>
-                            )}
+                              <h4>{busFile ? busFile.name : 'Click to upload receipt'}</h4>
+                              <p>JPG, PNG, PDF — max 10 MB</p>
+                              <input type="file" id="bus-file" accept="image/*,.pdf" onChange={e => setBusFile(e.target.files[0])} />
+                            </label>
+                            <button type="button" className="btn btn-primary btn-full" style={{ marginTop: '10px' }} 
+                              disabled={!busFile || ocrStates.bus.status === 'processing' || ocrStates.bus.status === 'success'}
+                              onClick={() => handleOCRProcess('bus', busFile)}>
+                              {ocrStates.bus.status === 'processing' ? 'Processing...' : 'Upload & Process via OCR'}
+                            </button>
+                          </div>
+                          <div>
+                            <div className="field-label">OCR Extracted Details</div>
+                            <div className="ocr-panel">
+                              <div className="ocr-ptitle">Extracted from Receipt</div>
+                              
+                              {ocrStates.bus.status === 'processing' && (
+                                <div className="ocr-fields" style={{ justifyContent: 'center', padding: '20px' }}>
+                                  <span style={{ color: 'var(--accent)', fontWeight: 500 }}>⏳ {ocrStates.bus.message}</span>
+                                </div>
+                              )}
+                              
+                              {ocrStates.bus.status === 'error' && (
+                                <div className="ocr-fields" style={{ justifyContent: 'center', padding: '20px' }}>
+                                  <span style={{ color: '#dc2626', fontWeight: 500 }}>❌ {ocrStates.bus.message}</span>
+                                </div>
+                              )}
 
-                            {ocrStates.bus.status === 'idle' && (
-                              <div style={{ padding: '18px 0', textAlign: 'center', color: 'var(--text-sub)', fontSize: '.82rem' }}>
-                                 Upload a receipt to extract details via OCR
+                              {ocrStates.bus.status === 'success' && ocrStates.bus.ocrData && (
+                                <div className="ocr-fields">
+                                  <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Student Name</label><span>{ocrStates.bus.ocrData.studentName || '—'}</span></div>
+                                  <div className="ocr-field"><label>Department</label><span>{ocrStates.bus.ocrData.department || '—'}</span></div>
+                                  <div className="ocr-field"><label>Fee Category</label><span>{ocrStates.bus.ocrData.feeCategory || '—'}</span></div>
+                                  <div className="ocr-field"><label>Transaction ID</label><span>{ocrStates.bus.ocrData.transactionId || '—'}</span></div>
+                                  <div className="ocr-field"><label>Amount Paid</label><span>{ocrStates.bus.ocrData.amount || '—'}</span></div>
+                                  <div className="ocr-field"><label>Payment Date</label><span>{ocrStates.bus.ocrData.paymentDate || '—'}</span></div>
+                                  <div className="ocr-field"><label>Bank / Mode</label><span>{ocrStates.bus.ocrData.bankName || ocrStates.bus.ocrData.paymentMode || '—'}</span></div>
+                                </div>
+                              )}
+
+                              {ocrStates.bus.status === 'idle' && (
+                                <div style={{ padding: '18px 0', textAlign: 'center', color: 'var(--text-sub)', fontSize: '.82rem' }}>
+                                   Upload a receipt to extract details via OCR
+                                </div>
+                              )}
+
+                              <div className="ocr-actions">
+                                <button type="button" className="btn btn-success" style={{ flex: 1, fontSize: '.8rem', padding: '8px 10px' }} 
+                                  disabled={ocrStates.bus.status !== 'success'}
+                                  onClick={() => handleConfirmDetails('bus')}>
+                                  ✓ Confirm Details
+                                </button>
+                                <button type="button" className="btn btn-outline" style={{ fontSize: '.8rem', padding: '8px 10px' }} 
+                                  disabled={ocrStates.bus.status === 'processing'}
+                                  onClick={() => { setBusFile(null); setOcrStates(prev => ({...prev, bus: {status: 'idle', ocrData: null, requestId: null, message: ''}})) }}>
+                                  ↺ Re-upload
+                                </button>
                               </div>
-                            )}
-
-                            <div className="ocr-actions">
-                              <button type="button" className="btn btn-success" style={{ flex: 1, fontSize: '.8rem', padding: '8px 10px' }} 
-                                disabled={ocrStates.bus.status !== 'success'}
-                                onClick={() => handleConfirmDetails('bus')}>
-                                ✓ Confirm Details
-                              </button>
-                              <button type="button" className="btn btn-outline" style={{ fontSize: '.8rem', padding: '8px 10px' }} 
-                                disabled={ocrStates.bus.status === 'processing'}
-                                onClick={() => { setBusFile(null); setOcrStates(prev => ({...prev, bus: {status: 'idle', ocrData: null, requestId: null, message: ''}})) }}>
-                                ↺ Re-upload
-                              </button>
                             </div>
                           </div>
                         </div>
