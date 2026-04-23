@@ -63,12 +63,20 @@ export default function AdminDashboard() {
   }
 
   const handleDeleteLog = async (id) => {
-    if (!window.confirm('Delete this log entry?')) return
+    if (!id) return;
+    if (!window.confirm('Are you sure you want to delete this log entry?')) return;
+    
     try {
-      await adminAPI.deleteLog(id)
-      setLogs(prev => prev.filter(l => l._id !== id))
-    } catch (err) { alert('Failed to delete: ' + err.message) }
-  }
+      console.log('Deleting log:', id);
+      const res = await adminAPI.deleteLog(id);
+      if (res.success) {
+        setLogs(prev => prev.filter(l => (l._id || l.id) !== id));
+      }
+    } catch (err) {
+      console.error('Delete log error:', err);
+      alert('Failed to delete: ' + err.message);
+    }
+  };
 
   // Navigate to users tab pre-filtered by role
   const goToUsers = (role) => {
@@ -221,19 +229,6 @@ export default function AdminDashboard() {
               </div>
               <div className="card"><h3 className="card-title">Quick Actions</h3><div style={{display:'flex',gap:12,flexWrap:'wrap'}}><button className="btn btn-primary" onClick={()=>setActiveTab('student')}>+ Add Student Account</button><button className="btn btn-outline" onClick={()=>setActiveTab('users')}>Manage Users</button><button className="btn btn-outline" onClick={()=>setActiveTab('fee')}>Fee Structure</button><button className="btn btn-outline" onClick={()=>setActiveTab('logs')}>View Logs</button></div></div>
               
-              <div className="card" style={{marginTop:24}}>
-                <h3 className="card-title">System Status</h3>
-                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, padding:15, background:'#f8fafc', borderRadius:8}}>
-                  <div>
-                    <h4 style={{margin:0, fontSize:'.9rem'}}>Database Connection</h4>
-                    <p style={{margin:'4px 0 0 0', fontSize:'.85rem', color:'#10b981'}}>● Connected & Healthy</p>
-                  </div>
-                  <div>
-                    <h4 style={{margin:0, fontSize:'.9rem'}}>Vercel Deployment</h4>
-                    <p style={{margin:'4px 0 0 0', fontSize:'.85rem', color:'#3b82f6'}}>● Production (v2.1.0)</p>
-                  </div>
-                </div>
-              </div>
             </>
           )}
 
@@ -529,11 +524,15 @@ export default function AdminDashboard() {
                           <td style={{textAlign:'center'}}>
                             <button
                               className="btn btn-sm btn-outline"
-                              style={{color:'#ef4444', borderColor:'#fecaca', padding:'3px 10px'}}
-                              onClick={() => handleDeleteLog(l._id)}
+                              style={{color:'#ef4444', borderColor:'#fecaca', padding:'3px 10px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDeleteLog(l._id || l.id);
+                              }}
                               title="Delete this log"
                             >
-                              🗑
+                              <span role="img" aria-label="delete">🗑️</span>
                             </button>
                           </td>
                         </tr>
