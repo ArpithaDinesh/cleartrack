@@ -16,31 +16,35 @@ try { sharp = require('sharp'); } catch (e) {
 // This eliminates the 5-15s init delay on every upload.
 let workerReady = null; // Promise<worker>
 
+// Path to the pre-downloaded tessdata (avoids network download on every start)
+const TESSDATA_DIR = path.join(__dirname, '..', 'tessdata');
+
 const getWorker = () => {
   if (!workerReady) {
     console.log('🔧 Initializing Tesseract worker (one-time startup)...');
     workerReady = (async () => {
+      // OEM 1 = LSTM only (fastest); must be passed at init, not setParameters
       const w = await createWorker('eng', 1, {
-        cachePath: path.join(__dirname, '..', 'tessdata'),
-        logger: () => {}, // silence per-character progress spam
+        cachePath: TESSDATA_DIR,
+        langPath: TESSDATA_DIR,   // use pre-downloaded local file, no network needed
+        gzip: false,              // traineddata is already uncompressed
+        logger: () => {},         // silence progress spam
       });
       await w.setParameters({
-        tessedit_pageseg_mode: '6',   // uniform block of text
-        tessedit_ocr_engine_mode: '1', // LSTM only (faster than combined)
+        tessedit_pageseg_mode: '6',    // uniform block of text
         preserve_interword_spaces: '1',
       });
       console.log('✅ Tesseract worker ready.');
       return w;
     })().catch(err => {
-      // Reset so next call retries
-      workerReady = null;
+      workerReady = null; // reset so next call retries
       throw err;
     });
   }
   return workerReady;
 };
 
-// Pre-warm the worker immediately when the module loads
+// Pre-warm on module load so first request is fast
 getWorker().catch(err => console.error('Worker pre-warm failed:', err.message));
 
 // ─── Image Preprocessing ─────────────────────────────────────────────────────
@@ -49,13 +53,13 @@ const preprocessImage = async (inputPath) => {
   const outPath = path.join(os.tmpdir(), `ocr-${Date.now()}.png`);
   try {
     await sharp(inputPath)
-      .rotate()                                    // auto-rotate via EXIF
-      .resize({ width: 1400, withoutEnlargement: false })
+      .rotate()                                     // auto-rotate via EXIF
+      .resize({ width: 800, withoutEnlargement: false }) // 800px = fast OCR, still readable
       .grayscale()
       .normalise()
-      .linear(1.5, -(1.5 * 128 - 128))
-      .sharpen({ sigma: 1.2, m1: 1, m2: 2 })
-      .threshold(155)
+      .linear(1.4, -(1.4 * 128 - 128))
+      .sharpen({ sigma: 1.0 })
+      .threshold(150)
       .png({ compressionLevel: 1 })
       .toFile(outPath);
     return outPath;
@@ -269,14 +273,23 @@ const parseOCRFields = (rawText) => {
 };
 
 // ─── OCR Run with Timeout ─────────────────────────────────────────────────────
-const OCR_TIMEOUT_MS = 30000; // 30s — enough for even slow images
+// Worker init: up to 90s (tessdata is local but LSTM load is slow once)
+// Recognition: up to 60s (for complex/large images)
+const WORKER_INIT_TIMEOUT_MS = 90000;
+const OCR_RECOGNIZE_TIMEOUT_MS = 60000;
 
-const runOCR = (imagePath) => {
-  const recognize = getWorker().then(w => w.recognize(imagePath));
-  const timeout   = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error('OCR timed out after 30s')), OCR_TIMEOUT_MS)
+const runOCR = async (imagePath) => {
+  // Wait for worker with a generous timeout
+  const workerTimeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('Tesseract worker failed to initialize within 90s')), WORKER_INIT_TIMEOUT_MS)
   );
-  return Promise.race([recognize, timeout]);
+  const worker = await Promise.race([getWorker(), workerTimeout]);
+
+  // Run recognition with a separate timeout
+  const recognizeTimeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('OCR recognition timed out after 60s')), OCR_RECOGNIZE_TIMEOUT_MS)
+  );
+  return Promise.race([worker.recognize(imagePath), recognizeTimeout]);
 };
 
 // ─── Internal Helper (reusable by routes & triggers) ─────────────────────────
