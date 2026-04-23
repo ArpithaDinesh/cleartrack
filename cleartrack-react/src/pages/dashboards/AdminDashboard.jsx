@@ -23,6 +23,13 @@ export default function AdminDashboard() {
   const [selectedMainLocation, setSelectedMainLocation] = useState('Kannur')
   const [editingRouteId, setEditingRouteId] = useState(null)
   const [editingFee, setEditingFee] = useState('')
+  const [selectedTuitionYear, setSelectedTuitionYear] = useState('First year')
+  const [tuitionFeeStructure, setTuitionFeeStructure] = useState({
+    'First year': { meritReg: '', meritFull: '', tfw: '', nri: '' },
+    'Second year': { meritReg: '', meritFull: '', tfw: '', nri: '' },
+    'Third year': { meritReg: '', meritFull: '', tfw: '', nri: '' },
+    'Fourth year': { meritReg: '', meritFull: '', tfw: '', nri: '' },
+  })
   const [loading, setLoading] = useState(true)
   const initials = user?.fullName?.charAt(0)?.toUpperCase() || 'A'
   
@@ -320,30 +327,88 @@ export default function AdminDashboard() {
               <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(400px, 1fr))', gap:24}}>
                 {/* Tuition Fee Section */}
                 <div className="card">
-                  <h3 className="card-title" style={{display:'flex', alignItems:'center', gap:10}}>
+                  <h3 className="card-title" style={{display:'flex', alignItems:'center', gap:10, marginBottom: 20}}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
                     Tuition Fee Management
                   </h3>
+                  
+                  <div style={{background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: 20}}>
+                    <p style={{fontSize: '.85rem', fontWeight: 600, color: '#64748b', marginBottom: 10}}>Select Year:</p>
+                    <div style={{display:'flex', gap:15, flexWrap: 'wrap'}}>
+                      {['First year', 'Second year', 'Third year', 'Fourth year'].map(year => (
+                        <label key={year} style={{display:'flex', alignItems:'center', gap:6, cursor:'pointer', fontSize: '.85rem', fontWeight: 500}}>
+                          <input 
+                            type="radio" 
+                            name="tuitionYear" 
+                            value={year} 
+                            checked={selectedTuitionYear === year} 
+                            onChange={e => setSelectedTuitionYear(e.target.value)} 
+                          />
+                          {year}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
                   <form onSubmit={handleSaveFeeStructure}>
-                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14, marginBottom: 16}}>
-                      <div className="form-group"><label>Department</label>
-                        <select value={feeForm.department} onChange={e=>setFeeForm(p=>({...p,department:e.target.value}))} required>
-                          <option value="" disabled>Select department</option>
-                          <option value="IT">IT</option><option value="CS">CS</option><option value="EC">EC</option><option value="EEE">EEE</option><option value="ME">ME</option><option value="CE">CE</option><option value="MBA">MBA</option><option value="MCA">MCA</option>
-                        </select>
+                    <div className="form-group" style={{marginBottom: 16}}>
+                      <label>Department</label>
+                      <select value={feeForm.department} onChange={e=>setFeeForm(p=>({...p,department:e.target.value}))} required>
+                        <option value="" disabled>Select department</option>
+                        <option value="IT">IT</option><option value="CS">CS</option><option value="EC">EC</option><option value="EEE">EEE</option><option value="ME">ME</option><option value="CE">CE</option><option value="MBA">MBA</option><option value="MCA">MCA</option>
+                      </select>
+                    </div>
+
+                    <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:14}}>
+                      <div className="form-group">
+                        <label>Merit Fee (Regulated)</label>
+                        <input 
+                          type="number" 
+                          value={tuitionFeeStructure[selectedTuitionYear].meritReg} 
+                          onChange={e => setTuitionFeeStructure(p => ({
+                            ...p, [selectedTuitionYear]: { ...p[selectedTuitionYear], meritReg: e.target.value }
+                          }))}
+                          placeholder="₹ 0" 
+                        />
                       </div>
-                      <div className="form-group"><label>Class/Year</label>
-                        <select value={feeForm.classYear} onChange={e=>setFeeForm(p=>({...p,classYear:e.target.value}))} required>
-                          <option value="" disabled>Select year</option>
-                          <option value="First year">First year</option><option value="Second year">Second year</option><option value="Third year">Third year</option><option value="Fourth year">Fourth year</option>
-                        </select>
+                      <div className="form-group">
+                        <label>Merit Fee (Full fee)</label>
+                        <input 
+                          type="number" 
+                          value={tuitionFeeStructure[selectedTuitionYear].meritFull} 
+                          onChange={e => setTuitionFeeStructure(p => ({
+                            ...p, [selectedTuitionYear]: { ...p[selectedTuitionYear], meritFull: e.target.value }
+                          }))}
+                          placeholder="₹ 0" 
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Tuition Fee Waiver</label>
+                        <input 
+                          type="number" 
+                          value={tuitionFeeStructure[selectedTuitionYear].tfw} 
+                          onChange={e => setTuitionFeeStructure(p => ({
+                            ...p, [selectedTuitionYear]: { ...p[selectedTuitionYear], tfw: e.target.value }
+                          }))}
+                          placeholder="₹ 0" 
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>NRI Fee</label>
+                        <input 
+                          type="number" 
+                          value={tuitionFeeStructure[selectedTuitionYear].nri} 
+                          onChange={e => setTuitionFeeStructure(p => ({
+                            ...p, [selectedTuitionYear]: { ...p[selectedTuitionYear], nri: e.target.value }
+                          }))}
+                          placeholder="₹ 0" 
+                        />
                       </div>
                     </div>
-                    <div className="form-group">
-                      <label>Amount (₹)</label>
-                      <input type="number" min="0" value={feeForm.tuitionFee} onChange={e=>setFeeForm(p=>({...p,tuitionFee:e.target.value}))} placeholder="0" required/>
-                    </div>
-                    <button type="submit" className="btn btn-primary btn-full" style={{marginTop:16}}>Update Tuition Fee</button>
+                    
+                    <button type="submit" className="btn btn-primary btn-full" style={{marginTop:20}}>
+                      Update Tuition Fee for {selectedTuitionYear}
+                    </button>
                   </form>
                 </div>
 
