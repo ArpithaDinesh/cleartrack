@@ -36,10 +36,16 @@ export default function StudentDashboard() {
   const [allTuitionFees, setAllTuitionFees] = useState([])
   const [selectedTuitionCategory, setSelectedTuitionCategory] = useState('')
   const [isHalfTuition, setIsHalfTuition] = useState(false)
+  const [feeError, setFeeError] = useState(null)
 
   useEffect(() => {
     busAPI.getRoutes().then(res => setBusRoutes(res.routes || [])).catch(console.error)
-    tuitionFeeAPI.getFees().then(res => setAllTuitionFees(res.fees || [])).catch(console.error)
+    tuitionFeeAPI.getFees()
+      .then(res => setAllTuitionFees(res.fees || []))
+      .catch(err => {
+        console.error(err);
+        setFeeError('Failed to load fee structure.');
+      })
   }, [])
 
   const studentYearFees = allTuitionFees.find(f => f.year === user?.classYear)
@@ -222,6 +228,18 @@ export default function StudentDashboard() {
                       <span style={{background: '#0ea5e9', color: 'white', padding: '2px 10px', borderRadius: '20px', fontSize: '.8rem', fontWeight: 600}}>{user?.classYear || 'Not Specified'}</span>
                     </div>
 
+                    {feeError && (
+                      <div style={{background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', padding: '8px', borderRadius: '6px', fontSize: '.75rem', marginBottom: 15}}>
+                        ❌ {feeError}
+                      </div>
+                    )}
+
+                    {!studentYearFees && allTuitionFees.length > 0 && (
+                      <div style={{background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', padding: '8px', borderRadius: '6px', fontSize: '.75rem', marginBottom: 15}}>
+                        ⚠️ Your year "{user?.classYear}" is not configured in the system. Please contact admin.
+                      </div>
+                    )}
+
                     <label className="field-label" style={{marginBottom: 8, display: 'block'}}>1. Select Fee Category</label>
                     <select 
                       className="form-control" 
@@ -247,9 +265,16 @@ export default function StudentDashboard() {
                     </div>
 
                     {selectedTuitionCategory && (
-                      <div style={{padding: '12px', background: '#fff', borderRadius: '8px', border: '1px solid #0ea5e9', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                        <span style={{fontWeight: 500, color: '#0369a1'}}>Calculated Tuition Fee:</span>
-                        <span style={{fontWeight: 700, color: '#0284c7', fontSize: '1.1rem'}}>₹{calculatedTuitionFee.toLocaleString()}</span>
+                      <div style={{padding: '12px', background: '#fff', borderRadius: '8px', border: '1px solid #0ea5e9', display: 'flex', flexDirection: 'column', gap: 5}}>
+                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                          <span style={{fontWeight: 500, color: '#0369a1'}}>Calculated Tuition Fee:</span>
+                          <span style={{fontWeight: 700, color: '#0284c7', fontSize: '1.1rem'}}>₹{calculatedTuitionFee.toLocaleString()}</span>
+                        </div>
+                        {calculatedTuitionFee === 0 && (
+                          <div style={{fontSize: '.75rem', color: '#64748b', fontStyle: 'italic'}}>
+                            * Contact admin if fee is not configured for your category.
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

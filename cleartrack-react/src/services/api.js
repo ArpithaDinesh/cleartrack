@@ -97,5 +97,6 @@ export const busAPI = {
 
 export const tuitionFeeAPI = {
   getFees: () => request('GET', '/tuition-fees'),
-  updateFee: (data) => request('POST', '/tuition-fees/update', data)
+  updateFee: (data) => request('POST', '/tuition-fees/update', data),
+  seedFees: () => request('POST', '/tuition-fees/seed')
 };

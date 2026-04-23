@@ -25,10 +25,10 @@ export default function AdminDashboard() {
   const [editingFee, setEditingFee] = useState('')
   const [selectedTuitionYear, setSelectedTuitionYear] = useState('First year')
   const [tuitionFeeStructure, setTuitionFeeStructure] = useState({
-    'First year': { meritReg: '', meritFull: '', tfw: '', nri: '' },
-    'Second year': { meritReg: '', meritFull: '', tfw: '', nri: '' },
-    'Third year': { meritReg: '', meritFull: '', tfw: '', nri: '' },
-    'Fourth year': { meritReg: '', meritFull: '', tfw: '', nri: '' },
+    'First year': { meritReg: 0, meritFull: 0, tfw: 0, nri: 0 },
+    'Second year': { meritReg: 0, meritFull: 0, tfw: 0, nri: 0 },
+    'Third year': { meritReg: 0, meritFull: 0, tfw: 0, nri: 0 },
+    'Fourth year': { meritReg: 0, meritFull: 0, tfw: 0, nri: 0 },
   })
   const [savedTuitionYears, setSavedTuitionYears] = useState([])
   const [isEditingTuition, setIsEditingTuition] = useState(false)
@@ -161,6 +161,30 @@ export default function AdminDashboard() {
       const bRes = await busAPI.getRoutes();
       setBusRoutes(bRes.routes || []);
       setFeeMsg('✓ Routes seeded successfully!');
+    } catch (err) { setFeeMsg('Error: ' + err.message); }
+  };
+
+  const handleSeedTuition = async () => {
+    if (!window.confirm('This will reset all tuition fees to default. Proceed?')) return;
+    try {
+      await tuitionFeeAPI.seedFees();
+      const res = await tuitionFeeAPI.getFees();
+      if (res.success && res.fees.length > 0) {
+        const structure = { ...tuitionFeeStructure };
+        const saved = [];
+        res.fees.forEach(f => {
+          structure[f.year] = { 
+            meritReg: f.meritReg, 
+            meritFull: f.meritFull, 
+            tfw: f.tfw, 
+            nri: f.nri 
+          };
+          saved.push(f.year);
+        });
+        setTuitionFeeStructure(structure);
+        setSavedTuitionYears(saved);
+        setFeeMsg('✓ Tuition fees seeded successfully!');
+      }
     } catch (err) { setFeeMsg('Error: ' + err.message); }
   };
 
@@ -364,10 +388,13 @@ export default function AdminDashboard() {
               <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(400px, 1fr))', gap:24}}>
                 {/* Tuition Fee Section */}
                 <div className="card">
-                  <h3 className="card-title" style={{display:'flex', alignItems:'center', gap:10, marginBottom: 20}}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-                    Tuition Fee Management
-                  </h3>
+                  <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20}}>
+                    <h3 className="card-title" style={{margin:0, display:'flex', alignItems:'center', gap:10}}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                      Tuition Fee Management
+                    </h3>
+                    <button className="btn btn-outline btn-sm" onClick={handleSeedTuition}>Seed Defaults</button>
+                  </div>
                   
                   <div style={{background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: 20}}>
                     <p style={{fontSize: '.85rem', fontWeight: 600, color: '#64748b', marginBottom: 10}}>Select Year:</p>

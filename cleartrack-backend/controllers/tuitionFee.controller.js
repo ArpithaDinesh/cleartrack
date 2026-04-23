@@ -35,4 +35,24 @@ const updateFee = async (req, res) => {
   }
 };
 
-module.exports = { getAllFees, updateFee };
+// @desc  Seed initial tuition fees
+// @route POST /api/tuition-fees/seed
+const seedFees = async (req, res) => {
+  try {
+    const defaultFees = [
+      { year: 'First year', meritReg: 45000, meritFull: 85000, tfw: 5000, nri: 120000 },
+      { year: 'Second year', meritReg: 45000, meritFull: 85000, tfw: 5000, nri: 120000 },
+      { year: 'Third year', meritReg: 45000, meritFull: 85000, tfw: 5000, nri: 120000 },
+      { year: 'Fourth year', meritReg: 45000, meritFull: 85000, tfw: 5000, nri: 120000 },
+    ];
+    
+    await TuitionFee.deleteMany({});
+    await TuitionFee.insertMany(defaultFees);
+    
+    res.json({ success: true, message: 'Tuition fees seeded successfully' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+module.exports = { getAllFees, updateFee, seedFees };
