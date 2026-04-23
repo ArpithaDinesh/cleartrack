@@ -8,20 +8,31 @@ const authHeaders = () => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-// Generic request
-const request = async (method, path, body = null, isFormData = false) => {
+// Generic request with timeout support
+const request = async (method, path, body = null, isFormData = false, timeoutMs = 30000) => {
   const headers = { ...authHeaders() };
   if (body && !isFormData) headers['Content-Type'] = 'application/json';
 
-  const res = await fetch(`${BASE_URL}${path}`, {
-    method,
-    headers,
-    body: isFormData ? body : body ? JSON.stringify(body) : null
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Request failed');
-  return data;
+  try {
+    const res = await fetch(`${BASE_URL}${path}`, {
+      method,
+      headers,
+      body: isFormData ? body : body ? JSON.stringify(body) : null,
+      signal: controller.signal,
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Request failed');
+    return data;
+  } catch (err) {
+    if (err.name === 'AbortError') throw new Error('Request timed out. Please try again.');
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
 };
 
 // Auth
@@ -50,9 +61,9 @@ export const clearanceAPI = {
   },
 };
 
-// OCR
+// OCR — longer timeout since Tesseract can take up to 30s
 export const ocrAPI = {
-  processOCR: (requestId) => request('POST', `/ocr/process/${requestId}`),
+  processOCR: (requestId) => request('POST', `/ocr/process/${requestId}`, null, false, 60000),
   confirmOCR: (requestId, data) => request('PATCH', `/ocr/confirm/${requestId}`, data),
 };
 
