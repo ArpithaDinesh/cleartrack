@@ -81,16 +81,4 @@ const getLogs = async (req, res) => {
   }
 };
 
-// @desc  Delete a log entry
-// @route DELETE /api/admin/logs/:id
-const deleteLog = async (req, res) => {
-  try {
-    const log = await ApprovalLog.findByIdAndDelete(req.params.id);
-    if (!log) return res.status(404).json({ success: false, message: 'Log not found.' });
-    res.json({ success: true, message: 'Log deleted.' });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-module.exports = { getStats, getUsers, toggleUser, createStaff, getLogs, deleteLog };
+module.exports = { getStats, getUsers, toggleUser, createStaff, getLogs };

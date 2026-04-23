@@ -62,22 +62,6 @@ export default function AdminDashboard() {
     } catch (err) { console.error(err) }
   }
 
-  const handleDeleteLog = async (id) => {
-    if (!id) return;
-    if (!window.confirm('Are you sure you want to delete this log entry?')) return;
-    
-    try {
-      console.log('Deleting log:', id);
-      const res = await adminAPI.deleteLog(id);
-      if (res.success) {
-        setLogs(prev => prev.filter(l => (l._id || l.id) !== id));
-      }
-    } catch (err) {
-      console.error('Delete log error:', err);
-      alert('Failed to delete: ' + err.message);
-    }
-  };
-
   // Navigate to users tab pre-filtered by role
   const goToUsers = (role) => {
     setUserRoleFilterNav(role)
@@ -508,12 +492,11 @@ export default function AdminDashboard() {
                     <thead>
                       <tr>
                         <th>Time</th><th>Action</th><th>By</th><th>Request</th><th>Status</th>
-                        <th style={{textAlign:'center'}}>Delete</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {loading ? <tr><td colSpan={6} style={{textAlign:'center',padding:24}}>Loading…</td></tr>
-                      : logs.length === 0 ? <tr><td colSpan={6} style={{textAlign:'center',padding:24,color:'var(--text-sub)'}}>No logs found.</td></tr>
+                      {loading ? <tr><td colSpan={5} style={{textAlign:'center',padding:24}}>Loading…</td></tr>
+                      : logs.length === 0 ? <tr><td colSpan={5} style={{textAlign:'center',padding:24,color:'var(--text-sub)'}}>No logs found.</td></tr>
                       : logs.map(l => (
                         <tr key={l._id}>
                           <td style={{fontSize:'.78rem',color:'var(--text-sub)',whiteSpace:'nowrap'}}>{new Date(l.createdAt).toLocaleString()}</td>
@@ -521,20 +504,6 @@ export default function AdminDashboard() {
                           <td style={{fontSize:'.85rem'}}>{l.performedBy?.fullName||'System'}</td>
                           <td style={{fontSize:'.82rem'}}>{l.clearanceRequest?.requestNumber||'—'}</td>
                           <td style={{fontSize:'.82rem'}}>{l.newStatus||'—'}</td>
-                          <td style={{textAlign:'center'}}>
-                            <button
-                              className="btn btn-sm btn-outline"
-                              style={{color:'#ef4444', borderColor:'#fecaca', padding:'3px 10px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleDeleteLog(l._id || l.id);
-                              }}
-                              title="Delete this log"
-                            >
-                              <span role="img" aria-label="delete">🗑️</span>
-                            </button>
-                          </td>
                         </tr>
                       ))}
                     </tbody>
