@@ -13,6 +13,7 @@ export default function AdminDashboard() {
   const [userRoleFilter, setUserRoleFilter] = useState('all')
   const [departmentFilter, setDepartmentFilter] = useState('all')
   const [activeTab, setActiveTab] = useState('overview')
+  const [userRoleFilterNav, setUserRoleFilterNav] = useState('all') // driven by stat card clicks
   const [newStudent, setNewStudent] = useState({ fullName:'', email:'', password:'', phone:'', admissionNumber:'', universityNumber:'', rollNumber:'', department:'', classYear:'' })
   const [feeForm, setFeeForm] = useState({ department:'', classYear:'', tuitionFee:'', hostelFee:'', busFee:'' })
   const [studentMsg, setStudentMsg] = useState('')
@@ -59,6 +60,21 @@ export default function AdminDashboard() {
       const uRes = await adminAPI.getUsers()
       setUsers(uRes.users || [])
     } catch (err) { console.error(err) }
+  }
+
+  const handleDeleteLog = async (id) => {
+    if (!window.confirm('Delete this log entry?')) return
+    try {
+      await adminAPI.deleteLog(id)
+      setLogs(prev => prev.filter(l => l._id !== id))
+    } catch (err) { alert('Failed to delete: ' + err.message) }
+  }
+
+  // Navigate to users tab pre-filtered by role
+  const goToUsers = (role) => {
+    setUserRoleFilterNav(role)
+    setUserRoleFilter(role)
+    setActiveTab('users')
   }
 
   const handleSaveFeeStructure = (e) => {
@@ -118,12 +134,15 @@ export default function AdminDashboard() {
   };
 
   const statCards = stats ? [
-    { label:'Total Students', value:stats.totalStudents, color:'blue' },
-    { label:'Total Staff', value:stats.totalStaff, color:'teal' },
-    { label:'Total Requests', value:stats.totalRequests, color:'violet' },
-    { label:'Approved', value:stats.approved, color:'green' },
-    { label:'Pending', value:stats.pending, color:'orange' },
-    { label:'Rejected', value:stats.rejected, color:'red' },
+    { label:'Total Students', value:stats.totalStudents, color:'blue',
+      onClick: () => goToUsers('student') },
+    { label:'Total Staff', value:stats.totalStaff, color:'teal',
+      onClick: () => goToUsers('staff') },
+    { label:'Total Requests', value:stats.totalRequests, color:'violet',
+      onClick: () => setActiveTab('logs') },
+    { label:'Approved', value:stats.approved, color:'green', onClick: null },
+    { label:'Pending', value:stats.pending, color:'orange', onClick: null },
+    { label:'Rejected', value:stats.rejected, color:'red', onClick: null },
   ] : []
 
   const filteredUsers = users.filter(u => {
@@ -184,9 +203,19 @@ export default function AdminDashboard() {
               <div className="page-header"><h1>System Administration</h1><p>Manage students, staff, fee structures and monitor system activity.</p></div>
               <div className="stats-grid">
                 {statCards.map(s => (
-                  <div key={s.label} className="stat-card">
+                  <div
+                    key={s.label}
+                    className="stat-card"
+                    onClick={s.onClick || undefined}
+                    style={s.onClick ? { cursor:'pointer', transition:'transform .15s, box-shadow .15s' } : {}}
+                    onMouseEnter={e => { if (s.onClick) { e.currentTarget.style.transform='translateY(-3px)'; e.currentTarget.style.boxShadow='0 8px 24px rgba(0,0,0,.12)'; }}}
+                    onMouseLeave={e => { if (s.onClick) { e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow=''; }}}
+                  >
                     <div className={`stat-icon ${s.color}`}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/></svg></div>
-                    <div className="stat-info"><h3>{loading ? '…' : s.value}</h3><p>{s.label}</p></div>
+                    <div className="stat-info">
+                      <h3>{loading ? '…' : s.value}</h3>
+                      <p>{s.label}{s.onClick && <span style={{fontSize:'.7rem',marginLeft:6,opacity:.6}}>↗ view</span>}</p>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -480,19 +509,37 @@ export default function AdminDashboard() {
               <div className="page-header"><h1>Activity Logs</h1><p>Recent system events and approval actions.</p></div>
               <div className="card" style={{padding:0,overflow:'hidden'}}>
                 <div className="table-wrap" style={{border:'none',borderRadius:0,boxShadow:'none'}}>
-                  <table><thead><tr><th>Time</th><th>Action</th><th>By</th><th>Request</th><th>Status</th></tr></thead>
-                  <tbody>
-                    {loading ? <tr><td colSpan={5} style={{textAlign:'center',padding:24}}>Loading…</td></tr>
-                    : logs.map(l=>(
-                      <tr key={l._id}>
-                        <td style={{fontSize:'.78rem',color:'var(--text-sub)',whiteSpace:'nowrap'}}>{new Date(l.createdAt).toLocaleString()}</td>
-                        <td><span className={`badge badge-${l.action==='approved'?'success':l.action==='rejected'?'danger':'info'}`}>{l.action}</span></td>
-                        <td style={{fontSize:'.85rem'}}>{l.performedBy?.fullName||'System'}</td>
-                        <td style={{fontSize:'.82rem'}}>{l.clearanceRequest?.requestNumber||'—'}</td>
-                        <td style={{fontSize:'.82rem'}}>{l.newStatus||'—'}</td>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Time</th><th>Action</th><th>By</th><th>Request</th><th>Status</th>
+                        <th style={{textAlign:'center'}}>Delete</th>
                       </tr>
-                    ))}
-                  </tbody></table>
+                    </thead>
+                    <tbody>
+                      {loading ? <tr><td colSpan={6} style={{textAlign:'center',padding:24}}>Loading…</td></tr>
+                      : logs.length === 0 ? <tr><td colSpan={6} style={{textAlign:'center',padding:24,color:'var(--text-sub)'}}>No logs found.</td></tr>
+                      : logs.map(l => (
+                        <tr key={l._id}>
+                          <td style={{fontSize:'.78rem',color:'var(--text-sub)',whiteSpace:'nowrap'}}>{new Date(l.createdAt).toLocaleString()}</td>
+                          <td><span className={`badge badge-${l.action==='approved'?'success':l.action==='rejected'?'danger':'info'}`}>{l.action}</span></td>
+                          <td style={{fontSize:'.85rem'}}>{l.performedBy?.fullName||'System'}</td>
+                          <td style={{fontSize:'.82rem'}}>{l.clearanceRequest?.requestNumber||'—'}</td>
+                          <td style={{fontSize:'.82rem'}}>{l.newStatus||'—'}</td>
+                          <td style={{textAlign:'center'}}>
+                            <button
+                              className="btn btn-sm btn-outline"
+                              style={{color:'#ef4444', borderColor:'#fecaca', padding:'3px 10px'}}
+                              onClick={() => handleDeleteLog(l._id)}
+                              title="Delete this log"
+                            >
+                              🗑
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </>

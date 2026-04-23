@@ -84,6 +84,7 @@ export const adminAPI = {
   toggleUser: (id) => request('PATCH', `/admin/users/${id}/toggle`),
   createStaff: (data) => request('POST', '/admin/staff', data),
   getLogs: () => request('GET', '/admin/logs'),
+  deleteLog: (id) => request('DELETE', `/admin/logs/${id}`),
 };
 
 // Bus Routes
