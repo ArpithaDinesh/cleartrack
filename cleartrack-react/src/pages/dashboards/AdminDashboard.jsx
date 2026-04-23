@@ -30,6 +30,8 @@ export default function AdminDashboard() {
     'Third year': { meritReg: '', meritFull: '', tfw: '', nri: '' },
     'Fourth year': { meritReg: '', meritFull: '', tfw: '', nri: '' },
   })
+  const [savedTuitionYears, setSavedTuitionYears] = useState([])
+  const [isEditingTuition, setIsEditingTuition] = useState(false)
   const [loading, setLoading] = useState(true)
   const initials = user?.fullName?.charAt(0)?.toUpperCase() || 'A'
   
@@ -77,11 +79,14 @@ export default function AdminDashboard() {
 
   const handleSaveFeeStructure = (e) => {
     e.preventDefault();
-    if(!feeForm.department || !feeForm.classYear) {
-      setFeeMsg('Error: Please select department and year.');
-      return;
+    // For tuition, we mark the year as saved
+    if (activeTab === 'fee') {
+      if (!savedTuitionYears.includes(selectedTuitionYear)) {
+        setSavedTuitionYears([...savedTuitionYears, selectedTuitionYear]);
+      }
+      setIsEditingTuition(false);
     }
-    // Simulate updating settings in UI realistically
+    
     setFeeMsg('✓ Fee structure saved successfully!');
     setTimeout(() => setFeeMsg(''), 3000);
   }
@@ -351,64 +356,86 @@ export default function AdminDashboard() {
                   </div>
 
                   <form onSubmit={handleSaveFeeStructure}>
-                    <div className="form-group" style={{marginBottom: 16}}>
-                      <label>Department</label>
-                      <select value={feeForm.department} onChange={e=>setFeeForm(p=>({...p,department:e.target.value}))} required>
-                        <option value="" disabled>Select department</option>
-                        <option value="IT">IT</option><option value="CS">CS</option><option value="EC">EC</option><option value="EEE">EEE</option><option value="ME">ME</option><option value="CE">CE</option><option value="MBA">MBA</option><option value="MCA">MCA</option>
-                      </select>
-                    </div>
-
-                    <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:14}}>
-                      <div className="form-group">
-                        <label>Merit Fee (Regulated)</label>
-                        <input 
-                          type="number" 
-                          value={tuitionFeeStructure[selectedTuitionYear].meritReg} 
-                          onChange={e => setTuitionFeeStructure(p => ({
-                            ...p, [selectedTuitionYear]: { ...p[selectedTuitionYear], meritReg: e.target.value }
-                          }))}
-                          placeholder="₹ 0" 
-                        />
+                    {savedTuitionYears.includes(selectedTuitionYear) && !isEditingTuition ? (
+                      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:14, marginBottom: 20}}>
+                        <div className="view-field" style={{padding: '10px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '6px'}}>
+                          <label style={{fontSize: '.75rem', color: '#64748b', display: 'block'}}>Merit Fee (Regulated)</label>
+                          <span style={{fontWeight: 600}}>₹ {tuitionFeeStructure[selectedTuitionYear].meritReg || 0}</span>
+                        </div>
+                        <div className="view-field" style={{padding: '10px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '6px'}}>
+                          <label style={{fontSize: '.75rem', color: '#64748b', display: 'block'}}>Merit Fee (Full fee)</label>
+                          <span style={{fontWeight: 600}}>₹ {tuitionFeeStructure[selectedTuitionYear].meritFull || 0}</span>
+                        </div>
+                        <div className="view-field" style={{padding: '10px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '6px'}}>
+                          <label style={{fontSize: '.75rem', color: '#64748b', display: 'block'}}>Tuition Fee Waiver</label>
+                          <span style={{fontWeight: 600}}>₹ {tuitionFeeStructure[selectedTuitionYear].tfw || 0}</span>
+                        </div>
+                        <div className="view-field" style={{padding: '10px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '6px'}}>
+                          <label style={{fontSize: '.75rem', color: '#64748b', display: 'block'}}>NRI Fee</label>
+                          <span style={{fontWeight: 600}}>₹ {tuitionFeeStructure[selectedTuitionYear].nri || 0}</span>
+                        </div>
+                        <button type="button" className="btn btn-outline btn-full" style={{gridColumn: '1 / -1', marginTop: 10}} onClick={() => setIsEditingTuition(true)}>
+                          ⚙ Edit Fee Structure
+                        </button>
                       </div>
-                      <div className="form-group">
-                        <label>Merit Fee (Full fee)</label>
-                        <input 
-                          type="number" 
-                          value={tuitionFeeStructure[selectedTuitionYear].meritFull} 
-                          onChange={e => setTuitionFeeStructure(p => ({
-                            ...p, [selectedTuitionYear]: { ...p[selectedTuitionYear], meritFull: e.target.value }
-                          }))}
-                          placeholder="₹ 0" 
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Tuition Fee Waiver</label>
-                        <input 
-                          type="number" 
-                          value={tuitionFeeStructure[selectedTuitionYear].tfw} 
-                          onChange={e => setTuitionFeeStructure(p => ({
-                            ...p, [selectedTuitionYear]: { ...p[selectedTuitionYear], tfw: e.target.value }
-                          }))}
-                          placeholder="₹ 0" 
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>NRI Fee</label>
-                        <input 
-                          type="number" 
-                          value={tuitionFeeStructure[selectedTuitionYear].nri} 
-                          onChange={e => setTuitionFeeStructure(p => ({
-                            ...p, [selectedTuitionYear]: { ...p[selectedTuitionYear], nri: e.target.value }
-                          }))}
-                          placeholder="₹ 0" 
-                        />
-                      </div>
-                    </div>
-                    
-                    <button type="submit" className="btn btn-primary btn-full" style={{marginTop:20}}>
-                      Update Tuition Fee for {selectedTuitionYear}
-                    </button>
+                    ) : (
+                      <>
+                        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:14}}>
+                          <div className="form-group">
+                            <label>Merit Fee (Regulated)</label>
+                            <input 
+                              type="number" 
+                              value={tuitionFeeStructure[selectedTuitionYear].meritReg} 
+                              onChange={e => setTuitionFeeStructure(p => ({
+                                ...p, [selectedTuitionYear]: { ...p[selectedTuitionYear], meritReg: e.target.value }
+                              }))}
+                              placeholder="₹ 0" 
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Merit Fee (Full fee)</label>
+                            <input 
+                              type="number" 
+                              value={tuitionFeeStructure[selectedTuitionYear].meritFull} 
+                              onChange={e => setTuitionFeeStructure(p => ({
+                                ...p, [selectedTuitionYear]: { ...p[selectedTuitionYear], meritFull: e.target.value }
+                              }))}
+                              placeholder="₹ 0" 
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Tuition Fee Waiver</label>
+                            <input 
+                              type="number" 
+                              value={tuitionFeeStructure[selectedTuitionYear].tfw} 
+                              onChange={e => setTuitionFeeStructure(p => ({
+                                ...p, [selectedTuitionYear]: { ...p[selectedTuitionYear], tfw: e.target.value }
+                              }))}
+                              placeholder="₹ 0" 
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>NRI Fee</label>
+                            <input 
+                              type="number" 
+                              value={tuitionFeeStructure[selectedTuitionYear].nri} 
+                              onChange={e => setTuitionFeeStructure(p => ({
+                                ...p, [selectedTuitionYear]: { ...p[selectedTuitionYear], nri: e.target.value }
+                              }))}
+                              placeholder="₹ 0" 
+                            />
+                          </div>
+                        </div>
+                        <button type="submit" className="btn btn-primary btn-full" style={{marginTop:20}}>
+                          {savedTuitionYears.includes(selectedTuitionYear) ? 'Save Changes' : 'Submit Fee Structure'}
+                        </button>
+                        {isEditingTuition && (
+                          <button type="button" className="btn btn-outline btn-full" style={{marginTop: 8}} onClick={() => setIsEditingTuition(false)}>
+                            Cancel
+                          </button>
+                        )}
+                      </>
+                    )}
                   </form>
                 </div>
 
