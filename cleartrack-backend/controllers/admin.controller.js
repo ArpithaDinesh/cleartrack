@@ -11,7 +11,7 @@ const getStats = async (req, res) => {
       User.countDocuments({ role: 'staff' }),
       ClearanceRequest.countDocuments(),
       ClearanceRequest.countDocuments({ overallStatus: 'approved' }),
-      ClearanceRequest.countDocuments({ overallStatus: { $in: ['submitted', 'under_review', 'partially_approved'] } }),
+      ClearanceRequest.countDocuments({ overallStatus: { $nin: ['approved', 'rejected'] } }), // everything in-progress
       ClearanceRequest.countDocuments({ overallStatus: 'rejected' })
     ]);
     res.json({ success: true, stats: { totalStudents, totalStaff, totalRequests, approved, pending, rejected } });
