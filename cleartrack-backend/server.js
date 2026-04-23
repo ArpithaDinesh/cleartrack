@@ -60,6 +60,7 @@ app.use('/api/ocr', require('./routes/ocr.routes'));
 app.use('/api/departments', require('./routes/department.routes'));
 app.use('/api/admin', require('./routes/admin.routes'));
 app.use('/api/bus-routes', require('./routes/busRoute.routes'));
+app.use('/api/tuition-fees', require('./routes/tuitionFee.routes'));
 
 // Health check
 app.get('/api/health', (req, res) => {

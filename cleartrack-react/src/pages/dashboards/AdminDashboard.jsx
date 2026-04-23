@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { adminAPI, authAPI, busAPI } from '../../services/api'
+import { adminAPI, authAPI, busAPI, tuitionFeeAPI } from '../../services/api'
 import ProfileModal from '../../components/ProfileModal'
 
 export default function AdminDashboard() {
@@ -33,6 +33,26 @@ export default function AdminDashboard() {
   const [savedTuitionYears, setSavedTuitionYears] = useState([])
   const [isEditingTuition, setIsEditingTuition] = useState(false)
   const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    tuitionFeeAPI.getFees().then(res => {
+      if (res.success && res.fees.length > 0) {
+        const structure = { ...tuitionFeeStructure };
+        const saved = [];
+        res.fees.forEach(f => {
+          structure[f.year] = { 
+            meritReg: f.meritReg, 
+            meritFull: f.meritFull, 
+            tfw: f.tfw, 
+            nri: f.nri 
+          };
+          saved.push(f.year);
+        });
+        setTuitionFeeStructure(structure);
+        setSavedTuitionYears(saved);
+      }
+    }).catch(console.error);
+  }, []);
   const initials = user?.fullName?.charAt(0)?.toUpperCase() || 'A'
   
   const [showDropdown, setShowDropdown] = useState(false)
@@ -77,17 +97,29 @@ export default function AdminDashboard() {
     setActiveTab('users')
   }
 
-  const handleSaveFeeStructure = (e) => {
+  const handleSaveFeeStructure = async (e) => {
     e.preventDefault();
     // For tuition, we mark the year as saved
     if (activeTab === 'fee') {
-      if (!savedTuitionYears.includes(selectedTuitionYear)) {
-        setSavedTuitionYears([...savedTuitionYears, selectedTuitionYear]);
+      try {
+        const currentYearFees = tuitionFeeStructure[selectedTuitionYear];
+        await tuitionFeeAPI.updateFee({
+          year: selectedTuitionYear,
+          ...currentYearFees
+        });
+        
+        if (!savedTuitionYears.includes(selectedTuitionYear)) {
+          setSavedTuitionYears([...savedTuitionYears, selectedTuitionYear]);
+        }
+        setIsEditingTuition(false);
+        setFeeMsg('✓ Fee structure saved successfully!');
+      } catch (err) {
+        setFeeMsg('❌ Failed to save: ' + err.message);
       }
-      setIsEditingTuition(false);
+    } else {
+      setFeeMsg('✓ Fee structure saved successfully!');
     }
     
-    setFeeMsg('✓ Fee structure saved successfully!');
     setTimeout(() => setFeeMsg(''), 3000);
   }
 

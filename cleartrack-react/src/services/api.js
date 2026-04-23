@@ -94,3 +94,8 @@ export const busAPI = {
   deleteRoute: (id) => request('DELETE', `/bus-routes/${id}`),
   seedRoutes: () => request('POST', '/bus-routes/seed')
 };
+
+export const tuitionFeeAPI = {
+  getFees: () => request('GET', '/tuition-fees'),
+  updateFee: (data) => request('POST', '/tuition-fees/update', data)
+};

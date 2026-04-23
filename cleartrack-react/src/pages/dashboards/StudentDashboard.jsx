@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Sidebar from '../../components/Sidebar'
 import { useAuth } from '../../context/AuthContext'
-import { clearanceAPI, ocrAPI, busAPI } from '../../services/api'
+import { clearanceAPI, ocrAPI, busAPI, tuitionFeeAPI } from '../../services/api'
 import ProfileModal from '../../components/ProfileModal'
 import './StudentDashboard.css'
 
@@ -32,9 +32,19 @@ export default function StudentDashboard() {
   const [selectedSubLocationId, setSelectedSubLocationId] = useState('')
   const [isHalfFee, setIsHalfFee] = useState(false)
 
+  // Tuition Fee States
+  const [allTuitionFees, setAllTuitionFees] = useState([])
+  const [selectedTuitionCategory, setSelectedTuitionCategory] = useState('')
+  const [isHalfTuition, setIsHalfTuition] = useState(false)
+
   useEffect(() => {
     busAPI.getRoutes().then(res => setBusRoutes(res.routes || [])).catch(console.error)
+    tuitionFeeAPI.getFees().then(res => setAllTuitionFees(res.fees || [])).catch(console.error)
   }, [])
+
+  const studentYearFees = allTuitionFees.find(f => f.year === user?.classYear)
+  const baseTuitionAmount = studentYearFees ? (studentYearFees[selectedTuitionCategory] || 0) : 0
+  const calculatedTuitionFee = isHalfTuition ? baseTuitionAmount / 2 : baseTuitionAmount
 
   const selectedSubLocation = busRoutes.find(r => r._id === selectedSubLocationId)
   const calculatedBusFee = selectedSubLocation ? (isHalfFee ? selectedSubLocation.fee / 2 : selectedSubLocation.fee) : 0
@@ -200,90 +210,123 @@ export default function StudentDashboard() {
                   </div>
                   <span className="badge badge-warning">Pending</span>
                 </div>
-                <div className="fee-cat-body">
-                  <label className="field-label">Payment Mode</label>
-                  <div className="radio-grp">
-                    <label className="radio-opt"><input type="radio" name="t-mode" value="fully" defaultChecked /> Fully Paid</label>
-                    <label className="radio-opt"><input type="radio" name="t-mode" value="partially" /> Partially Paid</label>
-                  </div>
-                  <div className="inner-grid">
-                    <div>
-                      <label className="field-label">Upload Receipt</label>
-                      <label htmlFor="t-file" className="upload-zone">
-                        <div className="upload-icon-wrap">
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                            <polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
-                          </svg>
-                        </div>
-                        <h4>{tuitionFile ? tuitionFile.name : 'Click to upload receipt'}</h4>
-                        <p>JPG, PNG, PDF — max 10 MB</p>
-                        <input type="file" id="t-file" accept="image/*,.pdf" onChange={e => setTuitionFile(e.target.files[0])} />
-                      </label>
-                      <button type="button" className="btn btn-primary btn-full" style={{ marginTop: '10px' }} 
-                        disabled={!tuitionFile || ocrStates.tuition.status === 'processing' || ocrStates.tuition.status === 'success'}
-                        onClick={() => handleOCRProcess('tuition', tuitionFile)}>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                          <polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
-                        </svg>
-                        {ocrStates.tuition.status === 'processing' ? 'Processing...' : 'Upload & Process via OCR'}
-                      </button>
+                <div className="card">
+                  <h3 className="card-title" style={{display:'flex', alignItems:'center', gap:10}}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    Tuition Fee
+                  </h3>
+                  
+                  <div style={{background: '#f0f9ff', padding: '15px', borderRadius: '10px', border: '1px solid #bae6fd', marginBottom: 20}}>
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12}}>
+                      <span style={{fontSize: '.85rem', color: '#0369a1', fontWeight: 600}}>Your Academic Year:</span>
+                      <span style={{background: '#0ea5e9', color: 'white', padding: '2px 10px', borderRadius: '20px', fontSize: '.8rem', fontWeight: 600}}>{user?.classYear || 'Not Specified'}</span>
                     </div>
-                    <div>
-                      <div className="field-label">OCR Extracted Details</div>
-                      <div className="ocr-panel">
-                        <div className="ocr-ptitle">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" />
-                          </svg> Extracted from Receipt
-                        </div>
-                        {ocrStates.tuition.status === 'processing' && (
-                          <div className="ocr-fields" style={{ justifyContent: 'center', padding: '20px' }}>
-                            <span style={{ color: 'var(--accent)', fontWeight: 500 }}>⏳ {ocrStates.tuition.message}</span>
-                          </div>
-                        )}
-                        
-                        {ocrStates.tuition.status === 'error' && (
-                          <div className="ocr-fields" style={{ justifyContent: 'center', padding: '20px' }}>
-                            <span style={{ color: '#dc2626', fontWeight: 500 }}>❌ {ocrStates.tuition.message}</span>
-                          </div>
-                        )}
 
-                        {ocrStates.tuition.status === 'success' && ocrStates.tuition.ocrData && (
-                          <div className="ocr-fields">
-                            <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Student Name</label><span>{ocrStates.tuition.ocrData.studentName || '—'}</span></div>
-                            <div className="ocr-field"><label>Department</label><span>{ocrStates.tuition.ocrData.department || '—'}</span></div>
-                            <div className="ocr-field"><label>Fee Category</label><span>{ocrStates.tuition.ocrData.feeCategory || '—'}</span></div>
-                            <div className="ocr-field"><label>Transaction ID</label><span>{ocrStates.tuition.ocrData.transactionId || '—'}</span></div>
-                            <div className="ocr-field"><label>Amount Paid</label><span>{ocrStates.tuition.ocrData.amount || '—'}</span></div>
-                            <div className="ocr-field"><label>Payment Date</label><span>{ocrStates.tuition.ocrData.paymentDate || '—'}</span></div>
-                            <div className="ocr-field"><label>Bank / Mode</label><span>{ocrStates.tuition.ocrData.bankName || ocrStates.tuition.ocrData.paymentMode || '—'}</span></div>
-                          </div>
-                        )}
+                    <label className="field-label" style={{marginBottom: 8, display: 'block'}}>1. Select Fee Category</label>
+                    <select 
+                      className="form-control" 
+                      style={{width: '100%', marginBottom: 15, padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1'}}
+                      value={selectedTuitionCategory}
+                      onChange={e => setSelectedTuitionCategory(e.target.value)}
+                    >
+                      <option value="">Choose category...</option>
+                      <option value="meritReg">Merit Fee (Regulated)</option>
+                      <option value="meritFull">Merit Fee (Full fee)</option>
+                      <option value="tfw">Tuition Fee Waiver</option>
+                      <option value="nri">NRI</option>
+                    </select>
 
-                        {ocrStates.tuition.status === 'idle' && (
-                          <div style={{ padding: '18px 0', textAlign: 'center', color: 'var(--text-sub)', fontSize: '.82rem' }}>
-                             Upload a receipt to extract details via OCR
-                          </div>
-                        )}
+                    <label className="field-label" style={{marginBottom: 10, display: 'block'}}>2. Fee Structure</label>
+                    <div className="radio-grp" style={{marginBottom: 15}}>
+                      <label className="radio-opt">
+                        <input type="radio" name="tuition-fee-type" checked={!isHalfTuition} onChange={() => setIsHalfTuition(false)} /> Full Fee
+                      </label>
+                      <label className="radio-opt">
+                        <input type="radio" name="tuition-fee-type" checked={isHalfTuition} onChange={() => setIsHalfTuition(true)} /> Half Fee
+                      </label>
+                    </div>
 
-                        <div className="ocr-note">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
-                          </svg> Read-only — extracted via OCR, no manual editing.
-                        </div>
-                        <div className="ocr-actions">
-                          <button type="button" className="btn btn-success" style={{ flex: 1, fontSize: '.8rem', padding: '8px 10px' }} 
-                            disabled={ocrStates.tuition.status !== 'success'}
-                            onClick={() => handleConfirmDetails('tuition')}>
-                             Confirm Details
-                          </button>
-                          <button type="button" className="btn btn-outline" style={{ fontSize: '.8rem', padding: '8px 10px' }} 
-                            disabled={ocrStates.tuition.status === 'processing'}
-                            onClick={() => { setTuitionFile(null); setOcrStates(prev => ({...prev, tuition: {status: 'idle', ocrData: null, requestId: null, message: ''}})) }}>
-                             Re-upload
-                          </button>
+                    {selectedTuitionCategory && (
+                      <div style={{padding: '12px', background: '#fff', borderRadius: '8px', border: '1px solid #0ea5e9', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                        <span style={{fontWeight: 500, color: '#0369a1'}}>Calculated Tuition Fee:</span>
+                        <span style={{fontWeight: 700, color: '#0284c7', fontSize: '1.1rem'}}>₹{calculatedTuitionFee.toLocaleString()}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{borderTop: '1px solid #e2e8f0', paddingTop: 20}}>
+                    <label className="field-label">3. Payment Mode & Receipt</label>
+                    <div className="radio-grp" style={{marginBottom: 15}}>
+                      <label className="radio-opt"><input type="radio" name="tuition-mode" value="fully" defaultChecked /> Fully Paid</label>
+                      <label className="radio-opt"><input type="radio" name="tuition-mode" value="partially" /> Partially Paid</label>
+                    </div>
+                    <div className="inner-grid">
+                      <div>
+                        <label className="field-label">Upload Receipt</label>
+                        <label htmlFor="tuition-file" className="upload-zone">
+                          <div className="upload-icon-wrap">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                              <polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+                            </svg>
+                          </div>
+                          <h4>{tuitionFile ? tuitionFile.name : 'Click to upload receipt'}</h4>
+                          <p>JPG, PNG, PDF — max 10 MB</p>
+                          <input type="file" id="tuition-file" accept="image/*,.pdf" onChange={e => setTuitionFile(e.target.files[0])} />
+                        </label>
+                        <button type="button" className="btn btn-primary btn-full" style={{ marginTop: '10px' }} 
+                          disabled={!tuitionFile || ocrStates.tuition.status === 'processing' || ocrStates.tuition.status === 'success'}
+                          onClick={() => handleOCRProcess('tuition', tuitionFile)}>
+                          {ocrStates.tuition.status === 'processing' ? 'Processing...' : 'Upload & Process via OCR'}
+                        </button>
+                      </div>
+                      <div>
+                        <div className="field-label">OCR Extracted Details</div>
+                        <div className="ocr-panel">
+                          <div className="ocr-ptitle">Extracted from Receipt</div>
+                          
+                          {ocrStates.tuition.status === 'processing' && (
+                            <div className="ocr-fields" style={{ justifyContent: 'center', padding: '20px' }}>
+                              <span style={{ color: 'var(--accent)', fontWeight: 500 }}>⏳ {ocrStates.tuition.message}</span>
+                            </div>
+                          )}
+                          
+                          {ocrStates.tuition.status === 'error' && (
+                            <div className="ocr-fields" style={{ justifyContent: 'center', padding: '20px' }}>
+                              <span style={{ color: '#dc2626', fontWeight: 500 }}>❌ {ocrStates.tuition.message}</span>
+                            </div>
+                          )}
+
+                          {ocrStates.tuition.status === 'success' && ocrStates.tuition.ocrData && (
+                            <div className="ocr-fields">
+                              <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Student Name</label><span>{ocrStates.tuition.ocrData.studentName || '—'}</span></div>
+                              <div className="ocr-field"><label>Department</label><span>{ocrStates.tuition.ocrData.department || '—'}</span></div>
+                              <div className="ocr-field"><label>Fee Category</label><span>{ocrStates.tuition.ocrData.feeCategory || '—'}</span></div>
+                              <div className="ocr-field"><label>Transaction ID</label><span>{ocrStates.tuition.ocrData.transactionId || '—'}</span></div>
+                              <div className="ocr-field"><label>Amount Paid</label><span>{ocrStates.tuition.ocrData.amount || '—'}</span></div>
+                              <div className="ocr-field"><label>Payment Date</label><span>{ocrStates.tuition.ocrData.paymentDate || '—'}</span></div>
+                              <div className="ocr-field"><label>Bank / Mode</label><span>{ocrStates.tuition.ocrData.bankName || ocrStates.tuition.ocrData.paymentMode || '—'}</span></div>
+                            </div>
+                          )}
+
+                          {ocrStates.tuition.status === 'idle' && (
+                            <div style={{ padding: '18px 0', textAlign: 'center', color: 'var(--text-sub)', fontSize: '.82rem' }}>
+                               Upload a receipt to extract details via OCR
+                            </div>
+                          )}
+
+                          <div className="ocr-actions">
+                            <button type="button" className="btn btn-success" style={{ flex: 1, fontSize: '.8rem', padding: '8px 10px' }} 
+                              disabled={ocrStates.tuition.status !== 'success'}
+                              onClick={() => handleConfirmDetails('tuition')}>
+                              ✓ Confirm Details
+                            </button>
+                            <button type="button" className="btn btn-outline" style={{ fontSize: '.8rem', padding: '8px 10px' }} 
+                              disabled={ocrStates.tuition.status === 'processing'}
+                              onClick={() => { setTuitionFile(null); setOcrStates(prev => ({...prev, tuition: {status: 'idle', ocrData: null, requestId: null, message: ''}})) }}>
+                              ↺ Re-upload
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
