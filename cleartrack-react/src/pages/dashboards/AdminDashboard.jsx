@@ -19,11 +19,10 @@ export default function AdminDashboard() {
   const [studentMsg, setStudentMsg] = useState('')
   const [feeMsg, setFeeMsg] = useState('')
   const [busRoutes, setBusRoutes] = useState([])
-  const [selectedBusGroup, setSelectedBusGroup] = useState('')
-  const [selectedBusLocation, setSelectedBusLocation] = useState('')
-  const [filteredLocations, setFilteredLocations] = useState([])
-  const [showRouteManager, setShowRouteManager] = useState(false)
   const [newRoute, setNewRoute] = useState({ group: 'Kannur', location: '', fee: 0 })
+  const [selectedMainLocation, setSelectedMainLocation] = useState('Kannur')
+  const [editingRouteId, setEditingRouteId] = useState(null)
+  const [editingFee, setEditingFee] = useState('')
   const [loading, setLoading] = useState(true)
   const initials = user?.fullName?.charAt(0)?.toUpperCase() || 'A'
   
@@ -80,21 +79,6 @@ export default function AdminDashboard() {
     setTimeout(() => setFeeMsg(''), 3000);
   }
 
-  const handleGroupChange = (group) => {
-    setSelectedBusGroup(group);
-    setSelectedBusLocation('');
-    setFeeForm(p => ({ ...p, busFee: '' }));
-    setFilteredLocations(busRoutes.filter(r => r.group === group));
-  };
-
-  const handleLocationChange = (locId) => {
-    setSelectedBusLocation(locId);
-    const route = busRoutes.find(r => r._id === locId);
-    if (route) {
-      setFeeForm(p => ({ ...p, busFee: route.fee }));
-    }
-  };
-
   const handleAddRoute = async (e) => {
     e.preventDefault();
     try {
@@ -113,6 +97,17 @@ export default function AdminDashboard() {
       const bRes = await busAPI.getRoutes();
       setBusRoutes(bRes.routes || []);
     } catch (err) { console.error(err); }
+  };
+
+  const handleUpdateRoute = async (id) => {
+    try {
+      await busAPI.updateRoute(id, { fee: Number(editingFee) });
+      const bRes = await busAPI.getRoutes();
+      setBusRoutes(bRes.routes || []);
+      setEditingRouteId(null);
+      setFeeMsg('✓ Route updated successfully!');
+      setTimeout(() => setFeeMsg(''), 3000);
+    } catch (err) { setFeeMsg('Error: ' + err.message); }
   };
 
   const handleSeedRoutes = async () => {
@@ -382,104 +377,114 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Bus Fee Section (Full Width) */}
+              {/* Bus Fee Management Section */}
               <div className="card">
-                <h3 className="card-title" style={{display:'flex', alignItems:'center', gap:10, marginBottom:20}}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="3" width="22" height="13" rx="5"/><line x1="1" y1="10" x2="23" y2="10"/><line x1="4" y1="21" x2="4" y2="21"/><line x1="20" y1="21" x2="20" y2="21"/></svg>
-                  Bus Fee Management
-                </h3>
-                <form onSubmit={handleSaveFeeStructure}>
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:24}}>
-                    <div style={{display:'flex', flexDirection:'column', gap:14}}>
-                      <div className="form-group"><label>Department</label>
-                        <select value={feeForm.department} onChange={e=>setFeeForm(p=>({...p,department:e.target.value}))} required>
-                          <option value="" disabled>Select department</option>
-                          <option value="IT">IT</option><option value="CS">CS</option><option value="EC">EC</option><option value="EEE">EEE</option><option value="ME">ME</option><option value="CE">CE</option><option value="MBA">MBA</option><option value="MCA">MCA</option>
-                        </select>
-                      </div>
-                      <div className="form-group"><label>Class/Year</label>
-                        <select value={feeForm.classYear} onChange={e=>setFeeForm(p=>({...p,classYear:e.target.value}))} required>
-                          <option value="" disabled>Select year</option>
-                          <option value="First year">First year</option><option value="Second year">Second year</option><option value="Third year">Third year</option><option value="Fourth year">Fourth year</option>
-                        </select>
-                      </div>
-                    </div>
+                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20}}>
+                  <h3 className="card-title" style={{margin:0, display:'flex', alignItems:'center', gap:10}}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="3" width="22" height="13" rx="5"/><line x1="1" y1="10" x2="23" y2="10"/><line x1="4" y1="21" x2="4" y2="21"/><line x1="20" y1="21" x2="20" y2="21"/></svg>
+                    Bus Fee & Route Management
+                  </h3>
+                  <button className="btn btn-outline btn-sm" onClick={handleSeedRoutes}>Reset to Defaults</button>
+                </div>
 
-                    <div style={{background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0'}}>
-                      <h5 style={{margin:'0 0 10px 0', fontSize:'.85rem', color:'#64748b'}}>Bus Fee Configuration</h5>
-                      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
-                        <div className="form-group">
-                          <label>Bus Route Group</label>
-                          <select value={selectedBusGroup} onChange={e=>handleGroupChange(e.target.value)}>
-                            <option value="">Select Group</option>
-                            <option value="Kannur">Kannur</option><option value="Mattannur">Mattannur</option><option value="Thalassery">Thalassery</option>
-                          </select>
-                        </div>
-                        <div className="form-group">
-                          <label>Sub Location</label>
-                          <select value={selectedBusLocation} onChange={e=>handleLocationChange(e.target.value)} disabled={!selectedBusGroup}>
-                            <option value="">Select Location</option>
-                            {filteredLocations.map(r => (
-                              <option key={r._id} value={r._id}>{r.location} (₹{r.fee})</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                      <div className="form-group" style={{marginTop:10}}>
-                        <label>Calculated Bus Fee</label>
-                        <input type="number" value={feeForm.busFee} readOnly style={{background:'#f1f5f9'}}/>
-                      </div>
-                    </div>
+                <div style={{background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: 24}}>
+                  <p style={{fontSize: '.9rem', fontWeight: 600, color: '#64748b', marginBottom: 15}}>Select Main Location:</p>
+                  <div style={{display:'flex', gap:30, flexWrap: 'wrap'}}>
+                    {['Kannur', 'Mattannur', 'Thalassery'].map(loc => (
+                      <label key={loc} style={{display:'flex', alignItems:'center', gap:10, cursor:'pointer', padding: '8px 16px', background: selectedMainLocation === loc ? '#eff6ff' : 'white', borderRadius: '8px', border: '1px solid', borderColor: selectedMainLocation === loc ? '#3b82f6' : '#e2e8f0', transition: 'all 0.2s'}}>
+                        <input 
+                          type="radio" 
+                          name="mainLocation" 
+                          value={loc} 
+                          checked={selectedMainLocation === loc} 
+                          onChange={e => {
+                            setSelectedMainLocation(e.target.value);
+                            setNewRoute(p => ({...p, group: e.target.value}));
+                          }} 
+                          style={{width: 18, height: 18, cursor: 'pointer'}}
+                        />
+                        <span style={{fontWeight: selectedMainLocation === loc ? 600 : 500, color: selectedMainLocation === loc ? '#1e40af' : '#475569'}}>{loc}</span>
+                      </label>
+                    ))}
                   </div>
+                </div>
 
-                  <div style={{marginTop:20, display:'flex', gap:10}}>
-                    <button type="submit" className="btn btn-primary" style={{flex:1}}>Save Bus Fee Structure</button>
-                    <button type="button" className="btn btn-outline" onClick={()=>setShowRouteManager(!showRouteManager)}>
-                      {showRouteManager ? 'Hide Route Manager' : '⚙ Manage Routes'}
-                    </button>
-                  </div>
-                </form>
-              </div>
-
-              {showRouteManager && (
-                <div className="card">
-                  <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20}}>
-                    <h3 className="card-title" style={{margin:0}}>Manage Bus Routes</h3>
-                    <button className="btn btn-outline btn-sm" onClick={handleSeedRoutes}>Reset to Defaults</button>
-                  </div>
-
-                  <form onSubmit={handleAddRoute} style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr auto', gap:10, alignItems:'end', marginBottom:20, padding:15, background:'#f8fafc', borderRadius:8}}>
-                    <div className="form-group" style={{margin:0}}><label>Group</label>
-                      <select value={newRoute.group} onChange={e=>setNewRoute(p=>({...p,group:e.target.value}))}>
-                        <option value="Kannur">Kannur</option><option value="Mattannur">Mattannur</option><option value="Thalassery">Thalassery</option>
-                      </select>
-                    </div>
-                    <div className="form-group" style={{margin:0}}><label>Location</label>
-                      <input value={newRoute.location} onChange={e=>setNewRoute(p=>({...p,location:e.target.value}))} placeholder="e.g. Chala" required/>
-                    </div>
-                    <div className="form-group" style={{margin:0}}><label>Fee (₹)</label>
-                      <input type="number" value={newRoute.fee} onChange={e=>setNewRoute(p=>({...p,fee:e.target.value}))} required/>
-                    </div>
-                    <button type="submit" className="btn btn-primary btn-sm" style={{height:38}}>Add Route</button>
-                  </form>
-
-                  <div className="table-wrap" style={{maxHeight:400, overflow:'auto'}}>
-                    <table>
-                      <thead><tr><th>Group</th><th>Location</th><th>Fee (₹)</th><th>Action</th></tr></thead>
+                <div style={{display:'grid', gridTemplateColumns:'1fr', gap:20}}>
+                  <div className="table-wrap">
+                    <table style={{width: '100%'}}>
+                      <thead>
+                        <tr>
+                          <th style={{width: '40%'}}>Sub Route / Location</th>
+                          <th style={{width: '30%'}}>Fee Structure (₹)</th>
+                          <th style={{width: '30%', textAlign: 'right'}}>Actions</th>
+                        </tr>
+                      </thead>
                       <tbody>
-                        {busRoutes.length === 0 ? (
-                          <tr><td colSpan="4" style={{textAlign:'center', padding:20}}>No routes found. Click "Reset to Defaults" to seed data.</td></tr>
-                        ) : busRoutes.map(r => (
+                        {busRoutes.filter(r => r.group === selectedMainLocation).length === 0 ? (
+                          <tr><td colSpan="3" style={{textAlign:'center', padding:30, color: '#94a3b8'}}>No sub-routes added for {selectedMainLocation}.</td></tr>
+                        ) : busRoutes.filter(r => r.group === selectedMainLocation).map(r => (
                           <tr key={r._id}>
-                            <td>{r.group}</td><td>{r.location}</td><td>₹{r.fee}</td>
-                            <td><button className="btn btn-sm btn-outline" style={{color:'#ef4444', borderColor:'#fecaca'}} onClick={()=>handleDeleteRoute(r._id)}>Delete</button></td>
+                            <td style={{fontWeight: 500}}>{r.location}</td>
+                            <td>
+                              {editingRouteId === r._id ? (
+                                <input 
+                                  type="number" 
+                                  value={editingFee} 
+                                  onChange={e => setEditingFee(e.target.value)}
+                                  className="form-control"
+                                  style={{width: '120px', padding: '4px 8px', height: 'auto'}}
+                                  autoFocus
+                                />
+                              ) : (
+                                <span style={{color: '#0f172a', fontWeight: 600}}>₹{r.fee.toLocaleString()}</span>
+                              )}
+                            </td>
+                            <td style={{textAlign: 'right'}}>
+                              <div style={{display:'flex', gap:8, justifyContent: 'flex-end'}}>
+                                {editingRouteId === r._id ? (
+                                  <>
+                                    <button className="btn btn-sm btn-primary" onClick={() => handleUpdateRoute(r._id)}>Save</button>
+                                    <button className="btn btn-sm btn-outline" onClick={() => setEditingRouteId(null)}>Cancel</button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <button className="btn btn-sm btn-outline" onClick={() => { setEditingRouteId(r._id); setEditingFee(r.fee); }}>Edit</button>
+                                    <button className="btn btn-sm btn-outline" style={{color:'#ef4444', borderColor:'#fecaca'}} onClick={() => handleDeleteRoute(r._id)}>Delete</button>
+                                  </>
+                                )}
+                              </div>
+                            </td>
                           </tr>
                         ))}
+                        {/* Inline Add Row */}
+                        <tr style={{background: '#f8fafc'}}>
+                          <td>
+                            <input 
+                              placeholder="Add new sub-route..." 
+                              value={newRoute.location} 
+                              onChange={e => setNewRoute(p => ({...p, location: e.target.value}))}
+                              style={{width: '100%', border: '1px solid #cbd5e1', borderRadius: '4px', padding: '5px 10px'}}
+                            />
+                          </td>
+                          <td>
+                            <input 
+                              type="number" 
+                              placeholder="Fee amount" 
+                              value={newRoute.fee || ''} 
+                              onChange={e => setNewRoute(p => ({...p, fee: e.target.value}))}
+                              style={{width: '120px', border: '1px solid #cbd5e1', borderRadius: '4px', padding: '5px 10px'}}
+                            />
+                          </td>
+                          <td style={{textAlign: 'right'}}>
+                            <button className="btn btn-sm btn-primary" onClick={handleAddRoute} disabled={!newRoute.location || !newRoute.fee}>+ Add Route</button>
+                          </td>
+                        </tr>
                       </tbody>
                     </table>
                   </div>
                 </div>
-              )}
+                {feeMsg && <div style={{marginTop: 15, padding:'10px 14px',borderRadius:8,fontSize:'.875rem',background:feeMsg.startsWith('Error')?'#fee2e2':'#d1fae5',color:feeMsg.startsWith('Error')?'#991b1b':'#065f46'}}>{feeMsg}</div>}
+              </div>
             </div>
           )}
 
