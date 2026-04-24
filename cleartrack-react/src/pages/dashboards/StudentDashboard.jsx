@@ -38,6 +38,8 @@ export default function StudentDashboard() {
   const [isHalfTuition, setIsHalfTuition] = useState(false)
   const [feeError, setFeeError] = useState(null)
 
+  const [clearanceRequests, setClearanceRequests] = useState([])
+
   useEffect(() => {
     busAPI.getRoutes().then(res => setBusRoutes(res.routes || [])).catch(console.error)
     tuitionFeeAPI.getFees()
@@ -46,6 +48,11 @@ export default function StudentDashboard() {
         console.error(err);
         setFeeError('Failed to load fee structure.');
       })
+    
+    // Fetch clearance requests to show real status
+    clearanceAPI.getMyRequests()
+      .then(res => setClearanceRequests(res.requests || []))
+      .catch(console.error)
   }, [])
 
   const studentYearFees = allTuitionFees.find(f => f.year === user?.classYear)
@@ -90,13 +97,42 @@ export default function StudentDashboard() {
     
     try {
       setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], status: 'processing', message: 'Confirming details...' } }))
-      await ocrAPI.confirmOCR(state.requestId, state.ocrData);
-      setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], status: 'confirmed', message: 'Details confirmed! Click "Submit for Approval" to send to your teacher.' } }))
+      
+      // Include the payment structure chosen by student
+      const confirmedData = {
+        ...state.ocrData,
+        paymentType: feeType === 'tuition' ? (isHalfTuition ? 'half' : 'full') : 
+                     feeType === 'bus' ? (isHalfFee ? 'half' : 'full') : 'full'
+      };
+
+      await ocrAPI.confirmOCR(state.requestId, confirmedData);
+      setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], status: 'confirmed', ocrData: confirmedData, message: 'Details confirmed! Click "Submit for Approval" to send to your teacher.' } }))
       alert(`✅ ${feeType.toUpperCase()} Fee details confirmed. Click "Submit for Approval" to send it to your teacher.`);
     } catch (err) {
       setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], status: 'error', message: err.message || 'Failed to confirm.' } }))
     }
   }
+
+  const getFeeBadge = (feeType) => {
+    const req = clearanceRequests.find(r => r.feeType === feeType);
+    if (!req) return <span className="badge badge-neutral">Not Submitted</span>;
+
+    // Status logic: pending until approved by teacher
+    const teacherApproval = req.departmentApprovals?.find(a => a.department === 'class_teacher');
+    const isApproved = teacherApproval?.status === 'approved';
+
+    if (!isApproved) {
+      return <span className="badge badge-warning">Pending</span>;
+    }
+
+    // Approved -> Check if it was half or full
+    const pType = req.ocrData?.paymentType || 'full';
+    if (pType === 'half') {
+      return <span className="badge badge-warning">Half Paid</span>;
+    } else {
+      return <span className="badge badge-success">Fully Paid</span>;
+    }
+  };
 
   const handleSubmitFee = async (feeType) => {
     try {
@@ -208,7 +244,7 @@ export default function StudentDashboard() {
                     </div>
                     Tuition Fee
                   </div>
-                  <span className="badge badge-warning">Pending</span>
+                  {getFeeBadge('tuition')}
                 </div>
                 <div className="card">
                   
@@ -367,7 +403,7 @@ export default function StudentDashboard() {
                     </div>
                     Bus Fee
                   </div>
-                  <span className="badge badge-success">Fully Paid</span>
+                  {busOpted ? getFeeBadge('bus') : <span className="badge badge-neutral">Not Opted</span>}
                 </div>
                 <div className="fee-cat-body">
                   <label className="field-label">Bus Service</label>
@@ -524,7 +560,7 @@ export default function StudentDashboard() {
                     </div>
                     Hostel Fee
                   </div>
-                  <span className="badge badge-danger">Not Paid</span>
+                  {hostelOpted ? getFeeBadge('hostel') : <span className="badge badge-neutral">Not Opted</span>}
                 </div>
                 <div className="fee-cat-body">
                   <label className="field-label">Hostel Accommodation</label>
@@ -671,56 +707,40 @@ export default function StudentDashboard() {
                   <tbody>
                     {/* ── Tuition Fee Row ── */}
                     {(() => {
+                      const req = clearanceRequests.find(r => r.feeType === 'tuition');
                       const amountDue = baseTuitionAmount > 0 ? `₹${baseTuitionAmount.toLocaleString()}` : '—';
-                      const tuitionConfirmed = ocrStates.tuition.status === 'confirmed';
-                      const amountPaid = tuitionConfirmed && ocrStates.tuition.ocrData?.amount
-                        ? ocrStates.tuition.ocrData.amount
-                        : '—';
-                      const paymentType = selectedTuitionCategory
-                        ? (isHalfTuition ? 'Half Payment' : 'Full Payment')
-                        : '—';
-                      const tuitionStatus = !selectedTuitionCategory
-                        ? <span className="badge badge-neutral">Pending</span>
-                        : tuitionConfirmed
-                          ? isHalfTuition
-                            ? <span className="badge badge-warning">Half Paid</span>
-                            : <span className="badge badge-success">Fully Paid</span>
-                          : <span className="badge badge-neutral">Pending</span>;
+                      const amountPaid = req?.ocrData?.amount || '—';
+                      
+                      const pType = req?.ocrData?.paymentType || (selectedTuitionCategory ? (isHalfTuition ? 'half' : 'full') : null);
+                      const paymentTypeLabel = pType === 'half' ? 'Half Payment' : (pType === 'full' ? 'Full Payment' : '—');
+                      
                       return (
                         <tr>
                           <td>Tuition Fee</td>
                           <td>{amountDue}</td>
                           <td>{amountPaid}</td>
-                          <td>{paymentType}</td>
-                          <td>{tuitionStatus}</td>
+                          <td>{paymentTypeLabel}</td>
+                          <td>{getFeeBadge('tuition')}</td>
                         </tr>
                       );
                     })()}
 
                     {/* ── Bus Fee Row ── */}
                     {busOpted ? (() => {
+                      const req = clearanceRequests.find(r => r.feeType === 'bus');
                       const busAmountDue = selectedSubLocation ? `₹${selectedSubLocation.fee.toLocaleString()}` : '—';
-                      const busConfirmed = ocrStates.bus.status === 'confirmed';
-                      const busAmountPaid = busConfirmed && ocrStates.bus.ocrData?.amount
-                        ? ocrStates.bus.ocrData.amount
-                        : '—';
-                      const busPaymentType = selectedSubLocation
-                        ? (isHalfFee ? 'Half Payment' : 'Full Payment')
-                        : '—';
-                      const busStatus = !selectedSubLocation
-                        ? <span className="badge badge-neutral">Pending</span>
-                        : busConfirmed
-                          ? isHalfFee
-                            ? <span className="badge badge-warning">Half Paid</span>
-                            : <span className="badge badge-success">Fully Paid</span>
-                          : <span className="badge badge-neutral">Pending</span>;
+                      const busAmountPaid = req?.ocrData?.amount || '—';
+                      
+                      const pType = req?.ocrData?.paymentType || (selectedSubLocation ? (isHalfFee ? 'half' : 'full') : null);
+                      const paymentTypeLabel = pType === 'half' ? 'Half Payment' : (pType === 'full' ? 'Full Payment' : '—');
+                      
                       return (
                         <tr>
                           <td>Bus Fee</td>
                           <td>{busAmountDue}</td>
                           <td>{busAmountPaid}</td>
-                          <td>{busPaymentType}</td>
-                          <td>{busStatus}</td>
+                          <td>{paymentTypeLabel}</td>
+                          <td>{getFeeBadge('bus')}</td>
                         </tr>
                       );
                     })() : (
@@ -735,20 +755,16 @@ export default function StudentDashboard() {
 
                     {/* ── Hostel Fee Row ── */}
                     {hostelOpted ? (() => {
-                      const hostelConfirmed = ocrStates.hostel.status === 'confirmed';
-                      const hostelAmountPaid = hostelConfirmed && ocrStates.hostel.ocrData?.amount
-                        ? ocrStates.hostel.ocrData.amount
-                        : '—';
-                      const hostelStatus = hostelConfirmed
-                        ? <span className="badge badge-success">Fully Paid</span>
-                        : <span className="badge badge-neutral">Pending</span>;
+                      const req = clearanceRequests.find(r => r.feeType === 'hostel');
+                      const hostelAmountPaid = req?.ocrData?.amount || '—';
+                      
                       return (
                         <tr>
                           <td>Hostel Fee</td>
                           <td>—</td>
                           <td>{hostelAmountPaid}</td>
                           <td>Full Payment</td>
-                          <td>{hostelStatus}</td>
+                          <td>{getFeeBadge('hostel')}</td>
                         </tr>
                       );
                     })() : (

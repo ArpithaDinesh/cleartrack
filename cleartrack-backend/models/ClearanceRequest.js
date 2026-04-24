@@ -30,6 +30,7 @@ const ocrDataSchema = new mongoose.Schema({
   receiptNumber: { type: String, default: '' },
   bankName: { type: String, default: '' },
   paymentMode: { type: String, default: '' },
+  paymentType: { type: String, default: '' }, // 'half' or 'full'
   rawText: { type: String, default: '' },
   ocrStatus: {
     type: String,
