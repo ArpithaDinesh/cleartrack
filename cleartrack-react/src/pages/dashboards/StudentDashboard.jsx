@@ -665,24 +665,92 @@ export default function StudentDashboard() {
                 <table className="cf-fee-table">
                   <thead>
                     <tr>
-                      <th>Fee Category</th><th>Amount Due</th><th>Amount Paid</th><th>Payment Mode</th><th>Status</th>
+                      <th>Fee Category</th><th>Amount Due</th><th>Amount Paid</th><th>Payment Type</th><th>Status</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <td>Tuition Fee</td><td>—</td><td>—</td><td>—</td>
-                      <td><span className="badge badge-neutral">Not Submitted</span></td>
-                    </tr>
-                    {busOpted && (
+                    {/* ── Tuition Fee Row ── */}
+                    {(() => {
+                      const amountDue = baseTuitionAmount > 0 ? `₹${baseTuitionAmount.toLocaleString()}` : '—';
+                      const amountPaid = calculatedTuitionFee > 0 ? `₹${calculatedTuitionFee.toLocaleString()}` : '—';
+                      const paymentType = selectedTuitionCategory
+                        ? (isHalfTuition ? 'Half Payment' : 'Full Payment')
+                        : '—';
+                      const tuitionSubmitted = ocrStates.tuition.status === 'confirmed';
+                      const tuitionStatus = !selectedTuitionCategory
+                        ? <span className="badge badge-neutral">Pending</span>
+                        : tuitionSubmitted
+                          ? isHalfTuition
+                            ? <span className="badge badge-warning">Half Paid</span>
+                            : <span className="badge badge-success">Fully Paid</span>
+                          : <span className="badge badge-neutral">Pending</span>;
+                      return (
+                        <tr>
+                          <td>Tuition Fee</td>
+                          <td>{amountDue}</td>
+                          <td>{amountPaid}</td>
+                          <td>{paymentType}</td>
+                          <td>{tuitionStatus}</td>
+                        </tr>
+                      );
+                    })()}
+
+                    {/* ── Bus Fee Row ── */}
+                    {busOpted ? (() => {
+                      const busAmountDue = selectedSubLocation ? `₹${selectedSubLocation.fee.toLocaleString()}` : '—';
+                      const busAmountPaid = calculatedBusFee > 0 ? `₹${calculatedBusFee.toLocaleString()}` : '—';
+                      const busPaymentType = selectedSubLocation
+                        ? (isHalfFee ? 'Half Payment' : 'Full Payment')
+                        : '—';
+                      const busSubmitted = ocrStates.bus.status === 'confirmed';
+                      const busStatus = !selectedSubLocation
+                        ? <span className="badge badge-neutral">Pending</span>
+                        : busSubmitted
+                          ? isHalfFee
+                            ? <span className="badge badge-warning">Half Paid</span>
+                            : <span className="badge badge-success">Fully Paid</span>
+                          : <span className="badge badge-neutral">Pending</span>;
+                      return (
+                        <tr>
+                          <td>Bus Fee</td>
+                          <td>{busAmountDue}</td>
+                          <td>{busAmountPaid}</td>
+                          <td>{busPaymentType}</td>
+                          <td>{busStatus}</td>
+                        </tr>
+                      );
+                    })() : (
                       <tr>
-                        <td>Bus Fee</td><td>—</td><td>—</td><td>—</td>
-                        <td><span className="badge badge-neutral">Not Submitted</span></td>
+                        <td>Bus Fee</td>
+                        <td>Nil</td>
+                        <td>Nil</td>
+                        <td>Nil</td>
+                        <td><span className="badge badge-neutral">Not Opted</span></td>
                       </tr>
                     )}
-                    {hostelOpted && (
+
+                    {/* ── Hostel Fee Row ── */}
+                    {hostelOpted ? (() => {
+                      const hostelSubmitted = ocrStates.hostel.status === 'confirmed';
+                      const hostelStatus = hostelSubmitted
+                        ? <span className="badge badge-success">Fully Paid</span>
+                        : <span className="badge badge-neutral">Pending</span>;
+                      return (
+                        <tr>
+                          <td>Hostel Fee</td>
+                          <td>—</td>
+                          <td>—</td>
+                          <td>Full Payment</td>
+                          <td>{hostelStatus}</td>
+                        </tr>
+                      );
+                    })() : (
                       <tr>
-                        <td>Hostel Fee</td><td>—</td><td>—</td><td>—</td>
-                        <td><span className="badge badge-neutral">Not Submitted</span></td>
+                        <td>Hostel Fee</td>
+                        <td>Nil</td>
+                        <td>Nil</td>
+                        <td>Nil</td>
+                        <td><span className="badge badge-neutral">Not Opted</span></td>
                       </tr>
                     )}
                   </tbody>
