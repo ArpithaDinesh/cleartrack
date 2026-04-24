@@ -217,10 +217,6 @@ export default function StudentDashboard() {
                   <span className="badge badge-warning">Pending</span>
                 </div>
                 <div className="card">
-                  <h3 className="card-title" style={{display:'flex', alignItems:'center', gap:10}}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-                    Tuition Fee
-                  </h3>
                   
                   <div style={{background: '#f0f9ff', padding: '15px', borderRadius: '10px', border: '1px solid #bae6fd', marginBottom: 20}}>
                     <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12}}>

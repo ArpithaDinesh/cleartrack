@@ -108,7 +108,13 @@ export default function ProfileModal({ isOpen, onClose }) {
             {user?.role === 'student' && (
               <div className="form-group">
                 <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-sub)' }}>Class / Year</label>
-                <input type="text" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #e5e7eb' }} value={form.classYear} onChange={set('classYear')} />
+                <select style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #e5e7eb', background: '#fff' }} value={form.classYear} onChange={set('classYear')}>
+                  <option value="" disabled>Select Year</option>
+                  <option value="First year">First year</option>
+                  <option value="Second year">Second year</option>
+                  <option value="Third year">Third year</option>
+                  <option value="Fourth year">Fourth year</option>
+                </select>
               </div>
             )}
             
