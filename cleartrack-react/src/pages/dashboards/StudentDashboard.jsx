@@ -672,14 +672,16 @@ export default function StudentDashboard() {
                     {/* ── Tuition Fee Row ── */}
                     {(() => {
                       const amountDue = baseTuitionAmount > 0 ? `₹${baseTuitionAmount.toLocaleString()}` : '—';
-                      const amountPaid = calculatedTuitionFee > 0 ? `₹${calculatedTuitionFee.toLocaleString()}` : '—';
+                      const tuitionConfirmed = ocrStates.tuition.status === 'confirmed';
+                      const amountPaid = tuitionConfirmed && ocrStates.tuition.ocrData?.amount
+                        ? ocrStates.tuition.ocrData.amount
+                        : '—';
                       const paymentType = selectedTuitionCategory
                         ? (isHalfTuition ? 'Half Payment' : 'Full Payment')
                         : '—';
-                      const tuitionSubmitted = ocrStates.tuition.status === 'confirmed';
                       const tuitionStatus = !selectedTuitionCategory
                         ? <span className="badge badge-neutral">Pending</span>
-                        : tuitionSubmitted
+                        : tuitionConfirmed
                           ? isHalfTuition
                             ? <span className="badge badge-warning">Half Paid</span>
                             : <span className="badge badge-success">Fully Paid</span>
@@ -698,14 +700,16 @@ export default function StudentDashboard() {
                     {/* ── Bus Fee Row ── */}
                     {busOpted ? (() => {
                       const busAmountDue = selectedSubLocation ? `₹${selectedSubLocation.fee.toLocaleString()}` : '—';
-                      const busAmountPaid = calculatedBusFee > 0 ? `₹${calculatedBusFee.toLocaleString()}` : '—';
+                      const busConfirmed = ocrStates.bus.status === 'confirmed';
+                      const busAmountPaid = busConfirmed && ocrStates.bus.ocrData?.amount
+                        ? ocrStates.bus.ocrData.amount
+                        : '—';
                       const busPaymentType = selectedSubLocation
                         ? (isHalfFee ? 'Half Payment' : 'Full Payment')
                         : '—';
-                      const busSubmitted = ocrStates.bus.status === 'confirmed';
                       const busStatus = !selectedSubLocation
                         ? <span className="badge badge-neutral">Pending</span>
-                        : busSubmitted
+                        : busConfirmed
                           ? isHalfFee
                             ? <span className="badge badge-warning">Half Paid</span>
                             : <span className="badge badge-success">Fully Paid</span>
@@ -731,15 +735,18 @@ export default function StudentDashboard() {
 
                     {/* ── Hostel Fee Row ── */}
                     {hostelOpted ? (() => {
-                      const hostelSubmitted = ocrStates.hostel.status === 'confirmed';
-                      const hostelStatus = hostelSubmitted
+                      const hostelConfirmed = ocrStates.hostel.status === 'confirmed';
+                      const hostelAmountPaid = hostelConfirmed && ocrStates.hostel.ocrData?.amount
+                        ? ocrStates.hostel.ocrData.amount
+                        : '—';
+                      const hostelStatus = hostelConfirmed
                         ? <span className="badge badge-success">Fully Paid</span>
                         : <span className="badge badge-neutral">Pending</span>;
                       return (
                         <tr>
                           <td>Hostel Fee</td>
                           <td>—</td>
-                          <td>—</td>
+                          <td>{hostelAmountPaid}</td>
                           <td>Full Payment</td>
                           <td>{hostelStatus}</td>
                         </tr>
