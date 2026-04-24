@@ -118,12 +118,6 @@ export default function ProfileModal({ isOpen, onClose }) {
               </div>
             )}
             
-            {user?.role === 'student' && (
-              <div className="form-group">
-                <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-sub)' }}>Section</label>
-                <input type="text" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #e5e7eb' }} value={form.section} onChange={set('section')} />
-              </div>
-            )}
             
             {user?.role === 'student' && (
               <div className="form-group">

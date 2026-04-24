@@ -90,28 +90,22 @@ export default function StudentDashboard() {
     
     try {
       setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], status: 'processing', message: 'Confirming details...' } }))
-      await ocrAPI.confirmOCR(state.requestId, state.ocrData); // passing extracted data
-      setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], status: 'success', message: 'Details confirmed! Click "Submit All" at the bottom when ready.' } }))
-      alert(`✅ ${feeType.toUpperCase()} Fee details confirmed successfully. Please scroll down and click "Submit All Requests for Approval" to send it to your teacher.`);
+      await ocrAPI.confirmOCR(state.requestId, state.ocrData);
+      setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], status: 'confirmed', message: 'Details confirmed! Click "Submit for Approval" to send to your teacher.' } }))
+      alert(`✅ ${feeType.toUpperCase()} Fee details confirmed. Click "Submit for Approval" to send it to your teacher.`);
     } catch (err) {
       setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], status: 'error', message: err.message || 'Failed to confirm.' } }))
     }
   }
 
-  const handleSubmitAll = async () => {
+  const handleSubmitFee = async (feeType) => {
     try {
-      const confirmedCount = Object.values(ocrStates).filter(s => s.status === 'success').length;
-      if (confirmedCount === 0) {
-        alert(" Please upload and confirm at least one fee receipt first.");
-        return;
-      }
-
       setSubmitLoading(true);
       await clearanceAPI.submitAllRequests();
-      alert(" Success! All your fee clearance requests have been sent to your Teacher Dashboard for approval.");
+      alert(`✅ ${feeType.charAt(0).toUpperCase() + feeType.slice(1)} Fee clearance request has been sent to your Teacher Dashboard for approval.`);
       window.location.reload();
     } catch (err) {
-      alert(" Submission failed: " + (err.message || "Unknown error"));
+      alert('Submission failed: ' + (err.message || 'Unknown error'));
     } finally {
       setSubmitLoading(false);
     }
@@ -348,6 +342,11 @@ export default function StudentDashboard() {
                               ↺ Re-upload
                             </button>
                           </div>
+                          <button type="button" className="btn btn-primary btn-full" style={{ marginTop: '10px', fontSize: '.85rem', fontWeight: 600 }}
+                            disabled={ocrStates.tuition.status !== 'confirmed' || submitLoading}
+                            onClick={() => handleSubmitFee('tuition')}>
+                            {submitLoading ? 'Submitting...' : '🚀 Submit Tuition Fee for Approval'}
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -499,6 +498,11 @@ export default function StudentDashboard() {
                                   ↺ Re-upload
                                 </button>
                               </div>
+                              <button type="button" className="btn btn-primary btn-full" style={{ marginTop: '10px', fontSize: '.85rem', fontWeight: 600 }}
+                                disabled={ocrStates.bus.status !== 'confirmed' || submitLoading}
+                                onClick={() => handleSubmitFee('bus')}>
+                                {submitLoading ? 'Submitting...' : '🚀 Submit Bus Fee for Approval'}
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -606,6 +610,11 @@ export default function StudentDashboard() {
                                 ↺ Re-upload
                               </button>
                             </div>
+                            <button type="button" className="btn btn-primary btn-full" style={{ marginTop: '10px', fontSize: '.85rem', fontWeight: 600 }}
+                              disabled={ocrStates.hostel.status !== 'confirmed' || submitLoading}
+                              onClick={() => handleSubmitFee('hostel')}>
+                              {submitLoading ? 'Submitting...' : '🚀 Submit Hostel Fee for Approval'}
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -692,21 +701,7 @@ export default function StudentDashboard() {
               </div>
             </div>
 
-            <div className="final-submit-box" style={{ 
-              marginTop: '40px', padding: '30px', background: 'white', borderRadius: '12px', 
-              boxShadow: '0 4px 15px rgba(0,0,0,0.05)', textAlign: 'center', border: '1px solid #eef2f6' 
-            }}>
-              <h3 style={{ marginBottom: '10px', color: '#1e293b' }}>Confirm and Submit</h3>
-              <button 
-                type="button"
-                className="btn btn-primary" 
-                style={{ padding: '12px 40px', fontSize: '1.05rem', fontWeight: 'bold' }}
-                disabled={submitLoading}
-                onClick={handleSubmitAll}
-              >
-                {submitLoading ? 'Sending...' : 'Submit All Requests for Approval'}
-              </button>
-            </div>
+
           </div>
         </main>
       </div>
