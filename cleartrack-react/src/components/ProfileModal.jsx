@@ -4,12 +4,11 @@ import { userAPI } from '../services/api';
 
 export default function ProfileModal({ isOpen, onClose }) {
   const { user, login } = useAuth(); // login is actually setAuth, we might need a way to refresh user context
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  
-  // Initialize form with existing user data
+
   const [form, setForm] = useState({
     fullName: user?.fullName || '',
     phone: user?.phone || '',
@@ -35,7 +34,7 @@ export default function ProfileModal({ isOpen, onClose }) {
     try {
       // Send updates to backend
       const res = await userAPI.updateProfile(form);
-      
+
       // We need to update localStorage and context
       // Re-use the existing token from localStorage, just update user
       const token = localStorage.getItem('cleartrack_token');
@@ -104,7 +103,7 @@ export default function ProfileModal({ isOpen, onClose }) {
                 </select>
               </div>
             )}
-            
+
             {user?.role === 'student' && (
               <div className="form-group">
                 <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-sub)' }}>Class / Year</label>
@@ -117,15 +116,15 @@ export default function ProfileModal({ isOpen, onClose }) {
                 </select>
               </div>
             )}
-            
-            
+
+
             {user?.role === 'student' && (
               <div className="form-group">
                 <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-sub)' }}>University Number</label>
                 <input type="text" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #e5e7eb' }} value={form.universityNumber} onChange={set('universityNumber')} />
               </div>
             )}
-            
+
             {user?.role === 'student' && (
               <div className="form-group">
                 <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-sub)' }}>Roll Number</label>
