@@ -27,14 +27,17 @@ const normalizeFeeCategory = (raw = '') => {
 const IGNORE_WORDS = new Set([
   'COLLEGE','ENGINEERING','BANK','SERVICE','CO','OP','COOPERATIVE',
   'KADIRUR','CASHIER','OFFICER','REMITTED','TRANSFER','RECEIPT','DEPOSIT',
-  'SAVINGS','AUTHORISED','AUTHORIZ',
+  'SAVINGS','AUTHORISED','AUTHORIZ','PARTICULARS','AMOUNT','DATE','CUSTOMER',
+  'CHALAN','RUPEES','TOTAL','WORDS','CHALLAN','ADMISSION',
 ]);
 
 const extractCleanName = (raw = '') => {
-  const tokens = raw.split(/\s+/).filter(t => {
+  const tokens = raw.split(/[\s,]+/).filter(t => {
+    const up = t.toUpperCase();
     if (t.length < 2) return false;
-    if (/\d/.test(t)) return false;
-    if (IGNORE_WORDS.has(t.toUpperCase())) return false;
+    if (/\d/.lastIndex > 0) return false; // Contains digits
+    if (IGNORE_WORDS.has(up)) return false;
+    if (['S1','S2','S3','S4','S5','S6','S7','S8'].includes(up)) return false;
     const letterRatio = (t.match(/[A-Za-z]/g) || []).length / t.length;
     return letterRatio >= 0.7;
   });
@@ -75,20 +78,20 @@ export const parseOCRFields = (rawText) => {
   }
 
   // 3. Amount
-  // Look for 4-6 digit numbers with decimals, often isolated or near 'Particulars'/'Amount'
   const amountPatterns = [
-    /BY\s+CASH\s+.+?(\d{4,}\.\d{2})/i, // Capture amount on the same line as 'By Cash'
+    /AMOUNT\s*([\d,]{3,}\.\d{2})/i, // Priority: Value next to 'Amount' header
+    /BY\s+CASH\s+.+?(\d{4,}\.\d{2})/i,
     /Particulars\s*Amount\s*([\d,]{4,}\.\d{2})/i,
     /([\d,]{4,}\.\d{2})\s*Rupees/i,
     /[Tt]otal\s*[=:]\s*([\d,\s]+\.?\s*\d{0,2})/i,
-    /(?:RS\.?|AMT|AMOUNT)\s*:?\s*([\d,.\s]{3,15})/i,
   ];
   
   for (const p of amountPatterns) {
     const m = oneLine.match(p);
     if (m?.[1]) {
       const clean = sanitizeAmount(m[1]);
-      if (clean && parseFloat(clean) > 100) {
+      const val = parseFloat(clean);
+      if (clean && val > 100 && val !== 9001 && val !== 2015) {
         result.amount = '₹' + clean;
         break;
       }
@@ -103,26 +106,30 @@ export const parseOCRFields = (rawText) => {
   if (particularsMatch?.[1]) {
     const particularsBlock = particularsMatch[1].trim();
     
-    // Extract Dept from this block
+    // Extract Dept from this block (e.g., "S6 IT")
     const dM = particularsBlock.match(new RegExp(`\\b(${DEPTS})\\b`, 'i'));
     if (dM) {
       result.department = dM[1].toUpperCase();
       
-      // Name is usually before the Dept
-      const beforeDept = particularsBlock.slice(0, particularsBlock.toUpperCase().indexOf(dM[1].toUpperCase())).trim();
-      result.studentName = extractCleanName(beforeDept.replace(/BY\s*CASH/i, ''));
+      const deptIdx = particularsBlock.toUpperCase().indexOf(dM[1].toUpperCase());
+      const beforeDept = particularsBlock.slice(0, deptIdx).trim();
+      const afterDept = particularsBlock.slice(deptIdx + dM[1].length).trim();
       
-      // Fee Category is usually after the Dept
-      const afterDept = particularsBlock.slice(particularsBlock.toUpperCase().indexOf(dM[1].toUpperCase()) + dM[1].length).trim();
+      result.studentName = extractCleanName(beforeDept);
       result.feeCategory = normalizeFeeCategory(afterDept);
+    } else {
+      // Fallback: try first line for name
+      const pLines = particularsBlock.split(/\s{2,}/).filter(Boolean);
+      if (pLines.length > 0) result.studentName = extractCleanName(pLines[0]);
     }
   }
 
-  // 4b. Find Amount Area (Directly under or after 'Amount' header)
-  const amountHeaderMatch = oneLine.match(/AMOUNT\s*([\d,]{3,}\.\d{2})/i);
-  if (amountHeaderMatch?.[1]) {
-    const clean = sanitizeAmount(amountHeaderMatch[1]);
-    if (clean) result.amount = '₹' + clean;
+  // 4b. Explicit Amount check (if still missing)
+  if (!result.amount) {
+    const amMatch = oneLine.match(/AMOUNT\s*(\d{3,})\b/i);
+    if (amMatch?.[1] && amMatch[1] !== '9001') {
+      result.amount = '₹' + amMatch[1];
+    }
   }
 
   // Fallback to specific Kadirur "By Cash" line if section-based failed
