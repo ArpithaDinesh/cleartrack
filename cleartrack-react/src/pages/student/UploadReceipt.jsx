@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { clearanceAPI } from '../../services/api'
@@ -31,7 +31,7 @@ export default function UploadReceipt() {
   const onFile = (f) => {
     if (f && f.size <= 10 * 1024 * 1024) {
       setFile(f)
-      if (f.type.startsWith('image/')) {
+      if (f.type.startsWith('image/') || f.type === 'application/pdf') {
         setPreviewUrl(URL.createObjectURL(f))
       } else {
         setPreviewUrl('')
@@ -196,14 +196,19 @@ export default function UploadReceipt() {
               >
                 {file ? (
                   <div style={{textAlign:'center', width:'100%'}}>
-                    {previewUrl && (
+                    {previewUrl && file.type.startsWith('image/') && (
                       <img src={previewUrl} alt="Preview" style={{maxHeight:140, borderRadius:8, marginBottom:12, border:'1px solid var(--border)', boxShadow:'var(--shadow-sm)'}}/>
                     )}
                     <div>
                       <strong style={{color:'var(--primary)', display:'block'}}>{file.name}</strong>
                       <span style={{fontSize:'.78rem',color:'var(--text-sub)'}}>{(file.size/1024/1024).toFixed(2)} MB</span>
                     </div>
-                    <button type="button" onClick={removeFile} className="btn btn-sm btn-outline" style={{marginTop:12, padding:'6px 12px', fontSize:'.75rem'}}>Change File</button>
+                    <div style={{display:'flex', gap:8, justifyContent:'center', marginTop:12}}>
+                      {previewUrl && (
+                        <a href={previewUrl} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-primary" style={{padding:'6px 12px', fontSize:'.75rem', textDecoration:'none', color:'white'}}>View Bill</a>
+                      )}
+                      <button type="button" onClick={removeFile} className="btn btn-sm btn-outline" style={{padding:'6px 12px', fontSize:'.75rem'}}>Change File</button>
+                    </div>
                   </div>
                 ) : (
                   <label htmlFor="receipt-file" style={{cursor:'pointer', width:'100%', textAlign:'center'}}>
