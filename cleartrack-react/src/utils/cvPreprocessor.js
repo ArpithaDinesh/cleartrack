@@ -49,9 +49,15 @@ export const preprocessImage = async (imageElement) => {
         }
       }
 
-      // If we found a 4-point contour, warp the perspective
+      // If we found a 4-point contour, warp the perspective ONLY if it's large enough
       if (largestContour) {
-        src = warpPerspective(cv, src, largestContour);
+        const areaRatio = maxArea / (src.cols * src.rows);
+        if (areaRatio > 0.15) { // At least 15% of the image
+          console.log(`🎯 ROI Detected: Warping perspective (${Math.round(areaRatio*100)}% of image)`);
+          src = warpPerspective(cv, src, largestContour);
+        } else {
+          console.log('⚠️ ROI too small, skipping warp to avoid incorrect crop');
+        }
         largestContour.delete();
       }
 
@@ -62,21 +68,16 @@ export const preprocessImage = async (imageElement) => {
       // 1. Grayscale
       cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY, 0);
 
-      // 2. Intelligent Upscale (Target ~2500px for best OCR balance)
+      // 2. Intelligent Upscale (Target ~2500px)
       const targetWidth = 2500;
       if (dst.cols < targetWidth) {
         const scale = targetWidth / dst.cols;
         const dsize = new cv.Size(targetWidth, Math.round(dst.rows * scale));
         cv.resize(dst, dst, dsize, 0, 0, cv.INTER_CUBIC);
-      } else if (dst.cols > 3000) {
-        // Downscale if ridiculously large to avoid Tesseract memory crashes
-        const scale = 2500 / dst.cols;
-        const dsize = new cv.Size(2500, Math.round(dst.rows * scale));
-        cv.resize(dst, dst, dsize, 0, 0, cv.INTER_AREA);
       }
 
-      // 3. Enhance Contrast (CLAHE)
-      const clahe = new cv.CLAHE(3.5, new cv.Size(8, 8));
+      // 3. Enhance Contrast (CLAHE - toned down slightly for better stability)
+      const clahe = new cv.CLAHE(2.5, new cv.Size(8, 8));
       clahe.apply(dst, dst);
       clahe.delete();
 
@@ -89,8 +90,8 @@ export const preprocessImage = async (imageElement) => {
       cv.filter2D(dst, dst, cv.CV_8U, kernel);
       kernel.delete();
 
-      // 5. Adaptive Thresholding
-      cv.adaptiveThreshold(dst, dst, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 21, 15);
+      // 5. Adaptive Thresholding (MORE FORGIVING: constant 15 -> 8)
+      cv.adaptiveThreshold(dst, dst, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 25, 8);
 
       // Create a canvas to output
       const canvas = document.createElement('canvas');
