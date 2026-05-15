@@ -22,18 +22,34 @@ export default function TeacherDashboard() {
   const [showProfileModal, setShowProfileModal] = useState(false)
 
   useEffect(() => {
-    // Fetch pending requests
+    setLoading(true)
+    console.log('🔍 Fetching pending requests for teacher...', { 
+      dept: user?.classDepartment, 
+      year: user?.classYear,
+      token: !!localStorage.getItem('cleartrack_token')
+    });
+    
     clearanceAPI.getDepartmentPending()
-      .then(d => setPending(d.requests || []))
-      .catch(console.error)
+      .then(d => {
+        console.log('✅ Pending API Response:', d);
+        setPending(d.requests || [])
+      })
+      .catch(err => {
+        console.error('❌ Pending API Error:', err);
+      })
       .finally(() => setLoading(false))
 
-    // Fetch assigned students
+    setLoadingStudents(true)
     userAPI.getMyStudents()
-      .then(d => setStudents(d.students || []))
-      .catch(console.error)
+      .then(res => {
+        console.log('✅ Students API Response:', res);
+        setStudents(res.students || [])
+      })
+      .catch(err => {
+        console.error('❌ Students API Error:', err);
+      })
       .finally(() => setLoadingStudents(false))
-  }, [])
+  }, [user])
 
   return (
     <div className="dashboard-body">
@@ -94,9 +110,29 @@ export default function TeacherDashboard() {
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="stats-grid" style={{marginBottom:28}}>
-            <div className="stat-card"><div className="stat-icon orange"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div className="stat-info"><h3>{loading ? '…' : pending.length}</h3><p>Pending Review</p></div></div>
+          {/* Stats & Quick Actions */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24, marginBottom: 28 }}>
+            <div className="stat-card" style={{ cursor: 'pointer' }} onClick={() => navigate('/staff/pending')}>
+              <div className="stat-icon orange">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="17"/></svg>
+              </div>
+              <div className="stat-info">
+                <h3>{loading ? '…' : pending.length}</h3>
+                <p>Pending Reviews</p>
+                <small style={{ color: 'var(--primary)', fontWeight: 600 }}>Click to view all →</small>
+              </div>
+            </div>
+            
+            <div className="stat-card">
+              <div className="stat-icon blue">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+              <div className="stat-info">
+                <h3>{loadingStudents ? '…' : students.length}</h3>
+                <p>Total Students</p>
+                <small style={{ color: 'var(--text-sub)' }}>{user?.classDepartment} • {user?.classYear}</small>
+              </div>
+            </div>
           </div>
 
           {/* Missing Config Warning */}
@@ -106,54 +142,69 @@ export default function TeacherDashboard() {
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
               </div>
               <div>
-                <h4 style={{ margin: 0, fontSize: '1rem' }}>Class Configuration Missing</h4>
-                <p style={{ margin: '4px 0 0', fontSize: '.85rem', opacity: 0.9 }}>You haven't set your assigned Department and Year. You won't see any student requests until you update your profile.</p>
-                <button className="btn btn-sm" style={{ marginTop: '10px', background: '#92400e', color: 'white', border: 'none' }} onClick={() => setShowProfileModal(true)}>Configure Now</button>
+                <h4 style={{ margin: 0, fontSize: '1rem' }}>Matching Logic Not Configured</h4>
+                <p style={{ margin: '4px 0 0', fontSize: '.85rem', opacity: 0.9 }}>You must set your <strong>Class Department</strong> and <strong>Class Year</strong> to see your students' requests. Currently, the system doesn't know which students belong to you.</p>
+                <button className="btn btn-sm" style={{ marginTop: '10px', background: '#92400e', color: 'white', border: 'none' }} onClick={() => setShowProfileModal(true)}>Update My Class Profile</button>
               </div>
             </div>
           )}
 
-          {/* Pending Requests */}
-          <div className="card" style={{padding:0,overflow:'hidden'}}>
+          {/* Pending Requests List */}
+          <div className="card" style={{padding:0, overflow:'hidden', marginBottom: 28}}>
             <div style={{padding:'18px 24px 14px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-              <h3 className="card-title" style={{margin:0}}>Pending Clearance Requests</h3>
-              <Link to="/staff/pending" className="btn btn-primary btn-sm">View All</Link>
+              <h3 className="card-title" style={{margin:0}}>Recent Submissions (Requires Review)</h3>
+              <Link to="/staff/pending" className="btn btn-primary btn-sm">View All Pending</Link>
             </div>
             {loading ? <div style={{padding:32,textAlign:'center',color:'var(--text-sub)'}}>Loading requests…</div>
-            : pending.length === 0 ? <div style={{padding:32,textAlign:'center',color:'var(--success)',fontWeight:600}}>✓ No pending requests. All caught up!</div>
-            : (
-              <div className="cr-list" style={{padding:20}}>
-                {pending.slice(0,3).map(r => {
+            : pending.length === 0 ? (
+              <div style={{padding:40, textAlign:'center'}}>
+                <div style={{ fontSize: '2rem', marginBottom: 10 }}>🎉</div>
+                <p style={{color:'var(--success)', fontWeight:600, margin:0}}>No pending requests for your class.</p>
+                <p style={{fontSize:'.85rem', color:'var(--text-sub)', marginTop:4}}>Students from {user?.classDepartment} - {user?.classYear} will appear here when they submit for approval.</p>
+              </div>
+            ) : (
+              <div className="cr-list">
+                {pending.slice(0,5).map(r => {
                   const stu = r.student || {}
                   return (
-                    <div key={r._id} className="cr-item" onClick={() => navigate(`/staff/request/${r._id}`)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 15, padding: '12px', borderBottom: '1px solid #f1f5f9' }}>
-                      <div className="cr-receipt-preview" style={{ width: 50, height: 50, borderRadius: 6, background: '#f1f5f9', overflow: 'hidden', flexShrink: 0, border: '1px solid #e2e8f0' }}>
+                    <div key={r._id} className="cr-item" onClick={() => navigate(`/staff/request/${r._id}`)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 20, padding: '16px 24px', borderBottom: '1px solid #f1f5f9', transition: 'background 0.2s' }}>
+                      {/* Receipt Thumbnail */}
+                      <div style={{ width: 60, height: 60, borderRadius: 8, background: '#f1f5f9', overflow: 'hidden', flexShrink: 0, border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
                         {r.receiptFile?.filename ? (
                           <img src={`${API_ROOT}/uploads/${r.receiptFile.filename}`} alt="Receipt" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
-                          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#94a3b8' }}>No Img</div>
+                          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#94a3b8' }}>No Image</div>
                         )}
                       </div>
-                      <div className="cr-info">
-                        <div className="cr-name" style={{ fontWeight: 600 }}>{stu.fullName || 'Unknown Student'}</div>
-                        <div className="cr-meta" style={{ fontSize: '.8rem', color: '#64748b' }}>{stu.department} • {stu.classYear} • <span style={{ textTransform: 'capitalize', color: 'var(--primary)', fontWeight: 600 }}>{r.feeType}</span></div>
+                      
+                      {/* Student & Request Details */}
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-main)' }}>{stu.fullName || 'Unknown Student'}</div>
+                        <div style={{ fontSize: '.85rem', color: '#64748b', marginTop: 2 }}>
+                          {stu.universityNumber} • <span style={{ textTransform: 'capitalize', color: 'var(--primary)', fontWeight: 600 }}>{r.feeType} Fee</span>
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
-                        <span className="badge badge-warning">Pending</span>
-                        <span className="cr-submitted-time" style={{ fontSize: '.8rem', color: '#94a3b8' }}>{r.submittedAt ? new Date(r.submittedAt).toLocaleDateString() : ''}</span>
+
+                      {/* OCR Extracted Amount */}
+                      <div style={{ textAlign: 'right', minWidth: '100px' }}>
+                        <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-main)' }}>{r.ocrData?.amount || '₹—'}</div>
+                        <div style={{ fontSize: '.75rem', color: '#94a3b8' }}>{r.submittedAt ? new Date(r.submittedAt).toLocaleDateString() : ''}</div>
                       </div>
+
+                      {/* Action Button */}
+                      <div className="btn btn-outline btn-sm" style={{ padding: '6px 12px' }}>Review →</div>
                     </div>
                   )
                 })}
-                {pending.length > 3 && <div style={{textAlign:'center',paddingTop:8}}><Link to="/staff/pending" className="btn btn-outline btn-sm">View {pending.length-3} more…</Link></div>}
               </div>
             )}
           </div>
-          {/* My Students Section */}
-          <div className="card" style={{marginTop:28, padding:0, overflow:'hidden'}}>
+
+          {/* My Students List */}
+          <div className="card" style={{padding:0, overflow:'hidden'}}>
             <div style={{padding:'18px 24px 14px', borderBottom:'1px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
               <h3 className="card-title" style={{margin:0}}>My Students ({user?.classDepartment} {user?.classYear})</h3>
-              <span style={{fontSize:'.85rem', color:'var(--text-sub)'}}>{students.length} Total</span>
+              <span style={{fontSize:'.85rem', color:'var(--text-sub)'}}>{students.length} Total Registered</span>
             </div>
             
             <div className="table-wrap" style={{border:'none', borderRadius:0, boxShadow:'none'}}>
@@ -162,27 +213,33 @@ export default function TeacherDashboard() {
                   <tr>
                     <th>Student Name</th>
                     <th>Univ Number</th>
-                    <th>Roll No</th>
-                    <th>Section</th>
-                    <th>Status</th>
+                    <th>Admission No</th>
+                    <th>Clearance Status</th>
+                    <th style={{textAlign: 'right'}}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loadingStudents ? (
                     <tr><td colSpan="5" style={{textAlign:'center', padding:24}}>Loading students...</td></tr>
                   ) : students.length === 0 ? (
-                    <tr><td colSpan="5" style={{textAlign:'center', padding:24, color:'var(--text-sub)'}}>No students found for this class.</td></tr>
+                    <tr>
+                      <td colSpan="5" style={{textAlign:'center', padding:40, color:'var(--text-sub)'}}>
+                        <p>No students found for <strong>{user?.classDepartment} - {user?.classYear}</strong>.</p>
+                        <p style={{fontSize:'.8rem'}}>Verify that students have registered with these exact details.</p>
+                      </td>
+                    </tr>
                   ) : (
                     students.map(s => (
                       <tr key={s._id}>
                         <td><strong>{s.fullName}</strong></td>
                         <td style={{fontSize:'.85rem'}}>{s.universityNumber || '—'}</td>
-                        <td style={{fontSize:'.85rem'}}>{s.rollNumber || '—'}</td>
-                        <td style={{fontSize:'.85rem'}}>{s.section || '—'}</td>
+                        <td style={{fontSize:'.85rem'}}>{s.admissionNumber || '—'}</td>
                         <td>
-                          <span className={`badge ${s.isActive ? 'badge-success' : 'badge-neutral'}`}>
-                            {s.isActive ? 'Active' : 'Inactive'}
-                          </span>
+                           {/* We could fetch individual status here, but for now just show account status */}
+                           <span className="badge badge-neutral">Registered</span>
+                        </td>
+                        <td style={{textAlign: 'right'}}>
+                           <button className="btn btn-outline btn-sm" disabled>Profile</button>
                         </td>
                       </tr>
                     ))
