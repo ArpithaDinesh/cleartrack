@@ -11,37 +11,37 @@ const sanitizeAmount = (str = '') => {
 
 const normalizeFeeCategory = (raw = '') => {
   const t = raw.replace(/\b(NEW|THE|AND|OF|FOR|A|AN|FEE|F|EF|LI)\b/gi, ' ')
-               .replace(/[^A-Z\s]/gi, ' ')
-               .replace(/\s{2,}/g, ' ').trim();
+    .replace(/[^A-Z\s]/gi, ' ')
+    .replace(/\s{2,}/g, ' ').trim();
   const up = t.toUpperCase();
-  if (/ADMIS/i.test(up))                       return 'Admission Fee';
-  if (/TUI[TL][LI]?[OQ]N|TUITION/i.test(up))  return 'Tuition Fee';
-  if (/HOSTEL/i.test(up))                       return 'Hostel Fee';
-  if (/BUS|TRANSPORT/i.test(up))               return 'Bus Fee';
-  if (/EXAM/i.test(up))                         return 'Exam Fee';
-  if (/RE.?ADMI/i.test(up))                    return 'Re-Admission Fee';
-  if (/MESS/i.test(up))                         return 'Mess Fee';
+  if (/ADMIS/i.test(up)) return 'Admission Fee';
+  if (/TUI[TL][LI]?[OQ]N|TUITION/i.test(up)) return 'Tuition Fee';
+  if (/HOSTEL/i.test(up)) return 'Hostel Fee';
+  if (/BUS|TRANSPORT/i.test(up)) return 'Bus Fee';
+  if (/EXAM/i.test(up)) return 'Exam Fee';
+  if (/RE.?ADMI/i.test(up)) return 'Re-Admission Fee';
+  if (/MESS/i.test(up)) return 'Mess Fee';
   return t.length > 1 ? t : raw.trim();
 };
 
 const IGNORE_WORDS = new Set([
-  'COLLEGE','ENGINEERING','BANK','SERVICE','CO','OP','COOPERATIVE',
-  'KADIRUR','CASHIER','OFFICER','REMITTED','TRANSFER','RECEIPT','DEPOSIT',
-  'SAVINGS','AUTHORISED','AUTHORIZ','PARTICULARS','AMOUNT','DATE','CUSTOMER',
-  'CHALAN','RUPEES','TOTAL','WORDS','CHALLAN','ADMISSION','ISO','YEAR','TEL',
-  'OL','THE','AND','BRANCH','EXTN','KSEB','KSCB','AC','NO','TYPE','AMOU','AMNT',
-  'PARTIC','PART','PARTI','AMN','AMT',
+  'COLLEGE', 'ENGINEERING', 'BANK', 'SERVICE', 'CO', 'OP', 'COOPERATIVE',
+  'KADIRUR', 'CASHIER', 'OFFICER', 'REMITTED', 'TRANSFER', 'RECEIPT', 'DEPOSIT',
+  'SAVINGS', 'AUTHORISED', 'AUTHORIZ', 'PARTICULARS', 'AMOUNT', 'DATE', 'CUSTOMER',
+  'CHALAN', 'RUPEES', 'TOTAL', 'WORDS', 'CHALLAN', 'ADMISSION', 'ISO', 'YEAR', 'TEL',
+  'OL', 'THE', 'AND', 'BRANCH', 'EXTN', 'KSEB', 'KSCB', 'AC', 'NO', 'TYPE', 'AMOU', 'AMNT',
+  'PARTIC', 'PART', 'PARTI', 'AMN', 'AMT',
 ]);
 
 const extractCleanName = (raw = '') => {
-  const DEPTS = ['CSE','IT','EEE','ECE','ME','CE','CIVIL','MCA','MBA','BCA','BBA','MTECH'];
+  const DEPTS = ['CSE', 'IT', 'EEE', 'ECE', 'ME', 'CE', 'CIVIL'];
   const tokens = raw.split(/[\s,.\-\/]+/).filter(t => {
     const up = t.toUpperCase();
     if (t.length < 2) return false;
     if (/\d/.test(t)) return false; // Contains digits
     if (IGNORE_WORDS.has(up)) return false;
     if (DEPTS.includes(up)) return false;
-    if (['S1','S2','S3','S4','S5','S6','S7','S8','EVEN','ODD'].includes(up)) return false;
+    if (['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'EVEN', 'ODD'].includes(up)) return false;
     const letterRatio = (t.match(/[A-Za-z]/g) || []).length / t.length;
     return letterRatio >= 0.7;
   });
@@ -51,7 +51,10 @@ const extractCleanName = (raw = '') => {
 };
 
 export const parseOCRFields = (rawText) => {
-  const lines   = rawText.split(/\r?\n/);
+  // Debug log to help identify OCR issues in the browser console
+  console.log('📄 RAW OCR TEXT START 📄\n' + rawText + '\n📄 RAW OCR TEXT END 📄');
+
+  const lines   = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   const oneLine = rawText.replace(/\r?\n/g, ' ').replace(/\s{2,}/g, ' ');
   const UP      = oneLine.toUpperCase();
 
@@ -61,201 +64,84 @@ export const parseOCRFields = (rawText) => {
     receiptNumber: '', bankName: '', paymentMode: '', rawText,
   };
 
-  // 1. Receipt Number
-  for (const p of [
-    /No\.?F\s*[:.-]?\s*(\d{3,8})/i,
-    /No\.?\s*F[\s\-]*(\d{3,8})/i,
-    /RECEIPT\s*(?:NO|#)[\s:.]*([A-Z0-9\-]{3,12})/i,
-  ]) {
-    const m = oneLine.match(p);
-    if (m?.[1]) { result.receiptNumber = m[1].trim(); break; }
+  const DEPTS = ['CSE','IT','EEE','ECE','ME','CE','CIVIL','MCA','MBA','BCA','BBA','MTECH'];
+  const DEPT_REGEX = new RegExp(`\\b(${DEPTS.join('|')})\\b`, 'i');
+
+  // 1. Line-by-Line Anchor Search
+  let deptLineIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const dM = lines[i].match(DEPT_REGEX);
+    if (dM) {
+      result.department = dM[1].toUpperCase();
+      deptLineIdx = i;
+      break;
+    }
   }
 
-  // 2. Date
-  for (const p of [
-    /Date\s*[:.-]?\s*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/i,
-    /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/,
-    /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2})/,
-  ]) {
-    const m = oneLine.match(p);
-    if (m?.[1]) { result.paymentDate = m[1].trim(); break; }
+  if (deptLineIdx !== -1) {
+    const currentLine = lines[deptLineIdx];
+    const prevLine    = deptLineIdx > 0 ? lines[deptLineIdx - 1] : '';
+    
+    // Name is likely the previous line or the first part of current line
+    const nameCandidate = (prevLine.length > 3) ? prevLine : currentLine.split(DEPT_REGEX)[0];
+    result.studentName = extractCleanName(nameCandidate);
+    
+    // Fee Category is likely on current line or next line
+    const feeCandidate = currentLine + ' ' + (lines[deptLineIdx + 1] || '');
+    result.feeCategory = normalizeFeeCategory(feeCandidate);
   }
 
-  // 3. Amount
-  const amountPatterns = [
-    /AMOUNT\s*([\d,]{3,}\.\d{2})/i, // Priority: Value next to 'Amount' header
-    /BY\s+CASH\s+.+?(\d{4,}\.\d{2})/i,
-    /Particulars\s*Amount\s*([\d,]{4,}\.\d{2})/i,
-    /([\d,]{4,}\.\d{2})\s*Rupees/i,
-    /[Tt]otal\s*[=:]\s*([\d,\s]+\.?\s*\d{0,2})/i,
-  ];
-  
-  for (const p of amountPatterns) {
-    const m = oneLine.match(p);
-    if (m?.[1]) {
-      const clean = sanitizeAmount(m[1]);
-      const val = parseFloat(clean);
-      if (clean && val > 100 && val !== 9001 && val !== 2015) {
-        result.amount = '₹' + clean;
+  // 2. Global Scored Amount Search
+  const allNumbers = [...oneLine.matchAll(/\b(\d{3,}(?:[,\s]\d{3})*(?:\.\d{2})?)\b/g)];
+  let bestScore = -1;
+  let bestMatch = '';
+  for (const [, raw] of allNumbers) {
+    const clean = sanitizeAmount(raw);
+    const val = parseFloat(clean);
+    if ([9001, 2015, 2016, 2025, 2026].includes(val)) continue;
+    
+    let score = val;
+    if (raw.includes('.00')) score += 1000000;
+    
+    // Bonus if near "AMOUNT" or "TOTAL"
+    if (UP.includes('AMOUNT') || UP.includes('TOTAL')) score += 5000;
+
+    if (score > bestScore && val < 500000) {
+      bestScore = score;
+      bestMatch = clean;
+    }
+  }
+  if (bestMatch) result.amount = '₹' + bestMatch;
+
+  // 3. Fallbacks for missing fields
+  if (!result.studentName) {
+    for (const line of lines.slice(0, 10)) {
+      const cleaned = extractCleanName(line);
+      if (cleaned && cleaned.split(' ').length >= 2) {
+        result.studentName = cleaned;
         break;
       }
     }
   }
 
-  // 4. Section-Based Extraction (Particulars & Amount)
-  const DEPTS = 'CSE|IT|EEE|ECE|ME|CE|CIVIL|MCA|MBA|BCA|BBA|MTECH';
-  
-  // 4a. Find Particulars Area
-  const particularsMatch = oneLine.match(/PARTICULARS\s*(.*?)(?:RUPEES|TOTAL|$)/i);
-  if (particularsMatch?.[1]) {
-    const particularsBlock = particularsMatch[1].trim();
-    
-    // Extract Dept from this block (e.g., "S6 IT")
-    const dM = particularsBlock.match(new RegExp(`\\b(${DEPTS})\\b`, 'i'));
-    if (dM) {
-      result.department = dM[1].toUpperCase();
-      
-      const deptIdx = particularsBlock.toUpperCase().indexOf(dM[1].toUpperCase());
-      const beforeDept = particularsBlock.slice(0, deptIdx).trim();
-      const afterDept = particularsBlock.slice(deptIdx + dM[1].length).trim();
-      
-      result.studentName = extractCleanName(beforeDept);
-      result.feeCategory = normalizeFeeCategory(afterDept);
-    } else {
-      // Fallback: try first line for name
-      const pLines = particularsBlock.split(/\s{2,}/).filter(Boolean);
-      if (pLines.length > 0) result.studentName = extractCleanName(pLines[0]);
-    }
-  }
-
-  // 4b. Explicit Amount check (if still missing)
-  if (!result.amount) {
-    const amMatch = oneLine.match(/AMOUNT\s*(\d{3,})\b/i);
-    if (amMatch?.[1] && amMatch[1] !== '9001') {
-      result.amount = '₹' + amMatch[1];
-    }
-  }
-
-  // Fallback to specific Kadirur "By Cash" line if section-based failed
-  if (!result.studentName) {
-    const kadirurM = oneLine.match(/BY\s+CASH\s+([A-Z\s.]+?)\s+([A-Z]{2,5})\b\s+([A-Z\s]+?)(?:\s+\d{4,}\.\d{2}|Rupees|$)/i);
-    if (kadirurM) {
-      result.studentName = kadirurM[1].trim().replace(/\s{2,}/g, ' ');
-      result.department  = kadirurM[2].toUpperCase();
-      result.feeCategory = normalizeFeeCategory(kadirurM[3]);
-      result.paymentMode = 'Cash';
-    }
-  }
-
-  // 5. Final Cleanup (Remove identified amount/dept from name)
-  if (result.studentName) {
-    if (result.amount) {
-      const amtNum = result.amount.replace('₹', '');
-      result.studentName = result.studentName.replace(new RegExp(amtNum.replace('.', '\\.'), 'g'), '');
-    }
-    if (result.department) {
-      result.studentName = result.studentName.replace(new RegExp(`\\b${result.department}\\b`, 'gi'), '');
-    }
-    result.studentName = result.studentName.trim().replace(/\s{2,}/g, ' ');
-    // If name is still noisy, run one more extractCleanName pass
-    if (result.studentName.length > 20 || /AMOUNT|PARTIC|DATE/i.test(result.studentName)) {
-       result.studentName = extractCleanName(result.studentName);
-    }
-  }
-
-  // 6. Transaction ID
-  for (const p of [
-    /TXN[\s:#]*([A-Z0-9]{6,})/i,
-    /UTR[\s:#]*([A-Z0-9\-]{10,})/i,
-    /CHALAN\s*[\/\\]\s*VR\.?\s*NO[\s:.]*([A-Z0-9\/\-]{4,})/i,
-    /REF(?:ERENCE)?[\s:#]*([A-Z0-9\-]{8,})/i,
-    /(\d{12,18})/,
-  ]) {
+  // 4. Other fields (Date, Receipt No, etc.)
+  for (const p of [/Date\s*[:.-]?\s*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/i, /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/]) {
     const m = oneLine.match(p);
-    if (m?.[1]) {
-      const val = m[1].replace(/\s/g,'').toUpperCase();
-      if (!/DATE|AMOUNT|RS|INR|BANK/i.test(val)) { result.transactionId = val; break; }
-    }
+    if (m?.[1]) { result.paymentDate = m[1].trim(); break; }
   }
 
-  // 6. Bank Name
-  const bankMap = [
-    ['KADIRUR SERVICE CO-OP', 'Kadirur Service Co-operative Bank'],
-    ['KADIRUR',               'Kadirur Service Co-operative Bank'],
-    ['CO-OPERATIVE',          'Co-operative Bank'],
-    ['COOPERATIVE',           'Co-operative Bank'],
-    ['KERALA BANK',           'Kerala Bank'],
-    ['SOUTH INDIAN',          'South Indian Bank'],
-    ['FEDERAL',               'Federal Bank'],
-    ['SBI',                   'State Bank of India'],
-    ['HDFC',                  'HDFC Bank'],
-    ['ICICI',                 'ICICI Bank'],
-    ['AXIS',                  'Axis Bank'],
-    ['PNB',                   'Punjab National Bank'],
-    ['BOB',                   'Bank of Baroda'],
-    ['CANARA',                'Canara Bank'],
-    ['UNION',                 'Union Bank of India'],
-    ['KOTAK',                 'Kotak Mahindra Bank'],
-  ];
-  for (const [kw, name] of bankMap) {
-    if (UP.includes(kw)) { result.bankName = name; break; }
+  for (const p of [/No\.?F\s*[:.-]?\s*(\d{3,8})/i, /No\.?\s*F[\s\-]*(\d{3,8})/i]) {
+    const m = oneLine.match(p);
+    if (m?.[1]) { result.receiptNumber = m[1].trim(); break; }
   }
 
-  // 7. Payment Mode
-  if (!result.paymentMode) {
-    if      (/\bUPI\b/i.test(oneLine))               result.paymentMode = 'UPI';
-    else if (/NEFT|RTGS|IMPS/i.test(oneLine))        result.paymentMode = oneLine.match(/NEFT|RTGS|IMPS/i)[0].toUpperCase();
-    else if (/CHALAN|CHALLAN/i.test(oneLine))         result.paymentMode = 'DD / Challan';
-    else if (/BY\s*CASH|CASH\s*PAYMENT/i.test(oneLine)) result.paymentMode = 'Cash';
-    else if (/TRANSFER/i.test(oneLine))               result.paymentMode = 'Bank Transfer';
-    else if (/ONLINE/i.test(oneLine))                 result.paymentMode = 'Online';
-  }
+  // Bank Name
+  const bankMap = [['KADIRUR', 'Kadirur Service Co-operative Bank'], ['CO-OPERATIVE', 'Co-operative Bank'], ['KERALA BANK', 'Kerala Bank']];
+  for (const [kw, name] of bankMap) { if (UP.includes(kw)) { result.bankName = name; break; } }
 
-  // 8. HEURISTIC FALLBACKS (If fields are still missing)
-  // 8a. Heuristic Department
-  if (!result.department) {
-    const dM = UP.match(new RegExp(`\\b(${DEPTS})\\b`));
-    if (dM) result.department = dM[1];
-  }
-
-  // 8b. Heuristic Fee Category
-  if (!result.feeCategory) {
-    if (/ADMIS/i.test(UP)) result.feeCategory = 'Admission Fee';
-    else if (/TUI[TL][LI]?[OQ]N/i.test(UP)) result.feeCategory = 'Tuition Fee';
-    else if (/HOSTEL/i.test(UP)) result.feeCategory = 'Hostel Fee';
-    else if (/BUS|TRANS/i.test(UP)) result.feeCategory = 'Bus Fee';
-    else if (/EXAM/i.test(UP)) result.feeCategory = 'Exam Fee';
-  }
-
-  // 8c. Heuristic Amount (Scored search)
-  if (!result.amount) {
-    const allNumbers = [...oneLine.matchAll(/\b(\d{3,}(?:[,\s]\d{3})*(?:\.\d{2})?)\b/g)];
-    let bestScore = -1;
-    let bestMatch = '';
-    for (const [, raw] of allNumbers) {
-      const clean = sanitizeAmount(raw);
-      const val = parseFloat(clean);
-      // Skip ISO numbers and years
-      if (val === 9001 || val === 2015 || val === 2016 || val === 2026 || val === 2025) continue;
-      
-      let score = val;
-      if (raw.includes('.00')) score += 1000000; // Major priority to currency-formatted
-      
-      if (score > bestScore && val < 500000) {
-        bestScore = score;
-        bestMatch = clean;
-      }
-    }
-    if (bestMatch) result.amount = '₹' + bestMatch;
-  }
-
-  // 8d. Heuristic Name (Capitalized words in Particulars area)
-  if (!result.studentName) {
-    const partIdx = UP.indexOf('PARTICULARS');
-    if (partIdx >= 0) {
-      const sub = oneLine.slice(partIdx, partIdx + 100);
-      result.studentName = extractCleanName(sub.replace(/PARTICULARS/i, ''));
-    }
+  // 5. Final Filtering
+  if (result.studentName) {
+    result.studentName = result.studentName.replace(/PARTICULARS|AMOUNT|DATE|CUSTOMER|S[1-8]/gi, '').trim();
   }
 
   return result;
