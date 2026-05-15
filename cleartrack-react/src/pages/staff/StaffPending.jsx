@@ -43,21 +43,31 @@ export default function StaffPending() {
                 const stu = r.student || {}
                 const initS = stu.fullName?.charAt(0)?.toUpperCase() || 'S'
                 return (
-                  <div key={r._id} className="cr-card">
+                  <div key={r._id} className="cr-card" onClick={() => navigate(`/staff/request/${r._id}`)} style={{ cursor: 'pointer' }}>
                     <div className="cr-card-header">
                       <div className="cr-student-info">
-                        <div className="cr-avatar">{initS}</div>
-                        <div><div className="cr-student-name">{stu.fullName}</div><div className="cr-univ-no">Univ No: {stu.universityNumber} | Roll: {stu.rollNumber}</div></div>
+                        <div className="cr-receipt-preview" style={{ width: 60, height: 60, borderRadius: 8, background: '#f1f5f9', overflow: 'hidden', flexShrink: 0, border: '1px solid #e2e8f0', marginRight: 15 }}>
+                          {r.receiptFile?.filename ? (
+                            <img src={`${API_ROOT}/uploads/${r.receiptFile.filename}`} alt="Receipt" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#94a3b8' }}>No Img</div>
+                          )}
+                        </div>
+                        <div>
+                          <div className="cr-student-name" style={{ fontSize: '1.1rem', fontWeight: 600 }}>{stu.fullName}</div>
+                          <div className="cr-univ-no" style={{ fontSize: '.85rem', color: '#64748b' }}>Univ No: {stu.universityNumber} | Roll: {stu.rollNumber}</div>
+                        </div>
                       </div>
-                      <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginLeft: 'auto' }}>
                         <span className="badge badge-warning">Pending Review</span>
                         <span className="cr-submitted-time">{r.submittedAt ? new Date(r.submittedAt).toLocaleDateString() : ''}</span>
                       </div>
                     </div>
-                    <div style={{padding:'14px 20px',display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>
-                      <span style={{fontSize:'.8rem',color:'var(--text-sub)'}}>Fee Type: <strong style={{color:'var(--text-main)',textTransform:'capitalize'}}>{r.feeType}</strong></span>
-                      <span style={{fontSize:'.8rem',color:'var(--text-sub)'}}>Request: <strong style={{color:'var(--text-main)'}}>{r.requestNumber}</strong></span>
-                      <div style={{marginLeft:'auto'}}>
+                    <div style={{ padding: '14px 20px', borderTop: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '.85rem', color: '#64748b' }}>Department: <strong style={{ color: '#334155' }}>{stu.department}</strong></span>
+                      <span style={{ fontSize: '.85rem', color: '#64748b' }}>Year: <strong style={{ color: '#334155' }}>{stu.classYear}</strong></span>
+                      <span style={{ fontSize: '.85rem', color: '#64748b' }}>Fee Type: <strong style={{ color: 'var(--primary)', textTransform: 'capitalize' }}>{r.feeType}</strong></span>
+                      <div style={{ marginLeft: 'auto' }}>
                         <Link to={`/staff/request/${r._id}`} className="btn btn-primary btn-sm">Review Request →</Link>
                       </div>
                     </div>

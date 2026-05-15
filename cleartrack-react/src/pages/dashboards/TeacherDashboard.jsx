@@ -126,14 +126,21 @@ export default function TeacherDashboard() {
                 {pending.slice(0,3).map(r => {
                   const stu = r.student || {}
                   return (
-                    <div key={r._id} className="cr-card">
-                      <div className="cr-card-header">
-                        <div className="cr-student-info"><div className="cr-avatar">{stu.fullName?.charAt(0)||'S'}</div><div><div className="cr-student-name">{stu.fullName}</div><div className="cr-univ-no">Univ: {stu.universityNumber} | Roll: {stu.rollNumber}</div></div></div>
-                        <div style={{display:'flex',alignItems:'center',gap:10}}><span className="badge badge-warning">Pending</span><span className="cr-submitted-time">{r.submittedAt?new Date(r.submittedAt).toLocaleDateString():''}</span></div>
+                    <div key={r._id} className="cr-item" onClick={() => navigate(`/staff/request/${r._id}`)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 15, padding: '12px', borderBottom: '1px solid #f1f5f9' }}>
+                      <div className="cr-receipt-preview" style={{ width: 50, height: 50, borderRadius: 6, background: '#f1f5f9', overflow: 'hidden', flexShrink: 0, border: '1px solid #e2e8f0' }}>
+                        {r.receiptFile?.filename ? (
+                          <img src={`${API_ROOT}/uploads/${r.receiptFile.filename}`} alt="Receipt" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#94a3b8' }}>No Img</div>
+                        )}
                       </div>
-                      <div style={{padding:'12px 20px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                        <span style={{fontSize:'.8rem',color:'var(--text-sub)'}}>Fee Type: <strong style={{textTransform:'capitalize'}}>{r.feeType}</strong></span>
-                        <Link to={`/staff/request/${r._id}`} className="btn btn-primary btn-sm">Review →</Link>
+                      <div className="cr-info">
+                        <div className="cr-name" style={{ fontWeight: 600 }}>{stu.fullName || 'Unknown Student'}</div>
+                        <div className="cr-meta" style={{ fontSize: '.8rem', color: '#64748b' }}>{stu.department} • {stu.classYear} • <span style={{ textTransform: 'capitalize', color: 'var(--primary)', fontWeight: 600 }}>{r.feeType}</span></div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
+                        <span className="badge badge-warning">Pending</span>
+                        <span className="cr-submitted-time" style={{ fontSize: '.8rem', color: '#94a3b8' }}>{r.submittedAt ? new Date(r.submittedAt).toLocaleDateString() : ''}</span>
                       </div>
                     </div>
                   )

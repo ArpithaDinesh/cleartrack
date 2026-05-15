@@ -23,12 +23,12 @@ export default function AdminDashboard() {
   const [selectedMainLocation, setSelectedMainLocation] = useState('Kannur')
   const [editingRouteId, setEditingRouteId] = useState(null)
   const [editingFee, setEditingFee] = useState('')
-  const [selectedTuitionYear, setSelectedTuitionYear] = useState('First year')
+  const [selectedTuitionYear, setSelectedTuitionYear] = useState('1st Year')
   const [tuitionFeeStructure, setTuitionFeeStructure] = useState({
-    'First year': { meritReg: 0, meritFull: 0, tfw: 0, nri: 0 },
-    'Second year': { meritReg: 0, meritFull: 0, tfw: 0, nri: 0 },
-    'Third year': { meritReg: 0, meritFull: 0, tfw: 0, nri: 0 },
-    'Fourth year': { meritReg: 0, meritFull: 0, tfw: 0, nri: 0 },
+    '1st Year': { meritReg: 0, meritFull: 0, tfw: 0, nri: 0 },
+    '2nd Year': { meritReg: 0, meritFull: 0, tfw: 0, nri: 0 },
+    '3rd Year': { meritReg: 0, meritFull: 0, tfw: 0, nri: 0 },
+    '4th Year': { meritReg: 0, meritFull: 0, tfw: 0, nri: 0 },
   })
   const [savedTuitionYears, setSavedTuitionYears] = useState([])
   const [isEditingTuition, setIsEditingTuition] = useState(false)
@@ -364,10 +364,10 @@ export default function AdminDashboard() {
                     <div className="form-group"><label>Class/Year</label>
                       <select value={newStudent.classYear} onChange={e=>setNewStudent(p=>({...p,classYear:e.target.value}))} required>
                         <option value="" disabled>Select</option>
-                        <option value="First year">First year</option>
-                        <option value="Second year">Second year</option>
-                        <option value="Third year">Third year</option>
-                        <option value="Fourth year">Fourth year</option>
+                        <option value="1st Year">1st Year</option>
+                        <option value="2nd Year">2nd Year</option>
+                        <option value="3rd Year">3rd Year</option>
+                        <option value="4th Year">4th Year</option>
                       </select>
                     </div>
                     <div className="form-group"><label>Admission Number</label><input value={newStudent.admissionNumber} onChange={e=>setNewStudent(p=>({...p,admissionNumber:e.target.value}))} placeholder="e.g. 23BITTLY213" required/></div>
@@ -399,7 +399,7 @@ export default function AdminDashboard() {
                   <div style={{background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: 20}}>
                     <p style={{fontSize: '.85rem', fontWeight: 600, color: '#64748b', marginBottom: 10}}>Select Year:</p>
                     <div style={{display:'flex', gap:15, flexWrap: 'wrap'}}>
-                      {['First year', 'Second year', 'Third year', 'Fourth year'].map(year => (
+                      {['1st Year', '2nd Year', '3rd Year', '4th Year'].map(year => (
                         <label key={year} style={{display:'flex', alignItems:'center', gap:6, cursor:'pointer', fontSize: '.85rem', fontWeight: 500}}>
                           <input 
                             type="radio" 
@@ -515,7 +515,7 @@ export default function AdminDashboard() {
                       <div className="form-group"><label>Class/Year</label>
                         <select value={feeForm.classYear} onChange={e=>setFeeForm(p=>({...p,classYear:e.target.value}))} required>
                           <option value="" disabled>Select year</option>
-                          <option value="First year">First year</option><option value="Second year">Second year</option><option value="Third year">Third year</option><option value="Fourth year">Fourth year</option>
+                          <option value="1st Year">1st Year</option><option value="2nd Year">2nd Year</option><option value="3rd Year">3rd Year</option><option value="4th Year">4th Year</option>
                         </select>
                       </div>
                     </div>
