@@ -28,7 +28,7 @@ const IGNORE_WORDS = new Set([
   'COLLEGE','ENGINEERING','BANK','SERVICE','CO','OP','COOPERATIVE',
   'KADIRUR','CASHIER','OFFICER','REMITTED','TRANSFER','RECEIPT','DEPOSIT',
   'SAVINGS','AUTHORISED','AUTHORIZ','PARTICULARS','AMOUNT','DATE','CUSTOMER',
-  'CHALAN','RUPEES','TOTAL','WORDS','CHALLAN','ADMISSION',
+  'CHALAN','RUPEES','TOTAL','WORDS','CHALLAN','ADMISSION','ISO','YEAR','TEL',
 ]);
 
 const extractCleanName = (raw = '') => {
@@ -99,7 +99,7 @@ export const parseOCRFields = (rawText) => {
   }
 
   // 4. Section-Based Extraction (Particulars & Amount)
-  const DEPTS = 'CSE|IT|EEE|ECE|ME|CE|CIVIL|MCA|MBA|BCA|BBA|MTECH|BE';
+  const DEPTS = 'CSE|IT|EEE|ECE|ME|CE|CIVIL|MCA|MBA|BCA|BBA|MTECH';
   
   // 4a. Find Particulars Area
   const particularsMatch = oneLine.match(/PARTICULARS\s*(.*?)(?:RUPEES|TOTAL|$)/i);
@@ -215,6 +215,8 @@ export const parseOCRFields = (rawText) => {
     for (const [, raw] of allNumbers) {
       const clean = sanitizeAmount(raw);
       const val = parseFloat(clean);
+      // Skip ISO numbers and years
+      if (val === 9001 || val === 2015 || val === 2016) continue;
       if (val > maxVal && val < 500000) {
         maxVal = val;
         bestMatch = clean;
