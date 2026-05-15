@@ -21,6 +21,7 @@ export default function UploadReceipt() {
   const [error, setError] = useState('')
   const [dragOver, setDragOver] = useState(false)
   const [previewUrl, setPreviewUrl] = useState('')
+  const [rawOcrText, setRawOcrText] = useState('')
 
   useEffect(() => {
     return () => {
@@ -89,6 +90,8 @@ export default function UploadReceipt() {
       setOcrStatus('Reading receipt content...')
       const { data: { text } } = await worker.recognize(processedSrc);
       await worker.terminate();
+      
+      setRawOcrText(text) // Store the raw text for display
 
       setOcrStatus('Extracting information...')
       const ocrData = parseOCRFields(text);
@@ -242,7 +245,22 @@ export default function UploadReceipt() {
 
             {error && <div style={{background:'#fee2e2',border:'1px solid #fca5a5',color:'#991b1b',padding:'12px 16px',borderRadius:8,marginBottom:16,fontSize:'.875rem'}}>{error}</div>}
 
-            <div style={{display:'flex',gap:12,justifyContent:'flex-end'}}>
+            {rawOcrText && (
+              <div className="card" style={{marginTop:24, background:'#f1f5f9', border:'1px solid var(--border)'}}>
+                <h3 className="card-title" style={{fontSize:'.9rem', display:'flex', justifyContent:'space-between'}}>
+                  <span>RAW OCR OUTPUT</span>
+                  <button type="button" onClick={()=>setRawOcrText('')} style={{background:'none', border:'none', color:'var(--text-sub)', cursor:'pointer'}}>Clear</button>
+                </h3>
+                <pre style={{whiteSpace:'pre-wrap', fontSize:'.75rem', color:'#475569', maxHeight:200, overflowY:'auto', padding:10, background:'white', borderRadius:4, border:'1px solid #e2e8f0'}}>
+                  {rawOcrText}
+                </pre>
+                <p style={{fontSize:'.7rem', color:'var(--text-sub)', marginTop:8}}>
+                  ℹ️ This is the raw text extracted before any filtering. If your fields aren't populating correctly, check if the data exists in this list.
+                </p>
+              </div>
+            )}
+
+            <div style={{display:'flex',gap:12,justifyContent:'flex-end', marginTop:24}}>
               <Link to="/dashboard/student" className="btn btn-outline">Cancel</Link>
               <button type="submit" className="btn btn-primary" disabled={loading}>
                 {loading ? 'Processing...' : '➜ Upload & Process OCR'}

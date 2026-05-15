@@ -4,111 +4,43 @@
  */
 
 export const preprocessImage = async (imageElement) => {
-  return new Promise((resolve, reject) => {
-    if (!window.cv) {
-      console.warn('OpenCV.js not loaded, skipping preprocessing');
-      return resolve(imageElement.src);
-    }
+  return new Promise((resolve) => {
+    if (!window.cv) return resolve(imageElement.src);
 
     try {
       const cv = window.cv;
       let src = cv.imread(imageElement);
       let dst = new cv.Mat();
 
-      // --- STAGE 1: Perspective Correction (ROI Detection) ---
-      // We use a smaller version for contour detection to save memory/time
-      let gray = new cv.Mat();
-      cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
-      
-      let blurred = new cv.Mat();
-      cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
-      
-      let edged = new cv.Mat();
-      cv.Canny(blurred, edged, 75, 200);
-
-      let contours = new cv.MatVector();
-      let hierarchy = new cv.Mat();
-      cv.findContours(edged, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
-
-      let largestContour = null;
-      let maxArea = 0;
-
-      for (let i = 0; i < contours.size(); ++i) {
-        let cnt = contours.get(i);
-        let area = cv.contourArea(cnt);
-        if (area > 5000) {
-          let peri = cv.arcLength(cnt, true);
-          let approx = new cv.Mat();
-          cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
-          if (approx.rows === 4 && area > maxArea) {
-            largestContour = approx;
-            maxArea = area;
-          } else {
-            approx.delete();
-          }
-        }
-      }
-
-      // If we found a 4-point contour, warp the perspective ONLY if it's large enough
-      if (largestContour) {
-        const areaRatio = maxArea / (src.cols * src.rows);
-        if (areaRatio > 0.15) { // At least 15% of the image
-          console.log(`🎯 ROI Detected: Warping perspective (${Math.round(areaRatio*100)}% of image)`);
-          src = warpPerspective(cv, src, largestContour);
-        } else {
-          console.log('⚠️ ROI too small, skipping warp to avoid incorrect crop');
-        }
-        largestContour.delete();
-      }
-
-      // Cleanup stage 1
-      gray.delete(); blurred.delete(); edged.delete(); contours.delete(); hierarchy.delete();
-
-      // --- STAGE 2: Quality Enhancement ---
-      // 1. Grayscale
+      // 1. Grayscale (Essential for OCR)
       cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY, 0);
 
-      // 2. Intelligent Upscale (Target ~2500px)
-      const targetWidth = 2500;
-      if (dst.cols < targetWidth) {
-        const scale = targetWidth / dst.cols;
-        const dsize = new cv.Size(targetWidth, Math.round(dst.rows * scale));
-        cv.resize(dst, dst, dsize, 0, 0, cv.INTER_CUBIC);
+      // 2. Standard Resize (Max 2000px)
+      const maxDim = 2000;
+      if (dst.cols > maxDim || dst.rows > maxDim) {
+        const scale = maxDim / Math.max(dst.cols, dst.rows);
+        const dsize = new cv.Size(Math.round(dst.cols * scale), Math.round(dst.rows * scale));
+        cv.resize(dst, dst, dsize, 0, 0, cv.INTER_AREA);
       }
 
-      // 3. Enhance Contrast (CLAHE - toned down slightly for better stability)
-      const clahe = new cv.CLAHE(2.5, new cv.Size(8, 8));
+      // 3. Mild Contrast Boost (No thresholding)
+      const clahe = new cv.CLAHE(2.0, new cv.Size(8, 8));
       clahe.apply(dst, dst);
       clahe.delete();
 
-      // 4. Sharpening
-      let kernel = cv.matFromArray(3, 3, cv.CV_32F, [
-        0, -1, 0,
-        -1, 5, -1,
-        0, -1, 0
-      ]);
-      cv.filter2D(dst, dst, cv.CV_8U, kernel);
-      kernel.delete();
-
-      // 5. Adaptive Thresholding (MORE FORGIVING: constant 15 -> 8)
-      cv.adaptiveThreshold(dst, dst, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 25, 8);
-
-      // Create a canvas to output
       const canvas = document.createElement('canvas');
       cv.imshow(canvas, dst);
-      const processedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      const processedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
 
-      // Final Cleanup
-      src.delete();
-      dst.delete();
-
+      src.delete(); dst.delete();
       resolve(processedDataUrl);
     } catch (err) {
-      console.error('OpenCV preprocessing failed:', err);
+      console.error('Preprocessing failed, using raw image:', err);
       resolve(imageElement.src);
     }
   });
 };
+
 
 /**
  * Warps a 4-point contour into a top-down rectangular view
