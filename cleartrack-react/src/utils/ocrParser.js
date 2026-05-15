@@ -56,92 +56,64 @@ export const parseOCRFields = (rawText) => {
 
   // 1. Receipt Number
   for (const p of [
-    /No\.?\s*F[\s\-]*(\d{3,6})/i,
+    /No\.?F\s*[:.-]?\s*(\d{3,8})/i,
+    /No\.?\s*F[\s\-]*(\d{3,8})/i,
     /RECEIPT\s*(?:NO|#)[\s:.]*([A-Z0-9\-]{3,12})/i,
-    /CHALAN\s*[\/\\]\s*VR\.?\s*NO[\s:.]*([A-Z0-9\/\-]{3,12})/i,
   ]) {
     const m = oneLine.match(p);
     if (m?.[1]) { result.receiptNumber = m[1].trim(); break; }
   }
 
-  // 2. Student Name + Dept + Fee Category
-  const DEPTS = 'IT|CSE|ME|EE|EC|MCA|MBA|CIVIL|ECE|EEE|BCA|BBA|MTECH|BE';
-
-  // 2a. "By Cash [Name] [Dept] [FeeType]" - Optimized for Kadirur template
-  const cashM = oneLine.match(new RegExp(`BY\\s+CASH\\s+([A-Z][A-Z\\.\\s]{2,40}?)(\\s+(${DEPTS}))\\b\\s*(.{0,60})`, 'i'));
-  if (cashM) {
-    result.studentName = cashM[1].trim().replace(/\s{2,}/g, ' ');
-    result.department  = cashM[3].toUpperCase();
-    result.feeCategory = normalizeFeeCategory(cashM[4]);
-    result.paymentMode = 'Cash';
-  }
-
-  // 2b. "Particulars" block
-  if (!result.studentName) {
-    const partIdx = lines.findIndex(l => /particulars/i.test(l));
-    if (partIdx >= 0) {
-      const partLines = lines.slice(partIdx + 1, partIdx + 8)
-        .map(l => l.trim()).filter(Boolean);
-      const partBlock = partLines.join(' ');
-      const dM = partBlock.match(new RegExp(`\\b(${DEPTS})\\b`, 'i'));
-      if (dM) {
-        result.department  = dM[1].toUpperCase();
-        const before = partBlock.slice(0, partBlock.toUpperCase().indexOf(dM[1].toUpperCase())).trim();
-        result.studentName = extractCleanName(before);
-        const after = partBlock.slice(partBlock.toUpperCase().indexOf(dM[1].toUpperCase()) + dM[1].length).trim();
-        result.feeCategory = normalizeFeeCategory(after);
-      } else {
-        result.studentName = extractCleanName(partLines[0] || '');
-        result.feeCategory = normalizeFeeCategory(partLines.slice(1).join(' '));
-      }
-    }
-  }
-
-  // 2c. "Customer Name" label fallback
-  if (!result.studentName) {
-    const cnM = oneLine.match(/CUSTOMER\s*NAME[\s:#]*([A-Z][A-Z.\s]{2,40}?)(?:\s{3,}|$)/i);
-    if (cnM?.[1]) {
-      const n = cnM[1].replace(/College of Engineering/ig, '').trim();
-      if (!['COLLEGE','ENGINEERING','BANK','SERVICE','COOPERATIVE','KADIRUR','CASHIER'].some(w => n.toUpperCase().includes(w))) {
-        result.studentName = n.replace(/\d+/g, '').trim();
-      }
-    }
-  }
-
-  // 3. Amount
-  const totalM = oneLine.match(/[Tt]otal\s*[=:]\s*([\d,\s]+\.?\s*\d{0,2})/i);
-  if (totalM) {
-    const clean = sanitizeAmount(totalM[1]);
-    const val   = parseFloat(clean);
-    if (val >= 100 && val <= 300000) result.amount = '₹' + clean;
-  }
-
-  if (!result.amount) {
-    const kwM = oneLine.match(/(?:RS\.?|AMT|AMOUNT)\s*:?\s*([\d,.\s]{3,15})/i);
-    if (kwM) {
-      const clean = sanitizeAmount(kwM[1]);
-      if (clean) result.amount = '₹' + clean;
-    }
-  }
-
-  if (!result.amount) {
-    const decimals = [...oneLine.matchAll(/\b(\d{1,3}(?:[,\s]\d{3})*\.\d{1,2})\b/g)];
-    for (const [, raw] of decimals) {
-      const clean = sanitizeAmount(raw);
-      const val   = parseFloat(clean);
-      if (val >= 100 && val <= 300000) { result.amount = '₹' + clean; break; }
-    }
-  }
-
-  // 4. Date
+  // 2. Date
   for (const p of [
-    /DATE\s*:?\s*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/i,
+    /Date\s*[:.-]?\s*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/i,
     /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/,
     /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2})/,
-    /(\d{1,2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\w*\s+\d{2,4})/i,
   ]) {
     const m = oneLine.match(p);
     if (m?.[1]) { result.paymentDate = m[1].trim(); break; }
+  }
+
+  // 3. Amount
+  // Look for 4-6 digit numbers with decimals, often isolated or near 'Particulars'/'Amount'
+  const amountPatterns = [
+    /Particulars\s*Amount\s*([\d,]{4,}\.\d{2})/i,
+    /([\d,]{4,}\.\d{2})\s*Rupees/i,
+    /[Tt]otal\s*[=:]\s*([\d,\s]+\.?\s*\d{0,2})/i,
+    /(?:RS\.?|AMT|AMOUNT)\s*:?\s*([\d,.\s]{3,15})/i,
+  ];
+  
+  for (const p of amountPatterns) {
+    const m = oneLine.match(p);
+    if (m?.[1]) {
+      const clean = sanitizeAmount(m[1]);
+      if (clean && parseFloat(clean) > 100) {
+        result.amount = '₹' + clean;
+        break;
+      }
+    }
+  }
+
+  // 4. Student Name + Dept + Fee Category
+  const DEPTS = 'IT|CSE|ME|EE|EC|MCA|MBA|CIVIL|ECE|EEE|BCA|BBA|MTECH|BE';
+
+  // Specific Kadirur "By Cash" line: "By Cash Arpitha Dinesh IT NEW Admission FEE"
+  const kadirurM = oneLine.match(/BY\s+CASH\s+([A-Z\s.]+?)\s+([A-Z]{2,5})\b\s+([A-Z\s]+?)(?:Rupees|$)/i);
+  if (kadirurM) {
+    result.studentName = kadirurM[1].trim().replace(/\s{2,}/g, ' ');
+    result.department  = kadirurM[2].toUpperCase();
+    result.feeCategory = normalizeFeeCategory(kadirurM[3]);
+    result.paymentMode = 'Cash';
+  }
+
+  // Fallback for Name if still empty
+  if (!result.studentName) {
+    const cashM = oneLine.match(new RegExp(`BY\\s+CASH\\s+([A-Z][A-Z\\.\\s]{2,40}?)(\\s+(${DEPTS}))\\b`, 'i'));
+    if (cashM) {
+      result.studentName = cashM[1].trim().replace(/\s{2,}/g, ' ');
+      result.department  = cashM[3].toUpperCase();
+      result.paymentMode = 'Cash';
+    }
   }
 
   // 5. Transaction ID
