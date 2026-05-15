@@ -77,6 +77,7 @@ export const parseOCRFields = (rawText) => {
   // 3. Amount
   // Look for 4-6 digit numbers with decimals, often isolated or near 'Particulars'/'Amount'
   const amountPatterns = [
+    /BY\s+CASH\s+.+?(\d{4,}\.\d{2})/i, // Capture amount on the same line as 'By Cash'
     /Particulars\s*Amount\s*([\d,]{4,}\.\d{2})/i,
     /([\d,]{4,}\.\d{2})\s*Rupees/i,
     /[Tt]otal\s*[=:]\s*([\d,\s]+\.?\s*\d{0,2})/i,
@@ -95,10 +96,10 @@ export const parseOCRFields = (rawText) => {
   }
 
   // 4. Student Name + Dept + Fee Category
-  const DEPTS = 'IT|CSE|ME|EE|EC|MCA|MBA|CIVIL|ECE|EEE|BCA|BBA|MTECH|BE';
+  const DEPTS = 'CSE|IT|EEE|ECE|ME|CE|CIVIL|MCA|MBA|BCA|BBA|MTECH|BE';
 
   // Specific Kadirur "By Cash" line: "By Cash Arpitha Dinesh IT NEW Admission FEE"
-  const kadirurM = oneLine.match(/BY\s+CASH\s+([A-Z\s.]+?)\s+([A-Z]{2,5})\b\s+([A-Z\s]+?)(?:Rupees|$)/i);
+  const kadirurM = oneLine.match(/BY\s+CASH\s+([A-Z\s.]+?)\s+([A-Z]{2,5})\b\s+([A-Z\s]+?)(?:\s+\d{4,}\.\d{2}|Rupees|$)/i);
   if (kadirurM) {
     result.studentName = kadirurM[1].trim().replace(/\s{2,}/g, ' ');
     result.department  = kadirurM[2].toUpperCase();
