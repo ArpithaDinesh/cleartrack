@@ -60,12 +60,12 @@ export default function UploadReceipt() {
       // 2. Submit to backend
       setOcrStatus('Uploading to server...')
       const fd = new FormData()
+      fd.append('ocrData', JSON.stringify(ocrData))
       fd.append('receipt', file)
       fd.append('feeType', feeType)
       fd.append('semester', semester)
       fd.append('academicYear', academicYear)
       fd.append('studentNotes', notes)
-      fd.append('ocrData', JSON.stringify(ocrData))
       
       const { request } = await clearanceAPI.submitRequest(fd)
       navigate(`/ocr-confirm/${request._id}`)

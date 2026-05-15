@@ -92,17 +92,8 @@ const submitRequest = async (req, res) => {
         request.ocrData = { ocrStatus: 'idle' };
       }
     } else {
-      // Fallback for older clients or if frontend OCR fails
-      request.ocrData = { ocrStatus: 'processing' };
-      processOCRInternal(request, req.user)
-        .then(() => {
-          console.log(`✅ Background OCR completed for ${request._id}`);
-          return ClearanceRequest.findByIdAndUpdate(request._id, { 'ocrData.ocrStatus': 'completed' });
-        })
-        .catch(err => {
-          console.error(`❌ Background OCR failed for ${request._id}:`, err.message);
-          return ClearanceRequest.findByIdAndUpdate(request._id, { 'ocrData.ocrStatus': 'failed' });
-        });
+      // If frontend OCR was skipped or failed, mark as failed
+      request.ocrData = { ocrStatus: 'failed', rawText: 'No OCR data provided by client.' };
     }
 
     await request.save();
