@@ -20,6 +20,7 @@ const normalizeFeeCategory = (raw = '') => {
   if (/BUS|TRANSPORT/i.test(up))               return 'Bus Fee';
   if (/EXAM/i.test(up))                         return 'Exam Fee';
   if (/RE.?ADMI/i.test(up))                    return 'Re-Admission Fee';
+  if (/MESS/i.test(up))                         return 'Mess Fee';
   return t.length > 1 ? t : raw.trim();
 };
 
@@ -66,12 +67,12 @@ export const parseOCRFields = (rawText) => {
   // 2. Student Name + Dept + Fee Category
   const DEPTS = 'IT|CSE|ME|EE|EC|MCA|MBA|CIVIL|ECE|EEE|BCA|BBA|MTECH|BE';
 
-  // 2a. "By Cash [Name] [Dept] [FeeType]"
-  const cashM = oneLine.match(new RegExp(`BY\\s+CASH\\s+([A-Z][A-Z.\\s]{2,?})\\s+(${DEPTS})\\b\\s*(.{0,60})`, 'i'));
+  // 2a. "By Cash [Name] [Dept] [FeeType]" - Optimized for Kadirur template
+  const cashM = oneLine.match(new RegExp(`BY\\s+CASH\\s+([A-Z][A-Z\\.\\s]{2,40}?)(\\s+(${DEPTS}))\\b\\s*(.{0,60})`, 'i'));
   if (cashM) {
     result.studentName = cashM[1].trim().replace(/\s{2,}/g, ' ');
-    result.department  = cashM[2].toUpperCase();
-    result.feeCategory = normalizeFeeCategory(cashM[3]);
+    result.department  = cashM[3].toUpperCase();
+    result.feeCategory = normalizeFeeCategory(cashM[4]);
     result.paymentMode = 'Cash';
   }
 

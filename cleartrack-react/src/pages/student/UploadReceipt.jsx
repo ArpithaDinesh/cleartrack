@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { clearanceAPI } from '../../services/api'
 import { createWorker } from 'tesseract.js'
 import { parseOCRFields } from '../../utils/ocrParser'
+import { preprocessImage, waitForCV } from '../../utils/cvPreprocessor'
 
 export default function UploadReceipt() {
   const { user, logout } = useAuth()
@@ -38,8 +39,18 @@ export default function UploadReceipt() {
     setLoading(true); setError('')
     
     try {
-      // 1. Run OCR in the browser
+      // 1. Run Preprocessing (OpenCV)
+      setOcrStatus('Enhancing image quality...')
+      await waitForCV();
+      
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      await new Promise(r => img.onload = r);
+      
+      const processedSrc = await preprocessImage(img);
       setOcrStatus('Initializing OCR engine...')
+
+      // 2. Run OCR in the browser
       const worker = await createWorker('eng', 1, {
         logger: m => {
           if (m.status === 'recognizing text') {
@@ -50,7 +61,7 @@ export default function UploadReceipt() {
       });
 
       setOcrStatus('Reading receipt content...')
-      const { data: { text } } = await worker.recognize(file);
+      const { data: { text } } = await worker.recognize(processedSrc);
       await worker.terminate();
 
       setOcrStatus('Extracting information...')

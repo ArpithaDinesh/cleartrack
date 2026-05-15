@@ -5,6 +5,7 @@ import { clearanceAPI, ocrAPI, busAPI, tuitionFeeAPI } from '../../services/api'
 import ProfileModal from '../../components/ProfileModal'
 import { createWorker } from 'tesseract.js'
 import { parseOCRFields } from '../../utils/ocrParser'
+import { preprocessImage, waitForCV } from '../../utils/cvPreprocessor'
 import './StudentDashboard.css'
 
 export default function StudentDashboard() {
@@ -69,7 +70,18 @@ export default function StudentDashboard() {
     setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], status: 'processing', message: 'Initializing OCR...' } }))
     
     try {
-      // 1. Run OCR in the browser
+      // 1. Run Preprocessing (OpenCV)
+      setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], status: 'processing', message: 'Enhancing image quality...' } }))
+      await waitForCV();
+      
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      await new Promise(r => img.onload = r);
+      
+      const processedSrc = await preprocessImage(img);
+      setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], message: 'Initializing OCR engine...' } }))
+
+      // 2. Run OCR in the browser
       const worker = await createWorker('eng', 1, {
         logger: m => {
           if (m.status === 'recognizing text') {
@@ -78,11 +90,11 @@ export default function StudentDashboard() {
         }
       });
       
-      const { data: { text } } = await worker.recognize(file);
+      const { data: { text } } = await worker.recognize(processedSrc);
       const ocrData = parseOCRFields(text);
       await worker.terminate();
 
-      // 2. Submit Request with File and OCR data
+      // 3. Submit Request with File and OCR data
       setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], message: 'Uploading to server...' } }))
       const formData = new FormData();
       formData.append('ocrData', JSON.stringify(ocrData));
