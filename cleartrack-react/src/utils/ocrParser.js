@@ -55,13 +55,12 @@ const extractCleanName = (raw = '') => {
 
 export const parseOCRFields = (rawText) => {
   // Version indicator
-  console.warn('⚡ OCR System Version: 1.1.0 | 🛠️ Mode: Stabilized High-Res');
-  // Debug log to help identify OCR issues in the browser console
+  console.warn('⚡ OCR System Version: 1.2.0 | 🛠️ Mode: Perspective Rectified');
   console.log('📄 RAW OCR TEXT START 📄\n' + rawText + '\n📄 RAW OCR TEXT END 📄');
 
-  const lines   = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   const oneLine = rawText.replace(/\r?\n/g, ' ').replace(/\s{2,}/g, ' ');
-  const UP      = oneLine.toUpperCase();
+  const UP = oneLine.toUpperCase();
 
   const result = {
     studentName: '', department: '', feeCategory: '',
@@ -72,7 +71,25 @@ export const parseOCRFields = (rawText) => {
   const DEPTS = ['CSE','IT','EEE','ECE','ME','CE','CIVIL','MCA','MBA','BCA','BBA','MTECH'];
   const DEPT_REGEX = new RegExp(`\\b(${DEPTS.join('|')})\\b`, 'i');
 
-  // 1. Line-by-Line Anchor Search
+  // 1. Transaction ID / Ref No (High Priority)
+  const TXN_PATTERNS = [
+    /(?:TXN|TRANS|REF|UPI|ID)\s*(?:NO|ID)?\s*[:.-]?\s*([A-Z0-9]{8,20})/i,
+    /UPI\s*ID\s*[:.-]?\s*([A-Z0-9@.-]{10,})/i,
+    /Ref\s*No\.?\s*[:.-]?\s*(\d{10,16})/i,
+    /\b([A-Z\d]{12,})\b/ // Long alphanumeric string likely a hash/id
+  ];
+  for (const p of TXN_PATTERNS) {
+    const m = oneLine.match(p);
+    if (m?.[1]) {
+      // Filter out common false positives
+      if (!/UNIVERSITY|COLLEGE|ENGINEERING/i.test(m[1])) {
+        result.transactionId = m[1].trim();
+        break;
+      }
+    }
+  }
+
+  // 2. Line-by-Line Anchor Search (Name/Dept)
   let deptLineIdx = -1;
   for (let i = 0; i < lines.length; i++) {
     const dM = lines[i].match(DEPT_REGEX);
@@ -85,31 +102,36 @@ export const parseOCRFields = (rawText) => {
 
   if (deptLineIdx !== -1) {
     const currentLine = lines[deptLineIdx];
-    const prevLine    = deptLineIdx > 0 ? lines[deptLineIdx - 1] : '';
-    
-    // Name is likely the previous line or the first part of current line
+    const prevLine = deptLineIdx > 0 ? lines[deptLineIdx - 1] : '';
     const nameCandidate = (prevLine.length > 3) ? prevLine : currentLine.split(DEPT_REGEX)[0];
     result.studentName = extractCleanName(nameCandidate);
-    
-    // Fee Category is likely on current line or next line
     const feeCandidate = currentLine + ' ' + (lines[deptLineIdx + 1] || '');
     result.feeCategory = normalizeFeeCategory(feeCandidate);
   }
 
-  // 2. Global Scored Amount Search
+  // 3. Global Scored Amount Search (Improved)
   const allNumbers = [...oneLine.matchAll(/\b(\d{3,}(?:[,\s]\d{3})*(?:\.\d{2})?)\b/g)];
   let bestScore = -1;
   let bestMatch = '';
+  
   for (const [, raw] of allNumbers) {
     const clean = sanitizeAmount(raw);
     const val = parseFloat(clean);
-    if ([9001, 2015, 2016, 2025, 2026].includes(val)) continue;
+    
+    // Ignore common non-amount numbers (years, etc)
+    if ([2023, 2024, 2025, 2026, 9001].includes(val)) continue;
     
     let score = val;
+    // Decimals are a very strong indicator of currency
     if (raw.includes('.00')) score += 1000000;
     
-    // Bonus if near "AMOUNT" or "TOTAL"
-    if (UP.includes('AMOUNT') || UP.includes('TOTAL')) score += 5000;
+    // Check for proximity to "Amount", "Total", "Paid"
+    const lowerOneLine = oneLine.toLowerCase();
+    const idx = oneLine.indexOf(raw);
+    const context = lowerOneLine.substring(Math.max(0, idx - 40), idx + raw.length + 20);
+    
+    if (/(?:total|paid|amount|amt|sum|rs|inr|rupees)/i.test(context)) score += 50000;
+    if (/(?:balance|due|remaining)/i.test(context)) score -= 20000; // Penalize balance dues
 
     if (score > bestScore && val < 500000) {
       bestScore = score;
@@ -118,7 +140,34 @@ export const parseOCRFields = (rawText) => {
   }
   if (bestMatch) result.amount = '₹' + bestMatch;
 
-  // 3. Fallbacks for missing fields
+  // 4. Improved Date Parsing
+  const DATE_PATTERNS = [
+    /Date\s*[:.-]?\s*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/i,
+    /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/,
+    /(\d{1,2}\s*(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*\d{2,4})/i
+  ];
+  for (const p of DATE_PATTERNS) {
+    const m = oneLine.match(p);
+    if (m?.[1]) { result.paymentDate = m[1].trim(); break; }
+  }
+
+  // 5. Receipt Number
+  for (const p of [/No\.?F\s*[:.-]?\s*(\d{3,8})/i, /No\.?\s*F[\s\-]*(\d{3,8})/i, /Receipt\s*No\.?\s*[:.-]?\s*(\d+)/i]) {
+    const m = oneLine.match(p);
+    if (m?.[1]) { result.receiptNumber = m[1].trim(); break; }
+  }
+
+  // Bank Name
+  const bankMap = [
+    ['KADIRUR', 'Kadirur Service Co-operative Bank'], 
+    ['CO-OPERATIVE', 'Co-operative Bank'], 
+    ['KERALA BANK', 'Kerala Bank'],
+    ['FEDERAL', 'Federal Bank'],
+    ['SBI', 'State Bank of India']
+  ];
+  for (const [kw, name] of bankMap) { if (UP.includes(kw)) { result.bankName = name; break; } }
+
+  // 6. Final Cleanups
   if (!result.studentName) {
     for (const line of lines.slice(0, 10)) {
       const cleaned = extractCleanName(line);
@@ -128,26 +177,11 @@ export const parseOCRFields = (rawText) => {
       }
     }
   }
-
-  // 4. Other fields (Date, Receipt No, etc.)
-  for (const p of [/Date\s*[:.-]?\s*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/i, /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/]) {
-    const m = oneLine.match(p);
-    if (m?.[1]) { result.paymentDate = m[1].trim(); break; }
-  }
-
-  for (const p of [/No\.?F\s*[:.-]?\s*(\d{3,8})/i, /No\.?\s*F[\s\-]*(\d{3,8})/i]) {
-    const m = oneLine.match(p);
-    if (m?.[1]) { result.receiptNumber = m[1].trim(); break; }
-  }
-
-  // Bank Name
-  const bankMap = [['KADIRUR', 'Kadirur Service Co-operative Bank'], ['CO-OPERATIVE', 'Co-operative Bank'], ['KERALA BANK', 'Kerala Bank']];
-  for (const [kw, name] of bankMap) { if (UP.includes(kw)) { result.bankName = name; break; } }
-
-  // 5. Final Filtering
+  
   if (result.studentName) {
     result.studentName = result.studentName.replace(/PARTICULARS|AMOUNT|DATE|CUSTOMER|S[1-8]/gi, '').trim();
   }
 
   return result;
 };
+
