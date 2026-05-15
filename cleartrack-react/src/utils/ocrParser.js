@@ -54,6 +54,8 @@ const extractCleanName = (raw = '') => {
 };
 
 export const parseOCRFields = (rawText) => {
+  // Version indicator
+  console.warn('⚡ OCR System Version: 1.0.8');
   // Debug log to help identify OCR issues in the browser console
   console.log('📄 RAW OCR TEXT START 📄\n' + rawText + '\n📄 RAW OCR TEXT END 📄');
 
