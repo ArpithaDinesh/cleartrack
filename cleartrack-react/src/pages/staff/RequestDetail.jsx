@@ -132,31 +132,32 @@ export default function RequestDetail() {
                   {/* Decision Panel */}
                   <div className="card" style={{borderLeft:'4px solid var(--primary)'}}>
                     <h3 className="card-title">Review Decision</h3>
-
-                {myApproval?.status === 'pending' && !decision ? (
-                  <>
-                    <div className="form-group">
-                      <label>Remarks (optional)</label>
-                      <textarea rows={2} value={remarks} onChange={e=>setRemarks(e.target.value)} placeholder="Add any remarks…" style={{width:'100%',padding:'10px 14px',border:'1.5px solid var(--border)',borderRadius:'var(--radius-sm)',fontFamily:'inherit',fontSize:'.9rem',resize:'vertical'}}/>
-                    </div>
-                    {error && <div style={{background:'#fee2e2',color:'#991b1b',padding:'10px 14px',borderRadius:8,marginBottom:12,fontSize:'.875rem'}}>{error}</div>}
-                    <div style={{display:'flex',gap:12}}>
-                      <button className="btn-approve" onClick={()=>handleDecision('approved')} disabled={deciding}>
-                        <svg xmlns="http://www.w3.org/2000/svg" width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                        {deciding ? 'Processing…' : 'Approve'}
-                      </button>
-                      <button className="btn-reject" onClick={()=>handleDecision('rejected')} disabled={deciding}>
-                        <svg xmlns="http://www.w3.org/2000/svg" width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                        {deciding ? 'Processing…' : 'Reject'}
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <div className={`cr-decision ${myApproval?.status}`} style={{display:'flex'}}>
-                    {myApproval?.status === 'approved' ? '✓ You approved this request' : myApproval?.status === 'rejected' ? '✗ You rejected this request' : myApproval?.status === 'not_applicable' ? 'N/A — This department is not required' : 'No action needed'}
-                    {decision && <span style={{marginLeft:8,fontWeight:400}}>{remarks && `— "${remarks}"`}</span>}
+                    {myApproval?.status === 'pending' && !decision ? (
+                      <>
+                        <div className="form-group">
+                          <label>Remarks (optional)</label>
+                          <textarea rows={2} value={remarks} onChange={e=>setRemarks(e.target.value)} placeholder="Add any remarks…" style={{width:'100%',padding:'10px 14px',border:'1.5px solid var(--border)',borderRadius:'var(--radius-sm)',fontFamily:'inherit',fontSize:'.9rem',resize:'vertical'}}/>
+                        </div>
+                        {error && <div style={{background:'#fee2e2',color:'#991b1b',padding:'10px 14px',borderRadius:8,marginBottom:12,fontSize:'.875rem'}}>{error}</div>}
+                        <div style={{display:'flex',gap:12}}>
+                          <button className="btn-approve" onClick={()=>handleDecision('approved')} disabled={deciding}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                            {deciding ? 'Processing…' : 'Approve'}
+                          </button>
+                          <button className="btn-reject" onClick={()=>handleDecision('rejected')} disabled={deciding}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            {deciding ? 'Processing…' : 'Reject'}
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className={`cr-decision ${myApproval?.status}`} style={{display:'flex'}}>
+                        {myApproval?.status === 'approved' ? '✓ You approved this request' : myApproval?.status === 'rejected' ? '✗ You rejected this request' : myApproval?.status === 'not_applicable' ? 'N/A — This department is not required' : 'No action needed'}
+                        {decision && <span style={{marginLeft:8,fontWeight:400}}>{remarks && `— "${remarks}"`}</span>}
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             </>
           )}
