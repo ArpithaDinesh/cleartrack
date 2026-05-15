@@ -711,18 +711,64 @@ export default function StudentDashboard() {
               Clearance Status
             </div>
 
-            <div className="status-bar pending" style={{ marginBottom: '20px' }}>
-              <div className="sb-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
+            {clearanceRequests.length === 0 ? (
+              <div className="status-bar pending" style={{ marginBottom: '20px' }}>
+                <div className="sb-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                </div>
+                <div className="sb-info">
+                  <h3>No Clearance Request Submitted</h3>
+                  <p>Upload your fee receipts above and submit a clearance request to see the status here.</p>
+                </div>
+                <span className="badge badge-neutral" style={{ marginLeft: 'auto', whiteSpace: 'nowrap' }}>Not Submitted</span>
               </div>
-              <div className="sb-info">
-                <h3>No Clearance Request Submitted</h3>
-                <p>Upload your fee receipts above and submit a clearance request to see the status here.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 15, marginBottom: 20 }}>
+                {clearanceRequests.map(r => {
+                  const teacherApproval = r.departmentApprovals?.find(a => a.department === 'class_teacher');
+                  const isPending = r.overallStatus === 'submitted' || r.overallStatus === 'under_review';
+                  const isApproved = r.overallStatus === 'approved';
+                  const isRejected = r.overallStatus === 'rejected';
+
+                  return (
+                    <div key={r._id} className={`status-bar ${isApproved ? 'success' : isRejected ? 'danger' : 'pending'}`}>
+                      <div className="sb-icon">
+                        {isApproved ? (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                        ) : isRejected ? (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        )}
+                      </div>
+                      <div className="sb-info" style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <h3 style={{ textTransform: 'capitalize' }}>{r.feeType} Fee Clearance</h3>
+                          <span style={{ fontSize: '.75rem', opacity: 0.8 }}>ID: {r.requestNumber}</span>
+                        </div>
+                        <p style={{ margin: '4px 0' }}>
+                          {isApproved ? 'All departments have approved your clearance!' : 
+                           isRejected ? 'Your request was rejected. Please check remarks and re-submit.' : 
+                           'Your request is currently being reviewed by your Class Teacher.'}
+                        </p>
+                        <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+                          <span className={`badge ${r.overallStatus === 'approved' ? 'badge-success' : r.overallStatus === 'rejected' ? 'badge-danger' : 'badge-warning'}`}>
+                            Overall: {r.overallStatus.replace('_', ' ')}
+                          </span>
+                          <span className="badge badge-neutral">Teacher: {teacherApproval?.status || 'pending'}</span>
+                        </div>
+                      </div>
+                      <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                        <div style={{ fontWeight: 700, color: 'var(--text-main)', marginBottom: 5 }}>₹{r.ocrData?.amount?.replace('₹', '') || '0'}</div>
+                        <div style={{ fontSize: '.7rem', color: 'var(--text-sub)' }}>{r.submittedAt ? new Date(r.submittedAt).toLocaleDateString() : 'Draft'}</div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              <span className="badge badge-neutral" style={{ marginLeft: 'auto', whiteSpace: 'nowrap' }}>Not Submitted</span>
-            </div>
+            )}
 
             {/* Final Clearance Certificate */}
             <div className="clearance-form-card">

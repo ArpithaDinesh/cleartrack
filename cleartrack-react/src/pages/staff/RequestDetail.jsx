@@ -90,26 +90,40 @@ export default function RequestDetail() {
                     </div>
                   </div>
 
-                  {/* OCR Full Data */}
+                  {/* OCR Extracted Data */}
                   <div className="card">
-                    <h3 className="card-title">Full Extracted Data (OCR)</h3>
-                    <div style={{background:'#f8fafc', padding:16, borderRadius:8, border:'1px solid #e2e8f0'}}>
+                    <h3 className="card-title">Extracted Payment Details</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: 20 }}>
+                      {[
+                        { label: 'Amount Paid', value: req.ocrData?.amount || '—', bold: true },
+                        { label: 'Transaction ID', value: req.ocrData?.transactionId || '—' },
+                        { label: 'Payment Date', value: req.ocrData?.paymentDate || '—' },
+                        { label: 'Bank / Mode', value: req.ocrData?.bankName || req.ocrData?.paymentMode || '—' },
+                        { label: 'Receipt No.', value: req.ocrData?.receiptNumber || '—' },
+                        { label: 'OCR Name Match', value: req.ocrData?.studentName || '—' },
+                      ].map(item => (
+                        <div key={item.label} style={{ background: '#f8fafc', padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                          <label style={{ fontSize: '.7rem', color: '#64748b', display: 'block', textTransform: 'uppercase', letterSpacing: '0.025em' }}>{item.label}</label>
+                          <span style={{ fontWeight: item.bold ? 700 : 500, color: item.bold ? 'var(--primary)' : '#334155' }}>{item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <h3 className="card-title" style={{ fontSize: '.9rem', marginBottom: 10 }}>Raw Extraction Text</h3>
+                    <div style={{ background: '#f1f5f9', padding: 12, borderRadius: 6, border: '1px solid #e2e8f0' }}>
                       <pre style={{
-                        margin:0, 
-                        whiteSpace:'pre-wrap', 
-                        fontSize:'.8rem', 
-                        lineHeight:1.6, 
-                        color:'#334155', 
-                        fontFamily:'monospace',
-                        maxHeight:'350px',
-                        overflowY:'auto'
+                        margin: 0,
+                        whiteSpace: 'pre-wrap',
+                        fontSize: '.75rem',
+                        lineHeight: 1.5,
+                        color: '#475569',
+                        fontFamily: 'monospace',
+                        maxHeight: '150px',
+                        overflowY: 'auto'
                       }}>
-                        {req.ocrData?.rawText || 'No extraction data available.'}
+                        {req.ocrData?.rawText || 'No raw text available.'}
                       </pre>
                     </div>
-                    <p style={{fontSize:'.75rem', color:'var(--text-sub)', marginTop:12}}>
-                      ℹ️ This is the raw text extracted from the bill. Use this to verify payment details.
-                    </p>
                   </div>
                 </div>
 
