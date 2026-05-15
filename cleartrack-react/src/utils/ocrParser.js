@@ -95,24 +95,43 @@ export const parseOCRFields = (rawText) => {
     }
   }
 
-  // 4. Student Name + Dept + Fee Category
+  // 4. Section-Based Extraction (Particulars & Amount)
   const DEPTS = 'CSE|IT|EEE|ECE|ME|CE|CIVIL|MCA|MBA|BCA|BBA|MTECH|BE';
-
-  // Specific Kadirur "By Cash" line: "By Cash Arpitha Dinesh IT NEW Admission FEE"
-  const kadirurM = oneLine.match(/BY\s+CASH\s+([A-Z\s.]+?)\s+([A-Z]{2,5})\b\s+([A-Z\s]+?)(?:\s+\d{4,}\.\d{2}|Rupees|$)/i);
-  if (kadirurM) {
-    result.studentName = kadirurM[1].trim().replace(/\s{2,}/g, ' ');
-    result.department  = kadirurM[2].toUpperCase();
-    result.feeCategory = normalizeFeeCategory(kadirurM[3]);
-    result.paymentMode = 'Cash';
+  
+  // 4a. Find Particulars Area
+  const particularsMatch = oneLine.match(/PARTICULARS\s*(.*?)(?:RUPEES|TOTAL|$)/i);
+  if (particularsMatch?.[1]) {
+    const particularsBlock = particularsMatch[1].trim();
+    
+    // Extract Dept from this block
+    const dM = particularsBlock.match(new RegExp(`\\b(${DEPTS})\\b`, 'i'));
+    if (dM) {
+      result.department = dM[1].toUpperCase();
+      
+      // Name is usually before the Dept
+      const beforeDept = particularsBlock.slice(0, particularsBlock.toUpperCase().indexOf(dM[1].toUpperCase())).trim();
+      result.studentName = extractCleanName(beforeDept.replace(/BY\s*CASH/i, ''));
+      
+      // Fee Category is usually after the Dept
+      const afterDept = particularsBlock.slice(particularsBlock.toUpperCase().indexOf(dM[1].toUpperCase()) + dM[1].length).trim();
+      result.feeCategory = normalizeFeeCategory(afterDept);
+    }
   }
 
-  // Fallback for Name if still empty
+  // 4b. Find Amount Area (Directly under or after 'Amount' header)
+  const amountHeaderMatch = oneLine.match(/AMOUNT\s*([\d,]{3,}\.\d{2})/i);
+  if (amountHeaderMatch?.[1]) {
+    const clean = sanitizeAmount(amountHeaderMatch[1]);
+    if (clean) result.amount = '₹' + clean;
+  }
+
+  // Fallback to specific Kadirur "By Cash" line if section-based failed
   if (!result.studentName) {
-    const cashM = oneLine.match(new RegExp(`BY\\s+CASH\\s+([A-Z][A-Z\\.\\s]{2,40}?)(\\s+(${DEPTS}))\\b`, 'i'));
-    if (cashM) {
-      result.studentName = cashM[1].trim().replace(/\s{2,}/g, ' ');
-      result.department  = cashM[3].toUpperCase();
+    const kadirurM = oneLine.match(/BY\s+CASH\s+([A-Z\s.]+?)\s+([A-Z]{2,5})\b\s+([A-Z\s]+?)(?:\s+\d{4,}\.\d{2}|Rupees|$)/i);
+    if (kadirurM) {
+      result.studentName = kadirurM[1].trim().replace(/\s{2,}/g, ' ');
+      result.department  = kadirurM[2].toUpperCase();
+      result.feeCategory = normalizeFeeCategory(kadirurM[3]);
       result.paymentMode = 'Cash';
     }
   }
