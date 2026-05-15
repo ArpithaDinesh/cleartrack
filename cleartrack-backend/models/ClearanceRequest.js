@@ -21,16 +21,9 @@ const departmentApprovalSchema = new mongoose.Schema({
 });
 
 const ocrDataSchema = new mongoose.Schema({
-  studentName: { type: String, default: '' },
-  department: { type: String, default: '' },
-  feeCategory: { type: String, default: '' },
-  transactionId: { type: String, default: '' },
+  particulars: { type: String, default: '' },
   amount: { type: String, default: '' },
-  paymentDate: { type: String, default: '' },
-  receiptNumber: { type: String, default: '' },
-  bankName: { type: String, default: '' },
-  paymentMode: { type: String, default: '' },
-  paymentType: { type: String, default: '' }, // 'half' or 'full'
+  bank: { type: String, default: '' },
   rawText: { type: String, default: '' },
   ocrStatus: {
     type: String,

@@ -93,18 +93,15 @@ export default function RequestDetail() {
                   {/* OCR Extracted Data */}
                   <div className="card">
                     <h3 className="card-title">Extracted Payment Details</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: 20 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: 20 }}>
                       {[
+                        { label: 'Particulars', value: req.ocrData?.particulars || '—', bold: true },
                         { label: 'Amount Paid', value: req.ocrData?.amount || '—', bold: true },
-                        { label: 'Transaction ID', value: req.ocrData?.transactionId || '—' },
-                        { label: 'Payment Date', value: req.ocrData?.paymentDate || '—' },
-                        { label: 'Bank / Mode', value: req.ocrData?.bankName || req.ocrData?.paymentMode || '—' },
-                        { label: 'Receipt No.', value: req.ocrData?.receiptNumber || '—' },
-                        { label: 'OCR Name Match', value: req.ocrData?.studentName || '—' },
+                        { label: 'Bank Name', value: req.ocrData?.bank || '—' },
                       ].map(item => (
-                        <div key={item.label} style={{ background: '#f8fafc', padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                          <label style={{ fontSize: '.7rem', color: '#64748b', display: 'block', textTransform: 'uppercase', letterSpacing: '0.025em' }}>{item.label}</label>
-                          <span style={{ fontWeight: item.bold ? 700 : 500, color: item.bold ? 'var(--primary)' : '#334155' }}>{item.value}</span>
+                        <div key={item.label} style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                          <label style={{ fontSize: '.75rem', color: '#64748b', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>{item.label}</label>
+                          <span style={{ fontWeight: item.bold ? 700 : 500, color: item.bold ? 'var(--primary)' : '#334155', fontSize: '1.05rem' }}>{item.value}</span>
                         </div>
                       ))}
                     </div>
