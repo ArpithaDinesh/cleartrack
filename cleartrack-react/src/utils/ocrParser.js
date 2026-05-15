@@ -29,7 +29,8 @@ const IGNORE_WORDS = new Set([
   'KADIRUR','CASHIER','OFFICER','REMITTED','TRANSFER','RECEIPT','DEPOSIT',
   'SAVINGS','AUTHORISED','AUTHORIZ','PARTICULARS','AMOUNT','DATE','CUSTOMER',
   'CHALAN','RUPEES','TOTAL','WORDS','CHALLAN','ADMISSION','ISO','YEAR','TEL',
-  'OL','THE','AND','BRANCH','EXTN','KSEB','KSCB','AC','NO','TYPE',
+  'OL','THE','AND','BRANCH','EXTN','KSEB','KSCB','AC','NO','TYPE','AMOU','AMNT',
+  'PARTIC','PART','PARTI','AMN','AMT',
 ]);
 
 const extractCleanName = (raw = '') => {
@@ -146,7 +147,23 @@ export const parseOCRFields = (rawText) => {
     }
   }
 
-  // 5. Transaction ID
+  // 5. Final Cleanup (Remove identified amount/dept from name)
+  if (result.studentName) {
+    if (result.amount) {
+      const amtNum = result.amount.replace('₹', '');
+      result.studentName = result.studentName.replace(new RegExp(amtNum.replace('.', '\\.'), 'g'), '');
+    }
+    if (result.department) {
+      result.studentName = result.studentName.replace(new RegExp(`\\b${result.department}\\b`, 'gi'), '');
+    }
+    result.studentName = result.studentName.trim().replace(/\s{2,}/g, ' ');
+    // If name is still noisy, run one more extractCleanName pass
+    if (result.studentName.length > 20 || /AMOUNT|PARTIC|DATE/i.test(result.studentName)) {
+       result.studentName = extractCleanName(result.studentName);
+    }
+  }
+
+  // 6. Transaction ID
   for (const p of [
     /TXN[\s:#]*([A-Z0-9]{6,})/i,
     /UTR[\s:#]*([A-Z0-9\-]{10,})/i,
