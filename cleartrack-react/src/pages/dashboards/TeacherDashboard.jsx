@@ -99,6 +99,20 @@ export default function TeacherDashboard() {
             <div className="stat-card"><div className="stat-icon orange"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div className="stat-info"><h3>{loading ? '…' : pending.length}</h3><p>Pending Review</p></div></div>
           </div>
 
+          {/* Missing Config Warning */}
+          {user?.assignedDepartment === 'class_teacher' && (!user?.classDepartment || !user?.classYear) && (
+            <div className="card" style={{ background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e', padding: '20px', marginBottom: '28px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ background: '#fef3c7', padding: '10px', borderRadius: '50%' }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              </div>
+              <div>
+                <h4 style={{ margin: 0, fontSize: '1rem' }}>Class Configuration Missing</h4>
+                <p style={{ margin: '4px 0 0', fontSize: '.85rem', opacity: 0.9 }}>You haven't set your assigned Department and Year. You won't see any student requests until you update your profile.</p>
+                <button className="btn btn-sm" style={{ marginTop: '10px', background: '#92400e', color: 'white', border: 'none' }} onClick={() => setShowProfileModal(true)}>Configure Now</button>
+              </div>
+            </div>
+          )}
+
           {/* Pending Requests */}
           <div className="card" style={{padding:0,overflow:'hidden'}}>
             <div style={{padding:'18px 24px 14px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>

@@ -137,8 +137,8 @@ export default function StudentDashboard() {
       };
 
       await ocrAPI.confirmOCR(state.requestId, confirmedData);
-      setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], status: 'confirmed', ocrData: confirmedData, message: 'Details confirmed! Click "Submit for Approval" to send to your teacher.' } }))
-      alert(`✅ ${feeType.toUpperCase()} Fee details confirmed. Click "Submit for Approval" to send it to your teacher.`);
+      setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], status: 'confirmed', ocrData: confirmedData, message: 'Details confirmed! Now click the "Submit for Approval" button below to send it to your teacher.' } }))
+      alert(`✅ ${feeType.toUpperCase()} Fee details confirmed. \n\nIMPORTANT: Your teacher won't see this yet! \n\nPlease click the "🚀 Submit for Approval" button to finalize.`);
     } catch (err) {
       setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], status: 'error', message: err.message || 'Failed to confirm.' } }))
     }
@@ -412,8 +412,13 @@ export default function StudentDashboard() {
                           <button type="button" className="btn btn-primary btn-full" style={{ marginTop: '10px', fontSize: '.85rem', fontWeight: 600 }}
                             disabled={ocrStates.tuition.status !== 'confirmed' || submitLoading}
                             onClick={() => handleSubmitFee('tuition')}>
-                            {submitLoading ? 'Submitting...' : '🚀 Submit Tuition Fee for Approval'}
+                            {submitLoading ? 'Submitting...' : '🚀 Final Submit for Approval'}
                           </button>
+                          {ocrStates.tuition.status === 'confirmed' && (
+                            <div style={{marginTop: 10, padding: 8, background: '#fffbeb', color: '#92400e', fontSize: '.75rem', borderRadius: 6, border: '1px solid #fde68a', textAlign: 'center'}}>
+                              ⚠️ One step left! Click the button above to send to your teacher.
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -568,8 +573,13 @@ export default function StudentDashboard() {
                               <button type="button" className="btn btn-primary btn-full" style={{ marginTop: '10px', fontSize: '.85rem', fontWeight: 600 }}
                                 disabled={ocrStates.bus.status !== 'confirmed' || submitLoading}
                                 onClick={() => handleSubmitFee('bus')}>
-                                {submitLoading ? 'Submitting...' : '🚀 Submit Bus Fee for Approval'}
+                                {submitLoading ? 'Submitting...' : '🚀 Final Submit for Approval'}
                               </button>
+                              {ocrStates.bus.status === 'confirmed' && (
+                                <div style={{marginTop: 10, padding: 8, background: '#fffbeb', color: '#92400e', fontSize: '.75rem', borderRadius: 6, border: '1px solid #fde68a', textAlign: 'center'}}>
+                                  ⚠️ One step left! Click the button above to send to your teacher.
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>

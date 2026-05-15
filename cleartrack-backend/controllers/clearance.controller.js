@@ -4,6 +4,7 @@ const os = require('os');
 const { v4: uuidv4 } = require('uuid');
 const ClearanceRequest = require('../models/ClearanceRequest');
 const ApprovalLog = require('../models/ApprovalLog');
+const User = require('../models/User');
 
 // Helper: build department approvals based on fee type and student profile
 const buildApprovals = (feeType, student) => {
@@ -149,32 +150,37 @@ const getDepartmentPending = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No department assigned.' });
     }
 
-    // First get all requests pending for this department
-    const requests = await ClearanceRequest.find({
+    // Base query: MUST be submitted (not draft) and have a pending approval for this department
+    const query = {
+      overallStatus: { $ne: 'draft' },
       'departmentApprovals': {
         $elemMatch: { department: dept, status: 'pending' }
       }
-    })
+    };
+
+    // If class teacher: additionally filter by student's department and year
+    if (dept === 'class_teacher') {
+      const { classDepartment, classYear } = req.user;
+      if (!classDepartment || !classYear) {
+        // Teacher has no class assigned - return empty but success
+        return res.json({ success: true, requests: [], message: 'No class assigned to this teacher.' });
+      }
+
+      // Optimization: Find students in this class first to filter requests in the DB query
+      const studentIds = await User.find({
+        role: 'student',
+        department: classDepartment,
+        classYear: classYear
+      }).distinct('_id');
+
+      query.student = { $in: studentIds };
+    }
+
+    const requests = await ClearanceRequest.find(query)
       .sort({ submittedAt: 1 })
       .populate('student', 'fullName universityNumber rollNumber department classYear admissionNumber');
 
-    // If class teacher: additionally filter by matching department AND year
-    let filtered = requests;
-    if (dept === 'class_teacher') {
-      const { classDepartment, classYear } = req.user;
-      if (classDepartment && classYear) {
-        filtered = requests.filter(r =>
-          r.student &&
-          r.student.department === classDepartment &&
-          r.student.classYear === classYear
-        );
-      } else {
-        // Teacher has no class assigned - show nothing
-        filtered = [];
-      }
-    }
-
-    res.json({ success: true, requests: filtered });
+    res.json({ success: true, requests });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
