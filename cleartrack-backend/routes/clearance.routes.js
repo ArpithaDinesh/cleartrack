@@ -5,13 +5,14 @@ const { protect, authorize } = require('../middleware/auth.middleware');
 const {
   submitRequest, getMyRequests, getRequest,
   getDepartmentPending, reviewRequest, getAllRequests, getRequestLogs,
-  submitAllRequests
+  submitAllRequests, confirmOCR
 } = require('../controllers/clearance.controller');
 
 // Student routes
 router.post('/submit', protect, authorize('student'), upload.single('receipt'), submitRequest);
 router.post('/submit-all', protect, authorize('student'), submitAllRequests);
 router.get('/my', protect, authorize('student'), getMyRequests);
+router.patch('/:id/confirm', protect, authorize('student'), confirmOCR);
 
 // Staff routes
 router.get('/department/pending', protect, authorize('staff'), getDepartmentPending);

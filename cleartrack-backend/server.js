@@ -56,7 +56,6 @@ app.use('/uploads', express.static(path.join(os.tmpdir(), 'cleartrack-uploads'))
 app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/users', require('./routes/user.routes'));
 app.use('/api/clearance', require('./routes/clearance.routes'));
-app.use('/api/ocr', require('./routes/ocr.routes'));
 app.use('/api/departments', require('./routes/department.routes'));
 app.use('/api/admin', require('./routes/admin.routes'));
 app.use('/api/bus-routes', require('./routes/busRoute.routes'));

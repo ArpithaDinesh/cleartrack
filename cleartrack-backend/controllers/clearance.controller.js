@@ -4,7 +4,6 @@ const os = require('os');
 const { v4: uuidv4 } = require('uuid');
 const ClearanceRequest = require('../models/ClearanceRequest');
 const ApprovalLog = require('../models/ApprovalLog');
-const { processOCRInternal } = require('./ocr.controller');
 
 // Helper: build department approvals based on fee type and student profile
 const buildApprovals = (feeType, student) => {
@@ -83,22 +82,30 @@ const submitRequest = async (req, res) => {
       newStatus: 'submitted'
     });
 
-    // Automatically trigger OCR processing in the background
-    // This makes the response instant while OCR runs silently
-    request.ocrData = { ocrStatus: 'processing' };
-    await request.save();
+    // If OCR data is provided by the frontend, use it
+    if (req.body.ocrData) {
+      try {
+        request.ocrData = JSON.parse(req.body.ocrData);
+        request.ocrData.ocrStatus = 'completed';
+      } catch (e) {
+        console.warn('Failed to parse ocrData from frontend:', e.message);
+        request.ocrData = { ocrStatus: 'idle' };
+      }
+    } else {
+      // Fallback for older clients or if frontend OCR fails
+      request.ocrData = { ocrStatus: 'processing' };
+      processOCRInternal(request, req.user)
+        .then(() => {
+          console.log(`✅ Background OCR completed for ${request._id}`);
+          return ClearanceRequest.findByIdAndUpdate(request._id, { 'ocrData.ocrStatus': 'completed' });
+        })
+        .catch(err => {
+          console.error(`❌ Background OCR failed for ${request._id}:`, err.message);
+          return ClearanceRequest.findByIdAndUpdate(request._id, { 'ocrData.ocrStatus': 'failed' });
+        });
+    }
 
-    // Trigger background process without awaiting
-    processOCRInternal(request, req.user)
-      .then(() => {
-        console.log(`✅ Background OCR completed for ${request._id}`);
-        // Update status to completed
-        return ClearanceRequest.findByIdAndUpdate(request._id, { 'ocrData.ocrStatus': 'completed' });
-      })
-      .catch(err => {
-        console.error(`❌ Background OCR failed for ${request._id}:`, err.message);
-        return ClearanceRequest.findByIdAndUpdate(request._id, { 'ocrData.ocrStatus': 'failed' });
-      });
+    await request.save();
 
     res.status(201).json({ success: true, request });
   } catch (err) {
@@ -285,8 +292,34 @@ const submitAllRequests = async (req, res) => {
   }
 };
 
+// @desc  Student confirm OCR data
+// @route PATCH /api/clearance/:id/confirm
+const confirmOCR = async (req, res) => {
+  try {
+    const request = await ClearanceRequest.findById(req.params.id);
+    if (!request) {
+      return res.status(404).json({ success: false, message: 'Request not found.' });
+    }
+    if (request.student.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Access denied.' });
+    }
+
+    const fields = ['studentName','department','feeCategory','transactionId','amount','paymentDate','receiptNumber','bankName','paymentMode'];
+    for (const f of fields) {
+      if (req.body[f] !== undefined) request.ocrData[f] = req.body[f];
+    }
+    request.ocrData.studentConfirmed = true;
+    request.ocrData.confirmedAt = new Date();
+    await request.save();
+
+    return res.json({ success: true, ocrData: request.ocrData });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 module.exports = {
   submitRequest, getMyRequests, getRequest,
   getDepartmentPending, reviewRequest, getAllRequests, getRequestLogs,
-  submitAllRequests
+  submitAllRequests, confirmOCR
 };

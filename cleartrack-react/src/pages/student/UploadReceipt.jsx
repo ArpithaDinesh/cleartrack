@@ -2,6 +2,8 @@ import { useState, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { clearanceAPI } from '../../services/api'
+import Tesseract from 'tesseract.js'
+import { parseOCRFields } from '../../utils/ocrParser'
 
 export default function UploadReceipt() {
   const { user, logout } = useAuth()
@@ -13,6 +15,8 @@ export default function UploadReceipt() {
   const [academicYear, setAcademicYear] = useState('2025-26')
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
+  const [ocrProgress, setOcrProgress] = useState(0)
+  const [ocrStatus, setOcrStatus] = useState('')
   const [error, setError] = useState('')
   const [dragOver, setDragOver] = useState(false)
 
@@ -32,19 +36,45 @@ export default function UploadReceipt() {
     e.preventDefault()
     if (!file) return setError('Please select a receipt file.')
     setLoading(true); setError('')
+    
     try {
+      // 1. Run OCR in the browser
+      setOcrStatus('Initializing OCR engine...')
+      const worker = await Tesseract.createWorker('eng', 1, {
+        logger: m => {
+          if (m.status === 'recognizing text') {
+            setOcrStatus(`Analyzing receipt... ${Math.round(m.progress * 100)}%`)
+            setOcrProgress(m.progress * 100)
+          }
+        }
+      });
+
+      setOcrStatus('Reading receipt content...')
+      const { data: { text } } = await worker.recognize(file);
+      await worker.terminate();
+
+      setOcrStatus('Extracting information...')
+      const ocrData = parseOCRFields(text);
+      ocrData.ocrStatus = 'completed';
+
+      // 2. Submit to backend
+      setOcrStatus('Uploading to server...')
       const fd = new FormData()
       fd.append('receipt', file)
       fd.append('feeType', feeType)
       fd.append('semester', semester)
       fd.append('academicYear', academicYear)
       fd.append('studentNotes', notes)
+      fd.append('ocrData', JSON.stringify(ocrData))
+      
       const { request } = await clearanceAPI.submitRequest(fd)
       navigate(`/ocr-confirm/${request._id}`)
     } catch (err) {
-      setError(err.message)
+      setError(err.message || 'Failed to process receipt. Please try again.')
     } finally {
       setLoading(false)
+      setOcrStatus('')
+      setOcrProgress(0)
     }
   }
 
@@ -138,12 +168,24 @@ export default function UploadReceipt() {
               </div>
             </div>
 
+            {loading && (
+              <div style={{marginBottom:16,background:'#f0f9ff',border:'1px solid #bae6fd',borderRadius:8,padding:12}}>
+                <div style={{display:'flex',justifyContent:'space-between',marginBottom:6,fontSize:'.85rem'}}>
+                  <span style={{color:'#0369a1',fontWeight:600}}>{ocrStatus}</span>
+                  <span style={{color:'#0369a1'}}>{Math.round(ocrProgress)}%</span>
+                </div>
+                <div style={{height:6,background:'#e0f2fe',borderRadius:3,overflow:'hidden'}}>
+                  <div style={{height:'100%',background:'var(--primary)',width:`${ocrProgress}%`,transition:'width 0.3s ease'}}/>
+                </div>
+              </div>
+            )}
+
             {error && <div style={{background:'#fee2e2',border:'1px solid #fca5a5',color:'#991b1b',padding:'12px 16px',borderRadius:8,marginBottom:16,fontSize:'.875rem'}}>{error}</div>}
 
             <div style={{display:'flex',gap:12,justifyContent:'flex-end'}}>
               <Link to="/dashboard/student" className="btn btn-outline">Cancel</Link>
               <button type="submit" className="btn btn-primary" disabled={loading}>
-                {loading ? 'Uploading…' : '➜ Upload & Process OCR'}
+                {loading ? 'Processing...' : '➜ Upload & Process OCR'}
               </button>
             </div>
           </form>

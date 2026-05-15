@@ -61,10 +61,9 @@ export const clearanceAPI = {
   },
 };
 
-// OCR — longer timeout since Tesseract can take up to 30s
+// OCR Confirmation (Now handled within clearance routes)
 export const ocrAPI = {
-  processOCR: (requestId) => request('POST', `/ocr/process/${requestId}`, null, false, 60000),
-  confirmOCR: (requestId, data) => request('PATCH', `/ocr/confirm/${requestId}`, data),
+  confirmOCR: (requestId, data) => request('PATCH', `/clearance/${requestId}/confirm`, data),
 };
 
 // User API (Profile)
