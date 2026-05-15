@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { clearanceAPI } from '../../services/api'
-import Tesseract from 'tesseract.js'
+import { createWorker } from 'tesseract.js'
 import { parseOCRFields } from '../../utils/ocrParser'
 
 export default function UploadReceipt() {
@@ -40,7 +40,7 @@ export default function UploadReceipt() {
     try {
       // 1. Run OCR in the browser
       setOcrStatus('Initializing OCR engine...')
-      const worker = await Tesseract.createWorker('eng', 1, {
+      const worker = await createWorker('eng', 1, {
         logger: m => {
           if (m.status === 'recognizing text') {
             setOcrStatus(`Analyzing receipt... ${Math.round(m.progress * 100)}%`)
