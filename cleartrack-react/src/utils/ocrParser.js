@@ -164,5 +164,46 @@ export const parseOCRFields = (rawText) => {
     else if (/ONLINE/i.test(oneLine))                 result.paymentMode = 'Online';
   }
 
+  // 8. HEURISTIC FALLBACKS (If fields are still missing)
+  // 8a. Heuristic Department
+  if (!result.department) {
+    const dM = UP.match(new RegExp(`\\b(${DEPTS})\\b`));
+    if (dM) result.department = dM[1];
+  }
+
+  // 8b. Heuristic Fee Category
+  if (!result.feeCategory) {
+    if (/ADMIS/i.test(UP)) result.feeCategory = 'Admission Fee';
+    else if (/TUI[TL][LI]?[OQ]N/i.test(UP)) result.feeCategory = 'Tuition Fee';
+    else if (/HOSTEL/i.test(UP)) result.feeCategory = 'Hostel Fee';
+    else if (/BUS|TRANS/i.test(UP)) result.feeCategory = 'Bus Fee';
+    else if (/EXAM/i.test(UP)) result.feeCategory = 'Exam Fee';
+  }
+
+  // 8c. Heuristic Amount (Largest decimal number)
+  if (!result.amount) {
+    const allNumbers = [...oneLine.matchAll(/\b(\d{3,}(?:[,\s]\d{3})*(?:\.\d{2})?)\b/g)];
+    let maxVal = 0;
+    let bestMatch = '';
+    for (const [, raw] of allNumbers) {
+      const clean = sanitizeAmount(raw);
+      const val = parseFloat(clean);
+      if (val > maxVal && val < 500000) {
+        maxVal = val;
+        bestMatch = clean;
+      }
+    }
+    if (bestMatch) result.amount = '₹' + bestMatch;
+  }
+
+  // 8d. Heuristic Name (Capitalized words in Particulars area)
+  if (!result.studentName) {
+    const partIdx = UP.indexOf('PARTICULARS');
+    if (partIdx >= 0) {
+      const sub = oneLine.slice(partIdx, partIdx + 100);
+      result.studentName = extractCleanName(sub.replace(/PARTICULARS/i, ''));
+    }
+  }
+
   return result;
 };
