@@ -8,8 +8,8 @@ const authHeaders = () => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-// Generic request with timeout support
-const request = async (method, path, body = null, isFormData = false, timeoutMs = 30000) => {
+// Generic request with timeout support (Increased to 90s for large uploads)
+const request = async (method, path, body = null, isFormData = false, timeoutMs = 90000) => {
   const headers = { ...authHeaders() };
   if (body && !isFormData) headers['Content-Type'] = 'application/json';
 
