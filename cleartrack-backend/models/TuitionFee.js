@@ -4,7 +4,7 @@ const tuitionFeeSchema = new mongoose.Schema({
   year: {
     type: String,
     required: true,
-    enum: ['First year', 'Second year', 'Third year', 'Fourth year'],
+    enum: ['1st Year', '2nd Year', '3rd Year', '4th Year'],
     unique: true
   },
   meritReg: { type: Number, default: 0 },

@@ -40,10 +40,10 @@ const updateFee = async (req, res) => {
 const seedFees = async (req, res) => {
   try {
     const defaultFees = [
-      { year: 'First year', meritReg: 45000, meritFull: 85000, tfw: 5000, nri: 120000 },
-      { year: 'Second year', meritReg: 45000, meritFull: 85000, tfw: 5000, nri: 120000 },
-      { year: 'Third year', meritReg: 45000, meritFull: 85000, tfw: 5000, nri: 120000 },
-      { year: 'Fourth year', meritReg: 45000, meritFull: 85000, tfw: 5000, nri: 120000 },
+      { year: '1st Year', meritReg: 45000, meritFull: 85000, tfw: 5000, nri: 120000 },
+      { year: '2nd Year', meritReg: 45000, meritFull: 85000, tfw: 5000, nri: 120000 },
+      { year: '3rd Year', meritReg: 45000, meritFull: 85000, tfw: 5000, nri: 120000 },
+      { year: '4th Year', meritReg: 45000, meritFull: 85000, tfw: 5000, nri: 120000 },
     ];
     
     await TuitionFee.deleteMany({});
