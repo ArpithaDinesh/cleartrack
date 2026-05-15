@@ -13,12 +13,14 @@ export default function OCRConfirm() {
     receiptNumber:'', bankName:'', paymentMode:''
   })
   const [rawText, setRawText] = useState('')
+  const [receiptUrl, setReceiptUrl] = useState('')
+  const [viewMode, setViewMode] = useState('image') // 'image' or 'text'
   const [loading, setLoading] = useState(true)
   const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState('')
   const initials = user?.fullName?.charAt(0)?.toUpperCase() || 'S'
 
-  const applyOcrData = (d, rt) => {
+  const applyOcrData = (d, rt, rUrl) => {
     setOcr({
       studentName:   d.studentName   || '',
       department:    d.department    || '',
@@ -31,6 +33,7 @@ export default function OCRConfirm() {
       paymentMode:   d.paymentMode   || '',
     })
     setRawText(rt || d.rawText || '')
+    setReceiptUrl(rUrl || '')
   }
 
   useEffect(() => {
@@ -39,9 +42,13 @@ export default function OCRConfirm() {
         const data = await clearanceAPI.getRequest(requestId);
         const req = data.request || {};
         const d = req.ocrData || {};
+        
+        // Build the full image URL
+        const backendUrl = import.meta.env.VITE_API_URL || 'https://cleartrack-backend.vercel.app';
+        const imgUrl = req.receiptFile?.filename ? `${backendUrl}/uploads/${req.receiptFile.filename}` : '';
 
         if (d.ocrStatus === 'completed') {
-          applyOcrData(d, d.rawText);
+          applyOcrData(d, d.rawText, imgUrl);
         } else {
           setError('OCR data not found for this request. Please try re-uploading.');
         }
@@ -54,8 +61,6 @@ export default function OCRConfirm() {
 
     fetchData();
   }, [requestId]);
-
-
 
   const handleConfirm = async (e) => {
     e.preventDefault()
@@ -73,14 +78,14 @@ export default function OCRConfirm() {
   const Field = ({ label, field }) => (
     <div className="form-group">
       <label>{label}</label>
-      <input type="text" value={ocr[field]} onChange={e=>setOcr(p=>({...p,[field]:e.target.value}))} placeholder={`Enter ${label}`}/>
+      <input type="text" value={ocr[field]} onChange={e=>setOcr(p=>({...p,[field]:e.target.value}))} placeholder={`Enter ${label}`} style={{padding:'8px 12px', fontSize:'.85rem'}}/>
     </div>
   )
 
   return (
     <div className="dashboard-body">
       <aside className="sidebar">
-        <div className="sidebar-logo"><div className="logo-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></div><div className="logo-text"><span>CLEARTRACK</span><small>Student Panel</small></div></div>
+        <div className="sidebar-logo"><div className="logo-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></div><div className="logo-text"><span>CLEARTRACK</span><small>Student Panel <span style={{opacity:0.5, fontSize:'10px'}}>v1.1.0</span></small></div></div>
         <nav className="sidebar-nav">
           <span className="nav-section-label">Main Menu</span>
           <Link to="/dashboard/student"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span>Dashboard</span></Link>
@@ -96,12 +101,12 @@ export default function OCRConfirm() {
       <div className="main-content">
         <header className="topbar"><div className="topbar-title">OCR Confirmation</div><div className="topbar-right"><div className="topbar-avatar">{initials}</div></div></header>
         <main className="page-content">
-          <div className="page-header"><h1>Confirm OCR Data</h1><p>Review the automatically extracted data. You can edit any incorrect fields before confirming.</p></div>
+          <div className="page-header"><h1>Confirm & Verify</h1><p>Check the extracted details against your uploaded receipt. Correct any mistakes before finishing.</p></div>
 
           {loading ? (
             <div className="card" style={{textAlign:'center',padding:48}}>
               <div style={{width:48,height:48,border:'4px solid #e2e8f0',borderTopColor:'var(--primary)',borderRadius:'50%',animation:'spin .8s linear infinite',margin:'0 auto 16px'}}/>
-              <p style={{color:'var(--text-sub)'}}>Loading extracted data…</p>
+              <p style={{color:'var(--text-sub)'}}>Loading your data…</p>
             </div>
           ) : error ? (
             <div className="card" style={{textAlign:'center',padding:48}}>
@@ -116,41 +121,58 @@ export default function OCRConfirm() {
                 <div className="card">
                   <h3 className="card-title" style={{marginBottom:20}}>
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{width:18,height:18}}><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-                    OCR Extracted Fields
+                    Extracted Details
                   </h3>
-                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
-                    <div style={{background:'#fff7ed',border:'1px solid #fed7aa',borderRadius:8,padding:'8px 12px',fontSize:'.78rem',color:'#92400e',flex:1}}>
-                      ⚠ OCR values may not be 100% accurate. Please verify and correct before confirming.
-                    </div>
-                    <div style={{marginLeft:12,background:'#dbeafe',color:'#1d4ed8',borderRadius:20,padding:'4px 12px',fontSize:'.75rem',fontWeight:600,whiteSpace:'nowrap'}}>
-                      {Object.values(ocr).filter(v=>v).length} / 9 fields detected
-                    </div>
-                  </div>
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12}}>
+                  
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12, marginBottom:20}}>
                     <Field label="Student Name" field="studentName"/>
                     <Field label="Department" field="department"/>
                     <Field label="Fee Category" field="feeCategory"/>
-                    <Field label="Transaction ID" field="transactionId"/>
                     <Field label="Amount Paid" field="amount"/>
+                    <Field label="Transaction ID" field="transactionId"/>
                     <Field label="Payment Date" field="paymentDate"/>
                     <Field label="Receipt No." field="receiptNumber"/>
                     <Field label="Bank Name" field="bankName"/>
-                    <Field label="Payment Mode" field="paymentMode"/>
+                    <div className="form-group" style={{gridColumn:'span 2'}}>
+                       <Field label="Payment Mode" field="paymentMode"/>
+                    </div>
+                  </div>
+
+                  <div style={{background:'#f0f9ff', border:'1px solid #bae6fd', borderRadius:8, padding:'12px 16px', fontSize:'.85rem', color:'#0369a1', display:'flex', gap:10, alignItems:'center'}}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    <span>Please double-check all fields. OCR can sometimes make mistakes.</span>
                   </div>
                 </div>
 
-                <div className="card">
-                  <h3 className="card-title" style={{marginBottom:16,fontSize:'.875rem'}}>Raw OCR Text</h3>
-                  <pre style={{background:'#f8fafc',border:'1px solid var(--border)',borderRadius:8,padding:14,fontSize:'.72rem',lineHeight:1.8,whiteSpace:'pre-wrap',wordBreak:'break-word',maxHeight:280,overflowY:'auto',color:'var(--text-sub)',fontFamily:'monospace'}}>{rawText || 'No raw text extracted'}</pre>
+                <div className="card" style={{padding:0, overflow:'hidden', display:'flex', flexDirection:'column', height:'580px'}}>
+                  <div style={{padding:'16px 20px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                    <h3 className="card-title" style={{margin:0, fontSize:'.9rem'}}>
+                       {viewMode === 'image' ? 'Original Receipt' : 'Raw OCR Text'}
+                    </h3>
+                    <div style={{display:'flex', gap:8}}>
+                      <button type="button" className={`btn btn-sm ${viewMode === 'image' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setViewMode('image')} style={{padding:'6px 12px', fontSize:'.75rem'}}>View Image</button>
+                      <button type="button" className={`btn btn-sm ${viewMode === 'text' ? 'btn-primary' : 'btn-outline'}`} onClick={()=>setViewMode('text')} style={{padding:'6px 12px', fontSize:'.75rem'}}>View Raw Text</button>
+                    </div>
+                  </div>
+                  
+                  <div style={{flex:1, overflow:'auto', background:'#f1f5f9', position:'relative'}}>
+                    {viewMode === 'image' ? (
+                      receiptUrl ? (
+                        <img src={receiptUrl} alt="Uploaded Receipt" style={{width:'100%', display:'block'}} />
+                      ) : (
+                        <div style={{padding:40, textAlign:'center', color:'var(--text-sub)'}}>Receipt image could not be loaded.</div>
+                      )
+                    ) : (
+                      <pre style={{padding:20, margin:0, fontSize:'.75rem', lineHeight:1.8, whiteSpace:'pre-wrap', wordBreak:'break-word', color:'var(--text-sub)', fontFamily:'monospace'}}>{rawText || 'No text extracted'}</pre>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {error && <div style={{background:'#fee2e2',border:'1px solid #fca5a5',color:'#991b1b',padding:'12px 16px',borderRadius:8,margin:'16px 0',fontSize:'.875rem'}}>{error}</div>}
-
-              <div style={{display:'flex',gap:12,justifyContent:'flex-end',marginTop:20}}>
-                <Link to="/upload-receipt" className="btn btn-outline">← Re-upload</Link>
-                <button type="submit" className="btn btn-primary" disabled={confirming}>
-                  {confirming ? 'Confirming…' : '✓ Confirm & Submit Request'}
+              <div style={{display:'flex',gap:12,justifyContent:'flex-end',marginTop:24}}>
+                <Link to="/upload-receipt" className="btn btn-outline" style={{padding:'12px 28px'}}>← Re-upload</Link>
+                <button type="submit" className="btn btn-primary" disabled={confirming} style={{padding:'12px 28px'}}>
+                  {confirming ? 'Submitting…' : '✓ Confirm & Submit for Approval'}
                 </button>
               </div>
             </form>
