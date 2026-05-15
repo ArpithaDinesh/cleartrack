@@ -75,12 +75,6 @@ export default function OCRConfirm() {
     }
   }
 
-  const Field = ({ label, field }) => (
-    <div className="form-group">
-      <label>{label}</label>
-      <input type="text" value={ocr[field]} onChange={e=>setOcr(p=>({...p,[field]:e.target.value}))} placeholder={`Enter ${label}`} style={{padding:'8px 12px', fontSize:'.85rem'}}/>
-    </div>
-  )
 
   return (
     <div className="dashboard-body">
@@ -115,7 +109,8 @@ export default function OCRConfirm() {
                 <Link to="/upload-receipt" className="btn btn-primary">Re-upload File</Link>
               </div>
             </div>
-          ) :             <form onSubmit={handleConfirm}>
+          ) : (
+            <form onSubmit={handleConfirm}>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:24,alignItems:'start'}}>
                 <div className="card" style={{height:'580px', display:'flex', flexDirection:'column'}}>
                   <h3 className="card-title" style={{marginBottom:20, display:'flex', alignItems:'center', gap:10}}>
