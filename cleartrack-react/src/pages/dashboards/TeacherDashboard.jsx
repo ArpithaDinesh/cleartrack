@@ -181,7 +181,7 @@ export default function TeacherDashboard() {
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-main)' }}>{stu.fullName || 'Unknown Student'}</div>
                         <div style={{ fontSize: '.85rem', color: '#64748b', marginTop: 2 }}>
-                          {stu.universityNumber} • <span style={{ textTransform: 'capitalize', color: 'var(--primary)', fontWeight: 600 }}>{r.feeType} Fee</span>
+                          {stu.universityNumber} • <span style={{ textTransform: 'capitalize', color: 'var(--primary)', fontWeight: 600 }}>{r.ocrData?.particulars || r.feeType + ' Fee'}</span>
                         </div>
                       </div>
 

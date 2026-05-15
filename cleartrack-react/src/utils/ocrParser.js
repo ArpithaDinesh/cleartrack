@@ -89,24 +89,40 @@ export const parseOCRFields = (rawText) => {
   }
 
   // 2. Global Scored Amount Search
-  const allNumbers = [...oneLine.matchAll(/\b(\d{3,}(?:[,\s]\d{3})*(?:\.\d{2})?)\b/g)];
+  const allNumbers = [...oneLine.matchAll(/\b(\d{2,}(?:[,\s]\d{3})*(?:\.\d{2})?)\b/g)];
   let bestScore = -1;
   let bestMatch = '';
   
   for (const [, raw] of allNumbers) {
     const clean = sanitizeAmount(raw);
     const val = parseFloat(clean);
-    if ([2023, 2024, 2025, 2026, 9001].includes(val)) continue;
     
-    let score = val;
-    if (raw.includes('.00')) score += 1000000;
-    const idx = oneLine.indexOf(raw);
-    const context = oneLine.toLowerCase().substring(Math.max(0, idx - 40), idx + raw.length + 20);
+    // IGNORE: Years (1900-2099)
+    if (val >= 1900 && val <= 2099) continue;
     
-    if (/(?:total|paid|amount|amt|sum|rs|inr|rupees)/i.test(context)) score += 50000;
-    if (/(?:balance|due|remaining)/i.test(context)) score -= 20000;
+    // IGNORE: Common constants or small serial numbers without context
+    if (val === 9001 || val === 0) continue;
 
-    if (score > bestScore && val < 500000) {
+    let score = 0;
+    const idx = oneLine.indexOf(raw);
+    const context = oneLine.toLowerCase().substring(Math.max(0, idx - 45), idx + raw.length + 25);
+    
+    // HIGH PRIORITY: Currency markers
+    if (/(?:rs|inr|rupees|₹)/i.test(context)) score += 100000;
+    
+    // MEDIUM PRIORITY: Total/Paid keywords
+    if (/(?:total|paid|amount|amt|sum|received)/i.test(context)) score += 50000;
+    
+    // QUALITY INDICATOR: Decimals (very common in printed bills)
+    if (raw.includes('.00')) score += 20000;
+    
+    // PENALTY: Words indicating balance or date
+    if (/(?:balance|due|remaining|date|year)/i.test(context)) score -= 30000;
+
+    // Use value as a tie-breaker if context is equal
+    score += (val / 1000); 
+
+    if (score > bestScore && val < 1000000 && val > 1) {
       bestScore = score;
       bestMatch = clean;
     }
@@ -131,6 +147,9 @@ export const parseOCRFields = (rawText) => {
     else if (UP.includes('HOSTEL')) result.particulars = 'Hostel Fee';
     else if (UP.includes('BUS') || UP.includes('TRANS')) result.particulars = 'Bus Fee';
     else if (UP.includes('EXAM')) result.particulars = 'Exam Fee';
+    else if (UP.includes('SEM')) result.particulars = 'Semester Fee';
+    else if (UP.includes('DEV')) result.particulars = 'Development Fee';
+    else if (UP.includes('CAUTION')) result.particulars = 'Caution Deposit';
   }
 
   return result;
