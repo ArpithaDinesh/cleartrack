@@ -3,6 +3,8 @@ import Sidebar from '../../components/Sidebar'
 import { useAuth } from '../../context/AuthContext'
 import { clearanceAPI, ocrAPI, busAPI, tuitionFeeAPI } from '../../services/api'
 import ProfileModal from '../../components/ProfileModal'
+import { createWorker } from 'tesseract.js'
+import { parseOCRFields } from '../../utils/ocrParser'
 import './StudentDashboard.css'
 
 export default function StudentDashboard() {
@@ -64,28 +66,35 @@ export default function StudentDashboard() {
 
   const handleOCRProcess = async (feeType, file) => {
     if (!file) return;
-    setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], status: 'processing', message: 'Uploading receipt...' } }))
+    setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], status: 'processing', message: 'Initializing OCR...' } }))
     
     try {
-      // 1. Submit Request with File
+      // 1. Run OCR in the browser
+      const worker = await createWorker('eng', 1, {
+        logger: m => {
+          if (m.status === 'recognizing text') {
+            setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], message: `Analyzing receipt... ${Math.round(m.progress * 100)}%` } }))
+          }
+        }
+      });
+      
+      const { data: { text } } = await worker.recognize(file);
+      const ocrData = parseOCRFields(text);
+      await worker.terminate();
+
+      // 2. Submit Request with File and OCR data
+      setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], message: 'Uploading to server...' } }))
       const formData = new FormData();
+      formData.append('ocrData', JSON.stringify(ocrData));
       formData.append('feeType', feeType);
-      formData.append('semester', 'Even 2026'); // Can be made dynamic later
+      formData.append('semester', 'Even 2026'); 
       formData.append('academicYear', '2025-2026');
       formData.append('receipt', file);
 
       const submitRes = await clearanceAPI.submitRequest(formData);
       const requestId = submitRes.request._id;
-      const autoOcrData = submitRes.ocrData;
 
-      // 2. Process OCR (Fallback if auto-OCR didn't run or wasn't included)
-      if (autoOcrData) {
-        setOcrStates(prev => ({ ...prev, [feeType]: { status: 'success', ocrData: autoOcrData, requestId, message: '' } }))
-      } else {
-        setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], message: 'Extracting details via OCR...' } }))
-        const ocrRes = await ocrAPI.processOCR(requestId);
-        setOcrStates(prev => ({ ...prev, [feeType]: { status: 'success', ocrData: ocrRes.ocrData, requestId, message: '' } }))
-      }
+      setOcrStates(prev => ({ ...prev, [feeType]: { status: 'success', ocrData, requestId, message: '' } }))
     } catch (err) {
       setOcrStates(prev => ({ ...prev, [feeType]: { status: 'error', ocrData: null, requestId: null, message: err.message || 'OCR Processing failed.' } }))
     }
