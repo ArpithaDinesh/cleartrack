@@ -72,62 +72,93 @@ export const parseOCRFields = (rawText) => {
   const DEPTS = ['CSE','IT','EEE','ECE','ME','CE','CIVIL','MCA','MBA','BCA','BBA','MTECH'];
   const DEPT_REGEX = new RegExp(`\\b(${DEPTS.join('|')})\\b`, 'i');
 
-  // 1. Line-by-Line Anchor Search (Name/Dept/Particulars)
-  let deptLineIdx = -1;
+  // --- NEW: TABLE AWARE EXTRACTION ---
+  // Many bills have "Particulars" and "Amount" side-by-side or as headers
+  let headerLineIdx = -1;
   for (let i = 0; i < lines.length; i++) {
-    const dM = lines[i].match(DEPT_REGEX);
-    if (dM) {
-      deptLineIdx = i;
+    const upLine = lines[i].toUpperCase();
+    if (upLine.includes('PARTICULAR') && upLine.includes('AMOU')) {
+      headerLineIdx = i;
       break;
     }
   }
 
-  if (deptLineIdx !== -1) {
-    const currentLine = lines[deptLineIdx];
-    const feeCandidate = currentLine + ' ' + (lines[deptLineIdx + 1] || '');
-    result.particulars = normalizeFeeCategory(feeCandidate);
-  }
-
-  // 2. Global Scored Amount Search
-  const allNumbers = [...oneLine.matchAll(/\b(\d{2,}(?:[,\s]\d{3})*(?:\.\d{2})?)\b/g)];
-  let bestScore = -1;
-  let bestMatch = '';
-  
-  for (const [, raw] of allNumbers) {
-    const clean = sanitizeAmount(raw);
-    const val = parseFloat(clean);
+  if (headerLineIdx !== -1) {
+    // Check lines immediately below the header for particulars and amount
+    const nextLine = lines[headerLineIdx + 1] || '';
+    const followingLine = lines[headerLineIdx + 2] || '';
+    const tableArea = nextLine + ' ' + followingLine;
     
-    // IGNORE: Years (1900-2099)
-    if (val >= 1900 && val <= 2099) continue;
+    // Extract amount from table area if possible
+    const amtMatch = tableArea.match(/\b(\d{3,}\.\d{2})\b/);
+    if (amtMatch) result.amount = '₹' + amtMatch[1];
     
-    // IGNORE: Common constants or small serial numbers without context
-    if (val === 9001 || val === 0) continue;
-
-    let score = 0;
-    const idx = oneLine.indexOf(raw);
-    const context = oneLine.toLowerCase().substring(Math.max(0, idx - 45), idx + raw.length + 25);
-    
-    // HIGH PRIORITY: Currency markers
-    if (/(?:rs|inr|rupees|₹)/i.test(context)) score += 100000;
-    
-    // MEDIUM PRIORITY: Total/Paid keywords
-    if (/(?:total|paid|amount|amt|sum|received)/i.test(context)) score += 50000;
-    
-    // QUALITY INDICATOR: Decimals (very common in printed bills)
-    if (raw.includes('.00')) score += 20000;
-    
-    // PENALTY: Words indicating balance or date
-    if (/(?:balance|due|remaining|date|year)/i.test(context)) score -= 30000;
-
-    // Use value as a tie-breaker if context is equal
-    score += (val / 1000); 
-
-    if (score > bestScore && val < 1000000 && val > 1) {
-      bestScore = score;
-      bestMatch = clean;
+    // Extract particulars from table area
+    if (tableArea.length > 5) {
+      result.particulars = normalizeFeeCategory(tableArea);
     }
   }
-  if (bestMatch) result.amount = '₹' + bestMatch;
+
+  // 1. Fallback: Line-by-Line Anchor Search (Name/Dept/Particulars)
+  if (!result.particulars) {
+    let deptLineIdx = -1;
+    for (let i = 0; i < lines.length; i++) {
+      const dM = lines[i].match(DEPT_REGEX);
+      if (dM) {
+        deptLineIdx = i;
+        break;
+      }
+    }
+
+    if (deptLineIdx !== -1) {
+      const currentLine = lines[deptLineIdx];
+      const feeCandidate = currentLine + ' ' + (lines[deptLineIdx + 1] || '');
+      result.particulars = normalizeFeeCategory(feeCandidate);
+    }
+  }
+
+  // 2. Global Scored Amount Search (Only if not found in table area)
+  if (!result.amount) {
+    const allNumbers = [...oneLine.matchAll(/\b(\d{2,}(?:[,\s]\d{3})*(?:\.\d{2})?)\b/g)];
+    let bestScore = -1;
+    let bestMatch = '';
+    
+    for (const [, raw] of allNumbers) {
+      const clean = sanitizeAmount(raw);
+      const val = parseFloat(clean);
+      
+      // IGNORE: Years (1900-2099)
+      if (val >= 1900 && val <= 2099) continue;
+      
+      // IGNORE: Common constants or small serial numbers without context
+      if (val === 9001 || val === 0) continue;
+
+      let score = 0;
+      const idx = oneLine.indexOf(raw);
+      const context = oneLine.toLowerCase().substring(Math.max(0, idx - 45), idx + raw.length + 25);
+      
+      // HIGH PRIORITY: Currency markers
+      if (/(?:rs|inr|rupees|₹)/i.test(context)) score += 100000;
+      
+      // MEDIUM PRIORITY: Total/Paid keywords
+      if (/(?:total|paid|amount|amt|sum|received)/i.test(context)) score += 50000;
+      
+      // QUALITY INDICATOR: Decimals (very common in printed bills)
+      if (raw.includes('.00')) score += 20000;
+      
+      // PENALTY: Words indicating balance or date
+      if (/(?:balance|due|remaining|date|year)/i.test(context)) score -= 30000;
+
+      // Use value as a tie-breaker if context is equal
+      score += (val / 1000); 
+
+      if (score > bestScore && val < 1000000 && val > 1) {
+        bestScore = score;
+        bestMatch = clean;
+      }
+    }
+    if (bestMatch) result.amount = '₹' + bestMatch;
+  }
 
   // 3. Bank Name
   const bankMap = [
@@ -141,8 +172,8 @@ export const parseOCRFields = (rawText) => {
   ];
   for (const [kw, name] of bankMap) { if (UP.includes(kw)) { result.bank = name; break; } }
 
-  // 4. Fallback for Particulars if not found via dept
-  if (!result.particulars) {
+  // 4. Final Fallback for Particulars
+  if (!result.particulars || result.particulars.length < 3) {
     if (UP.includes('TUITION')) result.particulars = 'Tuition Fee';
     else if (UP.includes('HOSTEL')) result.particulars = 'Hostel Fee';
     else if (UP.includes('BUS') || UP.includes('TRANS')) result.particulars = 'Bus Fee';
@@ -150,6 +181,7 @@ export const parseOCRFields = (rawText) => {
     else if (UP.includes('SEM')) result.particulars = 'Semester Fee';
     else if (UP.includes('DEV')) result.particulars = 'Development Fee';
     else if (UP.includes('CAUTION')) result.particulars = 'Caution Deposit';
+    else if (UP.includes('ADMISSION')) result.particulars = 'Admission Fee';
   }
 
   return result;
