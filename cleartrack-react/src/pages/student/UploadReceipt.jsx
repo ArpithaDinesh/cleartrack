@@ -20,10 +20,31 @@ export default function UploadReceipt() {
   const [ocrStatus, setOcrStatus] = useState('')
   const [error, setError] = useState('')
   const [dragOver, setDragOver] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState('')
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl)
+    }
+  }, [previewUrl])
 
   const onFile = (f) => {
-    if (f && f.size <= 10 * 1024 * 1024) setFile(f)
+    if (f && f.size <= 10 * 1024 * 1024) {
+      setFile(f)
+      if (f.type.startsWith('image/')) {
+        setPreviewUrl(URL.createObjectURL(f))
+      } else {
+        setPreviewUrl('')
+      }
+    }
     else setError('File too large. Maximum size is 10 MB.')
+  }
+
+  const removeFile = () => {
+    setFile(null)
+    if (previewUrl) URL.revokeObjectURL(previewUrl)
+    setPreviewUrl('')
+    if (fileRef.current) fileRef.current.value = ''
   }
 
   const handleDrop = (e) => {
@@ -44,7 +65,7 @@ export default function UploadReceipt() {
       await waitForCV();
       
       const img = new Image();
-      img.src = URL.createObjectURL(file);
+      img.src = previewUrl || URL.createObjectURL(file);
       await new Promise(r => img.onload = r);
       
       const processedSrc = await preprocessImage(img);
@@ -104,12 +125,12 @@ export default function UploadReceipt() {
 
   return (
     <div className="dashboard-body">
-      <aside className="sidebar">
+          <aside className="sidebar">
         <div className="sidebar-logo">
           <div className="logo-mark">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
           </div>
-          <div className="logo-text"><span>CLEARTRACK</span><small>Student Panel</small></div>
+          <div className="logo-text"><span>CLEARTRACK</span><small>Student Panel <span style={{opacity:0.5, fontSize:'10px'}}>v1.1.0</span></small></div>
         </div>
         <nav className="sidebar-nav">
           <span className="nav-section-label">Main Menu</span>
@@ -166,23 +187,35 @@ export default function UploadReceipt() {
             <div className="card" style={{marginBottom:24}}>
               <h3 className="card-title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{width:18,height:18}}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Receipt Upload</h3>
 
-              <label
-                htmlFor="receipt-file"
+              <div
                 className="upload-zone"
-                style={{border:`2.5px dashed ${dragOver?'var(--primary)':'var(--border)'}`,background:dragOver?'rgba(37,99,235,.04)':'#f8fafc',cursor:'pointer',borderRadius:'var(--radius-sm)',padding:'32px 20px',display:'flex',flexDirection:'column',alignItems:'center',gap:8,transition:'all 0.2s'}}
+                style={{border:`2.5px dashed ${dragOver?'var(--primary)':'var(--border)'}`,background:dragOver?'rgba(37,99,235,.04)':'#f8fafc',borderRadius:'var(--radius-sm)',padding:'32px 20px',display:'flex',flexDirection:'column',alignItems:'center',gap:8,transition:'all 0.2s', position:'relative'}}
                 onDragOver={e=>{e.preventDefault();setDragOver(true)}}
                 onDragLeave={()=>setDragOver(false)}
                 onDrop={handleDrop}
               >
-                <div style={{width:52,height:52,background:'#dbeafe',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                </div>
-                {file
-                  ? <><strong style={{color:'var(--primary)'}}>{file.name}</strong><span style={{fontSize:'.78rem',color:'var(--text-sub)'}}>({(file.size/1024/1024).toFixed(2)} MB)</span></>
-                  : <><strong style={{color:'var(--text-main)'}}>Click to upload or drag & drop</strong><span style={{fontSize:'.78rem',color:'var(--text-sub)'}}>JPG, PNG, PDF — max 10 MB</span></>
-                }
-                <input id="receipt-file" type="file" accept="image/*,.pdf" style={{display:'none'}} ref={fileRef} onChange={e=>onFile(e.target.files[0])}/>
-              </label>
+                {file ? (
+                  <div style={{textAlign:'center', width:'100%'}}>
+                    {previewUrl && (
+                      <img src={previewUrl} alt="Preview" style={{maxHeight:140, borderRadius:8, marginBottom:12, border:'1px solid var(--border)', boxShadow:'var(--shadow-sm)'}}/>
+                    )}
+                    <div>
+                      <strong style={{color:'var(--primary)', display:'block'}}>{file.name}</strong>
+                      <span style={{fontSize:'.78rem',color:'var(--text-sub)'}}>{(file.size/1024/1024).toFixed(2)} MB</span>
+                    </div>
+                    <button type="button" onClick={removeFile} className="btn btn-sm btn-outline" style={{marginTop:12, padding:'6px 12px', fontSize:'.75rem'}}>Change File</button>
+                  </div>
+                ) : (
+                  <label htmlFor="receipt-file" style={{cursor:'pointer', width:'100%', textAlign:'center'}}>
+                    <div style={{width:52,height:52,background:'#dbeafe',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center', margin:'0 auto 12px'}}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    </div>
+                    <strong style={{color:'var(--text-main)', display:'block'}}>Click to upload or drag & drop</strong>
+                    <span style={{fontSize:'.78rem',color:'var(--text-sub)'}}>JPG, PNG, PDF — max 10 MB</span>
+                    <input id="receipt-file" type="file" accept="image/*,.pdf" style={{display:'none'}} ref={fileRef} onChange={e=>onFile(e.target.files[0])}/>
+                  </label>
+                )}
+              </div>
 
               <div className="form-group" style={{marginTop:16}}>
                 <label>Additional Notes (optional)</label>
