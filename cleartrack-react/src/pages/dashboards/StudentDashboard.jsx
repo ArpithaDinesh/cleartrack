@@ -89,6 +89,10 @@ export default function StudentDashboard() {
           }
         }
       });
+
+      await worker.setParameters({
+        tessedit_pageseg_mode: '3',
+      });
       
       const { data: { text } } = await worker.recognize(processedSrc);
       const ocrData = parseOCRFields(text);

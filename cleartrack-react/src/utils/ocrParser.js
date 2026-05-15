@@ -37,7 +37,10 @@ const extractCleanName = (raw = '') => {
   const DEPTS = ['CSE', 'IT', 'EEE', 'ECE', 'ME', 'CE', 'CIVIL'];
   const tokens = raw.split(/[\s,.\-\/]+/).filter(t => {
     const up = t.toUpperCase();
-    if (t.length < 2) return false;
+    if (t.length < 2) {
+       // Allow single initials (e.g. "M" in SREESHNA M)
+       return /^[A-Z]$/.test(t);
+    }
     if (/\d/.test(t)) return false; // Contains digits
     if (IGNORE_WORDS.has(up)) return false;
     if (DEPTS.includes(up)) return false;

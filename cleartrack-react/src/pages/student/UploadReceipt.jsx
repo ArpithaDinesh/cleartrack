@@ -60,6 +60,11 @@ export default function UploadReceipt() {
         }
       });
 
+      // Set PSM to 3 (Fully automatic page segmentation, but no OSD)
+      await worker.setParameters({
+        tessedit_pageseg_mode: '3',
+      });
+
       setOcrStatus('Reading receipt content...')
       const { data: { text } } = await worker.recognize(processedSrc);
       await worker.terminate();

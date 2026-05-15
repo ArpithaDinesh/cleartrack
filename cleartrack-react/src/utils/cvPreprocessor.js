@@ -26,12 +26,14 @@ export const preprocessImage = async (imageElement) => {
         cv.resize(dst, dst, dsize, 0, 0, cv.INTER_AREA);
       }
 
-      // 3. Denoising / Gaussian Blur
+      // 3. Enhance Contrast (CLAHE - Contrast Limited Adaptive Histogram Equalization)
+      const clahe = new cv.CLAHE(2.0, new cv.Size(8, 8));
+      clahe.apply(dst, dst);
+      clahe.delete();
+
+      // 4. Denoising (Lightly)
       const ksize = new cv.Size(3, 3);
       cv.GaussianBlur(dst, dst, ksize, 0, 0, cv.BORDER_DEFAULT);
-
-      // 4. Adaptive Thresholding (Handles uneven lighting/shadows)
-      cv.adaptiveThreshold(dst, dst, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2);
 
       // 4. Sharpening (Optional, but can help)
       // We can use a kernel for this if needed
