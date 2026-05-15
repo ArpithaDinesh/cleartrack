@@ -29,15 +29,18 @@ const IGNORE_WORDS = new Set([
   'KADIRUR','CASHIER','OFFICER','REMITTED','TRANSFER','RECEIPT','DEPOSIT',
   'SAVINGS','AUTHORISED','AUTHORIZ','PARTICULARS','AMOUNT','DATE','CUSTOMER',
   'CHALAN','RUPEES','TOTAL','WORDS','CHALLAN','ADMISSION','ISO','YEAR','TEL',
+  'OL','THE','AND','BRANCH','EXTN','KSEB','KSCB','AC','NO','TYPE',
 ]);
 
 const extractCleanName = (raw = '') => {
-  const tokens = raw.split(/[\s,]+/).filter(t => {
+  const DEPTS = ['CSE','IT','EEE','ECE','ME','CE','CIVIL','MCA','MBA','BCA','BBA','MTECH'];
+  const tokens = raw.split(/[\s,.\-\/]+/).filter(t => {
     const up = t.toUpperCase();
     if (t.length < 2) return false;
-    if (/\d/.lastIndex > 0) return false; // Contains digits
+    if (/\d/.test(t)) return false; // Contains digits
     if (IGNORE_WORDS.has(up)) return false;
-    if (['S1','S2','S3','S4','S5','S6','S7','S8'].includes(up)) return false;
+    if (DEPTS.includes(up)) return false;
+    if (['S1','S2','S3','S4','S5','S6','S7','S8','EVEN','ODD'].includes(up)) return false;
     const letterRatio = (t.match(/[A-Za-z]/g) || []).length / t.length;
     return letterRatio >= 0.7;
   });
@@ -207,18 +210,22 @@ export const parseOCRFields = (rawText) => {
     else if (/EXAM/i.test(UP)) result.feeCategory = 'Exam Fee';
   }
 
-  // 8c. Heuristic Amount (Largest decimal number)
+  // 8c. Heuristic Amount (Scored search)
   if (!result.amount) {
     const allNumbers = [...oneLine.matchAll(/\b(\d{3,}(?:[,\s]\d{3})*(?:\.\d{2})?)\b/g)];
-    let maxVal = 0;
+    let bestScore = -1;
     let bestMatch = '';
     for (const [, raw] of allNumbers) {
       const clean = sanitizeAmount(raw);
       const val = parseFloat(clean);
       // Skip ISO numbers and years
-      if (val === 9001 || val === 2015 || val === 2016) continue;
-      if (val > maxVal && val < 500000) {
-        maxVal = val;
+      if (val === 9001 || val === 2015 || val === 2016 || val === 2026 || val === 2025) continue;
+      
+      let score = val;
+      if (raw.includes('.00')) score += 1000000; // Major priority to currency-formatted
+      
+      if (score > bestScore && val < 500000) {
+        bestScore = score;
         bestMatch = clean;
       }
     }
