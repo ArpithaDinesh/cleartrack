@@ -65,54 +65,74 @@ export default function RequestDetail() {
           : error && !req ? <div className="card" style={{textAlign:'center',padding:40}}><p style={{color:'var(--danger)'}}>{error}</p></div>
           : req && (
             <>
-              {/* Student Info */}
-              <div className="card" style={{marginBottom:20}}>
-                <h3 className="card-title">Student Information</h3>
-                <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(170px,1fr))',gap:12}}>
-                  {[['Name',stu.fullName],['Univ. No.',stu.universityNumber],['Roll No.',stu.rollNumber],['Department',stu.department],['Year',stu.classYear]].map(([l,v])=>(
-                    <div key={l} className="cf-field"><label>{l}</label><span>{v||'—'}</span></div>
-                  ))}
-                </div>
-              </div>
-
-              {/* OCR Data */}
-              {req.ocrData && (
-                <div className="card" style={{marginBottom:20}}>
-                  <h3 className="card-title">OCR Extracted Payment Data</h3>
-                  <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:10}}>
-                    {[['Transaction ID',req.ocrData.transactionId],['Amount',req.ocrData.amount],['Payment Date',req.ocrData.paymentDate],['Receipt No.',req.ocrData.receiptNumber],['Bank',req.ocrData.bankName],['Mode',req.ocrData.paymentMode]].map(([l,v])=> v ? (
-                      <div key={l} className="cr-ocr-field"><label>{l}</label><span>{v}</span></div>
-                    ) : null)}
-                  </div>
-                  {req.ocrData.rawText && (
-                    <details style={{marginTop:14}}>
-                      <summary style={{cursor:'pointer',fontSize:'.8rem',color:'var(--text-sub)'}}>View raw OCR text</summary>
-                      <pre style={{background:'#f8fafc',padding:12,borderRadius:8,fontSize:'.72rem',marginTop:8,whiteSpace:'pre-wrap',wordBreak:'break-word',maxHeight:180,overflowY:'auto'}}>{req.ocrData.rawText}</pre>
-                    </details>
-                  )}
-                </div>
-              )}
-
-              {/* Receipt file */}
-              {req.receiptFile && (
-                <div className="card" style={{marginBottom:20}}>
-                  <h3 className="card-title">Uploaded Receipt</h3>
-                  <div style={{display:'flex',alignItems:'center',gap:14}}>
-                    <div className="cr-receipt-thumb" style={{width:80,aspectRatio:'3/4'}}>
-                      <svg xmlns="http://www.w3.org/2000/svg" width={28} height={28} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                    </div>
-                    <div>
-                      <p style={{fontWeight:600,color:'var(--text-main)',marginBottom:4}}>{req.receiptFile.originalName}</p>
-                      <p style={{fontSize:'.78rem',color:'var(--text-sub)'}}>{(req.receiptFile.size/1024/1024).toFixed(2)} MB</p>
-                      <a href={`${API_ROOT}/uploads/${req.receiptFile.filename}`} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm" style={{marginTop:8}}>👁 View Receipt</a>
+              <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:24, alignItems:'start'}}>
+                <div style={{display:'flex', flexDirection:'column', gap:24}}>
+                  {/* Student Info */}
+                  <div className="card">
+                    <h3 className="card-title">Student Information</h3>
+                    <div style={{display:'flex', flexDirection:'column', gap:12}}>
+                      <div style={{display:'flex', justifyContent:'space-between', borderBottom:'1px solid #f1f5f9', paddingBottom:10}}>
+                        <span style={{color:'var(--text-sub)', fontSize:'.85rem'}}>Full Name</span>
+                        <span style={{fontWeight:600}}>{stu.fullName}</span>
+                      </div>
+                      <div style={{display:'flex', justifyContent:'space-between', borderBottom:'1px solid #f1f5f9', paddingBottom:10}}>
+                        <span style={{color:'var(--text-sub)', fontSize:'.85rem'}}>University Number</span>
+                        <span style={{fontWeight:600}}>{stu.universityNumber}</span>
+                      </div>
+                      <div style={{display:'flex', justifyContent:'space-between', borderBottom:'1px solid #f1f5f9', paddingBottom:10}}>
+                        <span style={{color:'var(--text-sub)', fontSize:'.85rem'}}>Department / Year</span>
+                        <span>{stu.department} — Year {stu.classYear}</span>
+                      </div>
+                      <div style={{display:'flex', justifyContent:'space-between'}}>
+                        <span style={{color:'var(--text-sub)', fontSize:'.85rem'}}>Fee Type</span>
+                        <span style={{textTransform:'capitalize', fontWeight:500, color:'var(--primary)'}}>{req.feeType} Fee</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
 
-              {/* Decision Panel */}
-              <div className="card">
-                <h3 className="card-title">Your Department Decision</h3>
+                  {/* OCR Full Data */}
+                  <div className="card">
+                    <h3 className="card-title">Full Extracted Data (OCR)</h3>
+                    <div style={{background:'#f8fafc', padding:16, borderRadius:8, border:'1px solid #e2e8f0'}}>
+                      <pre style={{
+                        margin:0, 
+                        whiteSpace:'pre-wrap', 
+                        fontSize:'.8rem', 
+                        lineHeight:1.6, 
+                        color:'#334155', 
+                        fontFamily:'monospace',
+                        maxHeight:'350px',
+                        overflowY:'auto'
+                      }}>
+                        {req.ocrData?.rawText || 'No extraction data available.'}
+                      </pre>
+                    </div>
+                    <p style={{fontSize:'.75rem', color:'var(--text-sub)', marginTop:12}}>
+                      ℹ️ This is the raw text extracted from the bill. Use this to verify payment details.
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{display:'flex', flexDirection:'column', gap:24}}>
+                  {/* Receipt View */}
+                  <div className="card" style={{padding:0, overflow:'hidden'}}>
+                    <div style={{padding:'16px 20px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                      <h3 className="card-title" style={{margin:0}}>Uploaded Receipt</h3>
+                      <a href={`${API_ROOT}/uploads/${req.receiptFile?.filename}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline">Full Resolution</a>
+                    </div>
+                    <div style={{background:'#f1f5f9', padding:10, textAlign:'center'}}>
+                      <img 
+                        src={`${API_ROOT}/uploads/${req.receiptFile?.filename}`} 
+                        alt="Receipt" 
+                        style={{maxWidth:'100%', borderRadius:4, boxShadow:'0 2px 10px rgba(0,0,0,0.1)'}} 
+                      />
+                    </div>
+                  </div>
+
+                  {/* Decision Panel */}
+                  <div className="card" style={{borderLeft:'4px solid var(--primary)'}}>
+                    <h3 className="card-title">Review Decision</h3>
+
                 {myApproval?.status === 'pending' && !decision ? (
                   <>
                     <div className="form-group">
