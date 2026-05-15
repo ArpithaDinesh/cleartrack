@@ -16,7 +16,7 @@ export default function LoginStudent() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     // Version indicator
-    console.warn('⚡ OCR System Version: 1.0.9');
+    console.warn('⚡ OCR System Version: 1.1.0');
     setError('')
     setLoading(true)
     try {
@@ -37,7 +37,7 @@ export default function LoginStudent() {
 
         <div className="auth-card">
           <h2>Student Login</h2>
-          <p className="subtitle">Sign in with your university credentials <span style={{opacity:0.5, fontSize:'10px', marginLeft:'4px'}}>v1.0.9</span></p>
+          <p className="subtitle">Sign in with your university credentials <span style={{opacity:0.5, fontSize:'10px', marginLeft:'4px'}}>v1.1.0</span></p>
 
           {/* Role switcher */}
           <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>

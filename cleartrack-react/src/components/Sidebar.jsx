@@ -108,7 +108,7 @@ export default function Sidebar({ role, activeSection }) {
         </div>
         <div className="logo-text">
           <span>CLEARTRACK</span>
-          <small>{cfg.panel} <span style={{opacity:0.5, fontSize:'10px', marginLeft:'4px'}}>v1.0.9</span></small>
+          <small>{cfg.panel} <span style={{opacity:0.5, fontSize:'10px', marginLeft:'4px'}}>v1.1.0</span></small>
         </div>
       </div>
 

@@ -26,9 +26,13 @@ export const preprocessImage = async (imageElement) => {
         cv.resize(dst, dst, dsize, 0, 0, cv.INTER_AREA);
       }
 
-      // 2. Upscale (2x) to help with small/thin text
-      let dsize = new cv.Size(dst.cols * 2, dst.rows * 2);
-      cv.resize(dst, dst, dsize, 0, 0, cv.INTER_CUBIC);
+      // 2. Intelligent Upscale (Target ~2500px for best OCR balance)
+      const targetWidth = 2500;
+      if (dst.cols < targetWidth) {
+        const scale = targetWidth / dst.cols;
+        const dsize = new cv.Size(targetWidth, Math.round(dst.rows * scale));
+        cv.resize(dst, dst, dsize, 0, 0, cv.INTER_CUBIC);
+      }
 
       // 3. Enhance Contrast (CLAHE)
       const clahe = new cv.CLAHE(3.0, new cv.Size(8, 8));
