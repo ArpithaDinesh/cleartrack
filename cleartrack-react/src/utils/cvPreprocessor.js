@@ -26,17 +26,26 @@ export const preprocessImage = async (imageElement) => {
         cv.resize(dst, dst, dsize, 0, 0, cv.INTER_AREA);
       }
 
-      // 3. Enhance Contrast (CLAHE - Contrast Limited Adaptive Histogram Equalization)
-      const clahe = new cv.CLAHE(2.0, new cv.Size(8, 8));
+      // 2. Upscale (2x) to help with small/thin text
+      let dsize = new cv.Size(dst.cols * 2, dst.rows * 2);
+      cv.resize(dst, dst, dsize, 0, 0, cv.INTER_CUBIC);
+
+      // 3. Enhance Contrast (CLAHE)
+      const clahe = new cv.CLAHE(3.0, new cv.Size(8, 8));
       clahe.apply(dst, dst);
       clahe.delete();
 
-      // 4. Denoising (Lightly)
-      const ksize = new cv.Size(3, 3);
-      cv.GaussianBlur(dst, dst, ksize, 0, 0, cv.BORDER_DEFAULT);
+      // 4. Sharpening
+      let kernel = cv.matFromArray(3, 3, cv.CV_32F, [
+        0, -1, 0,
+        -1, 5, -1,
+        0, -1, 0
+      ]);
+      cv.filter2D(dst, dst, cv.CV_8U, kernel);
+      kernel.delete();
 
-      // 4. Sharpening (Optional, but can help)
-      // We can use a kernel for this if needed
+      // 5. Adaptive Thresholding (Tuned for upscaled text)
+      cv.adaptiveThreshold(dst, dst, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 21, 10);
 
       // Create a canvas to output the processed image
       const canvas = document.createElement('canvas');

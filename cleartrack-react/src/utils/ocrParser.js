@@ -30,7 +30,7 @@ const IGNORE_WORDS = new Set([
   'SAVINGS', 'AUTHORISED', 'AUTHORIZ', 'PARTICULARS', 'AMOUNT', 'DATE', 'CUSTOMER',
   'CHALAN', 'RUPEES', 'TOTAL', 'WORDS', 'CHALLAN', 'ADMISSION', 'ISO', 'YEAR', 'TEL',
   'OL', 'THE', 'AND', 'BRANCH', 'EXTN', 'KSEB', 'KSCB', 'AC', 'NO', 'TYPE', 'AMOU', 'AMNT',
-  'PARTIC', 'PART', 'PARTI', 'AMN', 'AMT',
+  'PARTIC', 'PART', 'PARTI', 'AMN', 'AMT', 'CUSTOMER', 'NAME', 'COLLEGE', 'ENGINEERING',
 ]);
 
 const extractCleanName = (raw = '') => {
@@ -55,7 +55,7 @@ const extractCleanName = (raw = '') => {
 
 export const parseOCRFields = (rawText) => {
   // Version indicator
-  console.warn('⚡ OCR System Version: 1.0.8');
+  console.warn('⚡ OCR System Version: 1.0.9');
   // Debug log to help identify OCR issues in the browser console
   console.log('📄 RAW OCR TEXT START 📄\n' + rawText + '\n📄 RAW OCR TEXT END 📄');
 
