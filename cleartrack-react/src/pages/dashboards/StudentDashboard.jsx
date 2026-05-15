@@ -96,12 +96,18 @@ export default function StudentDashboard() {
 
       // 3. Submit Request with File and OCR data
       setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], message: 'Uploading to server...' } }))
+      
+      // Convert processed DataURL to Blob for upload
+      const response = await fetch(processedSrc);
+      const blob = await response.blob();
+      const processedFile = new File([blob], `receipt_${feeType}_${Date.now()}.jpg`, { type: 'image/jpeg' });
+
       const formData = new FormData();
       formData.append('ocrData', JSON.stringify(ocrData));
       formData.append('feeType', feeType);
       formData.append('semester', 'Even 2026'); 
       formData.append('academicYear', '2025-2026');
-      formData.append('receipt', file);
+      formData.append('receipt', processedFile);
 
       const submitRes = await clearanceAPI.submitRequest(formData);
       const requestId = submitRes.request._id;

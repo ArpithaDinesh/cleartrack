@@ -18,11 +18,19 @@ export const preprocessImage = async (imageElement) => {
       // 1. Grayscale
       cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY, 0);
 
-      // 2. Denoising / Gaussian Blur
+      // 2. Resize if too large (improves OCR speed and keeps upload under 4.5MB Vercel limit)
+      const maxDim = 1600;
+      if (src.cols > maxDim || src.rows > maxDim) {
+        const scale = maxDim / Math.max(src.cols, src.rows);
+        const dsize = new cv.Size(Math.round(src.cols * scale), Math.round(src.rows * scale));
+        cv.resize(dst, dst, dsize, 0, 0, cv.INTER_AREA);
+      }
+
+      // 3. Denoising / Gaussian Blur
       const ksize = new cv.Size(3, 3);
       cv.GaussianBlur(dst, dst, ksize, 0, 0, cv.BORDER_DEFAULT);
 
-      // 3. Adaptive Thresholding (Handles uneven lighting/shadows)
+      // 4. Adaptive Thresholding (Handles uneven lighting/shadows)
       cv.adaptiveThreshold(dst, dst, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2);
 
       // 4. Sharpening (Optional, but can help)
@@ -32,7 +40,8 @@ export const preprocessImage = async (imageElement) => {
       const canvas = document.createElement('canvas');
       cv.imshow(canvas, dst);
       
-      const processedDataUrl = canvas.toDataURL('image/png');
+      // Use JPEG with quality 0.8 to keep file size small
+      const processedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
 
       // Cleanup
       src.delete();

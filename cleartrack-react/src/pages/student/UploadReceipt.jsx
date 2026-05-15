@@ -68,11 +68,17 @@ export default function UploadReceipt() {
       const ocrData = parseOCRFields(text);
       ocrData.ocrStatus = 'completed';
 
-      // 2. Submit to backend
+      // 3. Submit to backend
       setOcrStatus('Uploading to server...')
+      
+      // Convert processed DataURL to Blob for upload
+      const response = await fetch(processedSrc);
+      const blob = await response.blob();
+      const processedFile = new File([blob], `receipt_${Date.now()}.jpg`, { type: 'image/jpeg' });
+
       const fd = new FormData()
       fd.append('ocrData', JSON.stringify(ocrData))
-      fd.append('receipt', file)
+      fd.append('receipt', processedFile)
       fd.append('feeType', feeType)
       fd.append('semester', semester)
       fd.append('academicYear', academicYear)
