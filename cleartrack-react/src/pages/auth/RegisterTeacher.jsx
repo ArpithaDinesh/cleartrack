@@ -11,7 +11,7 @@ export default function RegisterTeacher() {
   const [error, setError] = useState('')
   const [form, setForm] = useState({
     fullName: '', phone: '', email: '',
-    staffId: '', department: '', classYear: '', classDepartment: '',
+    staffId: '', classYear: '', classDepartment: '',
     password: '', confirmPassword: ''
   })
 
@@ -30,7 +30,6 @@ export default function RegisterTeacher() {
         password: form.password,
         phone: form.phone,
         staffId: form.staffId,
-        department: form.department,
         assignedDepartment: 'class_teacher',
         classDepartment: form.classDepartment || null,
         classYear: form.classYear || null,
@@ -82,20 +81,6 @@ export default function RegisterTeacher() {
             </div>
 
             <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="department">Department</label>
-                <select id="department" required value={form.department} onChange={set('department')}>
-                  <option value="" disabled>Select Department</option>
-                  <option value="CS">CS</option>
-                  <option value="IT">IT</option>
-                  <option value="CE">CE</option>
-                  <option value="ME">ME</option>
-                  <option value="EC">EC</option>
-                  <option value="EEE">EEE</option>
-                  <option value="MCA">MCA</option>
-                  <option value="MBA">MBA</option>
-                </select>
-              </div>
               <div className="form-group">
                 <label htmlFor="class_dept">Class Teacher Of — Department</label>
                 <select id="class_dept" value={form.classDepartment} onChange={set('classDepartment')}>

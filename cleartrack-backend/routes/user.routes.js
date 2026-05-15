@@ -11,7 +11,7 @@ router.get('/profile', protect, async (req, res) => {
 // @desc  Update current user's profile
 router.patch('/profile', protect, async (req, res) => {
   try {
-    const allowed = ['fullName', 'phone', 'section', 'universityNumber', 'rollNumber', 'admissionNumber', 'department', 'classYear', 'staffId', 'assignedDepartment'];
+    const allowed = ['fullName', 'phone', 'section', 'universityNumber', 'rollNumber', 'admissionNumber', 'department', 'classYear', 'staffId', 'assignedDepartment', 'classDepartment'];
     const updates = {};
     allowed.forEach(k => { if (req.body[k] !== undefined) updates[k] = req.body[k]; });
     const user = await User.findByIdAndUpdate(req.user._id, updates, { new: true, runValidators: true });

@@ -19,7 +19,8 @@ export default function ProfileModal({ isOpen, onClose }) {
     rollNumber: user?.rollNumber || '',
     admissionNumber: user?.admissionNumber || '',
     staffId: user?.staffId || '',
-    assignedDepartment: user?.assignedDepartment || ''
+    assignedDepartment: user?.assignedDepartment || '',
+    classDepartment: user?.classDepartment || ''
   });
 
   if (!isOpen) return null;
@@ -87,7 +88,7 @@ export default function ProfileModal({ isOpen, onClose }) {
               <input type="tel" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #e5e7eb' }} value={form.phone} onChange={set('phone')} />
             </div>
 
-            {(user?.role === 'student' || user?.role === 'staff' || user?.role === 'admin') && (
+            {user?.role === 'student' && (
               <div className="form-group">
                 <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-sub)' }}>Department</label>
                 <select style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #e5e7eb', background: '#fff' }} value={form.department} onChange={set('department')}>
@@ -104,15 +105,32 @@ export default function ProfileModal({ isOpen, onClose }) {
               </div>
             )}
 
-            {user?.role === 'student' && (
+            {user?.role === 'staff' && (
               <div className="form-group">
-                <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-sub)' }}>Class / Year</label>
+                <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-sub)' }}>Class Teacher Of (Dept)</label>
+                <select style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #e5e7eb', background: '#fff' }} value={form.classDepartment} onChange={set('classDepartment')}>
+                  <option value="">Select Department</option>
+                  <option value="CS">CS</option>
+                  <option value="IT">IT</option>
+                  <option value="CE">CE</option>
+                  <option value="ME">ME</option>
+                  <option value="EC">EC</option>
+                  <option value="EEE">EEE</option>
+                  <option value="MCA">MCA</option>
+                  <option value="MBA">MBA</option>
+                </select>
+              </div>
+            )}
+
+            {(user?.role === 'student' || user?.role === 'staff') && (
+              <div className="form-group">
+                <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-sub)' }}>{user?.role === 'staff' ? 'Class Teacher Of (Year)' : 'Class / Year'}</label>
                 <select style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #e5e7eb', background: '#fff' }} value={form.classYear} onChange={set('classYear')}>
                   <option value="" disabled>Select Year</option>
-                  <option value="First year">First year</option>
-                  <option value="Second year">Second year</option>
-                  <option value="Third year">Third year</option>
-                  <option value="Fourth year">Fourth year</option>
+                  <option value="1st Year">1st Year</option>
+                  <option value="2nd Year">2nd Year</option>
+                  <option value="3rd Year">3rd Year</option>
+                  <option value="4th Year">4th Year</option>
                 </select>
               </div>
             )}
