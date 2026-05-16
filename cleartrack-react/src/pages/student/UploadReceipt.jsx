@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { clearanceAPI } from '../../services/api'
+import { clearanceAPI, tuitionFeeAPI, busAPI } from '../../services/api'
 import { createWorker } from 'tesseract.js'
 import { parseOCRFields } from '../../utils/ocrParser'
 import { preprocessImage, waitForCV } from '../../utils/cvPreprocessor'
@@ -22,6 +22,39 @@ export default function UploadReceipt() {
   const [dragOver, setDragOver] = useState(false)
   const [previewUrl, setPreviewUrl] = useState('')
   const [rawOcrText, setRawOcrText] = useState('')
+  const [tuitionFees, setTuitionFees] = useState([])
+  const [busRoutes, setBusRoutes] = useState([])
+  const [selectedFeeData, setSelectedFeeData] = useState(null)
+  const [expectedAmount, setExpectedAmount] = useState(0)
+  
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [tfRes, busRes] = await Promise.all([
+          tuitionFeeAPI.getFees(),
+          busAPI.getRoutes()
+        ]);
+        if (tfRes.success) setTuitionFees(tfRes.fees);
+        if (busRes.success) setBusRoutes(busRes.routes);
+      } catch (err) {
+        console.error('Failed to fetch fee reference data:', err);
+      }
+    };
+    fetchData();
+  }, [])
+
+  // Auto-set expected amount when selections change
+  useEffect(() => {
+    if (feeType === 'exam') {
+      setExpectedAmount(1500); // Common default for exam fees
+    } else if (feeType === 'hostel') {
+      setExpectedAmount(65000); // Common default for hostel fees
+    } else if (!selectedFeeData) {
+      setExpectedAmount(0);
+    } else {
+      setExpectedAmount(selectedFeeData.fee || selectedFeeData.meritReg || 0);
+    }
+  }, [feeType, selectedFeeData])
 
   useEffect(() => {
     return () => {
@@ -108,7 +141,8 @@ export default function UploadReceipt() {
       setRawOcrText(text) // Store the raw text for display
 
       setOcrStatus('Extracting information...')
-      const ocrData = parseOCRFields(text, user?.fullName);
+      setOcrStatus('Extracting information...')
+      const ocrData = parseOCRFields(text, user?.fullName, expectedAmount);
       ocrData.ocrStatus = 'completed';
 
       // 3. Submit to backend
@@ -180,11 +214,55 @@ export default function UploadReceipt() {
                 <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
                   {[['tuition','Tuition Fee'],['bus','Bus Fee'],['hostel','Hostel Fee'],['exam','Exam Fee'],['full','All Fees']].map(([val,label])=>(
                     <label key={val} className="radio-opt" style={{border:`1.5px solid ${feeType===val?'var(--primary)':'var(--border)'}`,background:feeType===val?'rgba(37,99,235,.07)':'',color:feeType===val?'var(--primary)':'var(--text-sub)'}}>
-                      <input type="radio" name="feeType" value={val} checked={feeType===val} onChange={()=>setFeeType(val)} style={{display:'none'}}/>{label}
+                      <input type="radio" name="feeType" value={val} checked={feeType===val} onChange={()=>{setFeeType(val); setSelectedFeeData(null)}} style={{display:'none'}}/>{label}
                     </label>
                   ))}
                 </div>
               </div>
+
+              {feeType === 'tuition' && (
+                <div className="form-group" style={{marginTop:12}}>
+                  <label>Select Year</label>
+                  <select value={selectedFeeData?.year || ''} onChange={e => {
+                    const f = tuitionFees.find(tf => tf.year === e.target.value);
+                    setSelectedFeeData(f);
+                  }}>
+                    <option value="" disabled>Choose Academic Year Level</option>
+                    {tuitionFees.map(tf => <option key={tf.year} value={tf.year}>{tf.year}</option>)}
+                  </select>
+                  {selectedFeeData && (
+                    <div style={{marginTop:10, display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(120px, 1fr))', gap:8}}>
+                      {['meritReg', 'meritFull', 'tfw', 'nri'].map(cat => (
+                        <button key={cat} type="button" onClick={() => setExpectedAmount(selectedFeeData[cat])} 
+                          className={`btn btn-sm ${expectedAmount === selectedFeeData[cat] ? 'btn-primary' : 'btn-outline'}`}
+                          style={{fontSize:'.75rem'}}>
+                          {cat.toUpperCase()}: ₹{selectedFeeData[cat]}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {feeType === 'bus' && (
+                <div className="form-group" style={{marginTop:12}}>
+                  <label>Select Bus Point</label>
+                  <select value={selectedFeeData?._id || ''} onChange={e => {
+                    const r = busRoutes.find(br => br._id === e.target.value);
+                    setSelectedFeeData(r);
+                  }}>
+                    <option value="" disabled>Choose your boarding point</option>
+                    {busRoutes.map(br => <option key={br._id} value={br._id}>{br.group} - {br.location} (₹{br.fee})</option>)}
+                  </select>
+                </div>
+              )}
+
+              {expectedAmount > 0 && (
+                <div style={{margin:'12px 0', padding:'8px 12px', background:'rgba(37,99,235,0.05)', borderRadius:6, border:'1px solid rgba(37,99,235,0.2)', display:'flex', alignItems:'center', gap:8}}>
+                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                   <span style={{fontSize:'.85rem', color:'var(--primary)', fontWeight:500}}>OCR Hint: System will look for <strong>₹{expectedAmount.toLocaleString('en-IN')}</strong></span>
+                </div>
+              )}
 
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
                 <div className="form-group">
