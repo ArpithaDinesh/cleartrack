@@ -33,10 +33,16 @@ router.get('/my-students', protect, async (req, res) => {
       return res.json({ success: true, students: [] });
     }
 
+    // Loose matching for year (handles "4th" vs "Fourth" etc)
+    const yearPatterns = { '1': '(1st|First)', '2': '(2nd|Second)', '3': '(3rd|Third)', '4': '(4th|Fourth)' };
+    const yearNum = classYear.match(/\d/)?.[0];
+    const yearRegex = yearNum ? new RegExp(`^${yearPatterns[yearNum]}`, 'i') : new RegExp(`^${classYear}$`, 'i');
+    const deptRegex = new RegExp(`^${classDepartment}$`, 'i');
+
     const students = await User.find({
       role: 'student',
-      department: { $regex: new RegExp(`^${classDepartment}$`, 'i') },
-      classYear: { $regex: new RegExp(`^${classYear}$`, 'i') }
+      department: { $regex: deptRegex },
+      classYear: { $regex: yearRegex }
     }).select('fullName email phone universityNumber rollNumber admissionNumber section isActive');
 
     res.json({ success: true, students });
