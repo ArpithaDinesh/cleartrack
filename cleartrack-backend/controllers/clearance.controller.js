@@ -158,31 +158,40 @@ const getDepartmentPending = async (req, res) => {
       }
     };
 
-    // If class teacher: additionally filter by student's department and year
+    // For class teachers: find requests from students in the teacher's assigned class
     if (dept === 'class_teacher') {
       const { classDepartment, classYear } = req.user;
       if (!classDepartment || !classYear) {
         return res.json({ success: true, requests: [], message: 'No class assigned to this teacher.' });
       }
 
-      // Map common year formats to regex patterns
-      const yearPatterns = {
-        '1': '(1st|First)',
-        '2': '(2nd|Second)',
-        '3': '(3rd|Third)',
-        '4': '(4th|Fourth)'
-      };
-
+      // 1. Get all students that match this teacher's class assignment
+      // Using loose regex to ensure "4th Year" matches "Fourth Year" etc.
+      const yearPatterns = { '1': '(1st|First)', '2': '(2nd|Second)', '3': '(3rd|Third)', '4': '(4th|Fourth)' };
       const yearNum = classYear.match(/\d/)?.[0];
       const yearRegex = yearNum ? new RegExp(`^${yearPatterns[yearNum]}`, 'i') : new RegExp(`^${classYear}$`, 'i');
+      const deptRegex = new RegExp(`^${classDepartment}$`, 'i');
 
-      const studentIds = await User.find({
-        role: 'student',
-        department: { $regex: new RegExp(`^${classDepartment}$`, 'i') },
-        classYear: { $regex: yearRegex }
-      }).distinct('_id');
+      // 2. Perform a direct search for pending requests from these students
+      const requests = await ClearanceRequest.find({
+        overallStatus: { $ne: 'draft' },
+        'departmentApprovals': {
+          $elemMatch: { department: 'class_teacher', status: 'pending' }
+        }
+      }).populate({
+        path: 'student',
+        match: {
+          department: { $regex: deptRegex },
+          classYear: { $regex: yearRegex }
+        },
+        select: 'fullName universityNumber rollNumber department classYear admissionNumber'
+      });
 
-      query.student = { $in: studentIds };
+      // 3. Filter out requests where the student didn't match (Mongoose 'match' returns null for non-matches)
+      const filteredRequests = requests.filter(r => r.student !== null);
+      
+      console.log(`📡 Routing: Teacher (${classDepartment} ${classYear}) -> Found ${filteredRequests.length} requests`);
+      return res.json({ success: true, requests: filteredRequests });
     }
 
     const requests = await ClearanceRequest.find(query)
