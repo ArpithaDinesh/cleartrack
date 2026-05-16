@@ -853,7 +853,7 @@ export default function StudentDashboard() {
                     })()}
 
                     {/* ── Bus Fee Row ── */}
-                    {busOpted ? (() => {
+                    {false ? (() => {
                       const req = clearanceRequests.find(r => r.feeType === 'bus');
                       const busAmountDue = selectedSubLocation ? `₹${selectedSubLocation.fee.toLocaleString()}` : '—';
                       const busAmountPaid = req?.ocrData?.amount || '—';
