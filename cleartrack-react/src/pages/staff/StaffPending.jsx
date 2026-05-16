@@ -48,7 +48,7 @@ export default function StaffPending() {
                       <div className="cr-student-info">
                         <div className="cr-receipt-preview" style={{ width: 60, height: 60, borderRadius: 8, background: '#f1f5f9', overflow: 'hidden', flexShrink: 0, border: '1px solid #e2e8f0', marginRight: 15 }}>
                           {r.receiptFile?.filename ? (
-                            <img src={`${API_ROOT}/uploads/${r.receiptFile.filename}`} alt="Receipt" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <img src={`${API_ROOT}/uploads/${r.receiptFile?.filename}`} alt="Receipt" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           ) : (
                             <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#94a3b8' }}>No Img</div>
                           )}

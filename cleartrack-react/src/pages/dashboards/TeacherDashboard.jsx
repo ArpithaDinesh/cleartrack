@@ -169,11 +169,11 @@ export default function TeacherDashboard() {
                   return (
                     <div key={r._id} className="cr-item" onClick={() => navigate(`/staff/request/${r._id}`)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 20, padding: '16px 24px', borderBottom: '1px solid #f1f5f9', transition: 'background 0.2s' }}>
                       {/* Receipt Thumbnail */}
-                      <div style={{ width: 60, height: 60, borderRadius: 8, background: '#f1f5f9', overflow: 'hidden', flexShrink: 0, border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                      <div className="cr-receipt-preview" style={{ width: 60, height: 60, borderRadius: 8, background: '#f1f5f9', overflow: 'hidden', flexShrink: 0, border: '1px solid #e2e8f0', marginRight: 15 }}>
                         {r.receiptFile?.filename ? (
-                          <img src={`${API_ROOT}/uploads/${r.receiptFile.filename}`} alt="Receipt" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img src={`${API_ROOT}/uploads/${r.receiptFile?.filename}`} alt="Receipt" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
-                          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#94a3b8' }}>No Image</div>
+                          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#94a3b8' }}>No Img</div>
                         )}
                       </div>
                       
