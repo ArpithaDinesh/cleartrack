@@ -63,9 +63,9 @@ export default function ClearanceStatus() {
                 <div className="sb-info">
                   <h3>{statusLabel[latest.overallStatus] || latest.overallStatus}</h3>
                   <div style={{display:'flex', alignItems:'center', gap:10}}>
-                    <p style={{margin:0}}>Request #{latest.requestNumber} · Submitted {new Date(latest.submittedAt).toLocaleDateString()}</p>
+                    <p style={{margin:0}}>Request #{latest.requestNumber} · Submitted {latest.submittedAt ? new Date(latest.submittedAt).toLocaleDateString() : '—'}</p>
                     {latest.receiptFile?.filename && (
-                      <a href={`${API_ROOT}/uploads/${latest.receiptFile.filename}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline" style={{padding:'2px 10px', fontSize:'.7rem', background:'rgba(255,255,255,0.8)'}}>
+                      <a href={`${API_ROOT}/uploads/${latest.receiptFile?.filename}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline" style={{padding:'2px 10px', fontSize:'.7rem', background:'rgba(255,255,255,0.8)'}}>
                         View Bill
                       </a>
                     )}

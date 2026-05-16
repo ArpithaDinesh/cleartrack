@@ -63,7 +63,7 @@ export default function RequestHistory() {
                         <td><span className={`badge badge-${badgeClass[r.overallStatus]||'neutral'}`}>{r.overallStatus?.replace('_',' ')}</span></td>
                         <td>
                           {r.receiptFile?.filename && (
-                            <a href={`${API_ROOT}/uploads/${r.receiptFile.filename}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline" style={{padding:'4px 8px', fontSize:'.7rem'}}>
+                            <a href={`${API_ROOT}/uploads/${r.receiptFile?.filename}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline" style={{padding:'4px 8px', fontSize:'.7rem'}}>
                               View Bill
                             </a>
                           )}
