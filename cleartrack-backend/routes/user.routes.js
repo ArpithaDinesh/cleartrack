@@ -35,11 +35,16 @@ router.get('/my-students', protect, async (req, res) => {
       return res.json({ success: true, students: [] });
     }
 
-    // Bulletproof matching (Trims spaces, handles common year variations)
+    // High-Flexibility matching (Trims spaces, handles fuzzy depts and year variations)
     const yearPatterns = { '1': '(1st|First)', '2': '(2nd|Second)', '3': '(3rd|Third)', '4': '(4th|Fourth)' };
     const yearNum = classYear.match(/\d/)?.[0];
-    const yearRegex = yearNum ? new RegExp(`^\\s*${yearPatterns[yearNum]}`, 'i') : new RegExp(`^\\s*${classYear.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i');
-    const deptRegex = new RegExp(`^\\s*${classDepartment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i');
+    const yearRegex = yearNum ? new RegExp(`^\\s*${yearPatterns[yearNum]}`, 'i') : new RegExp(`^\\s*${classYear}\\s*$`, 'i');
+    
+    // Fuzzy Dept Match
+    const deptPattern = classDepartment.length <= 3 
+      ? `^\\s*${classDepartment}` 
+      : classDepartment.split(' ')[0];
+    const deptRegex = new RegExp(deptPattern, 'i');
 
     const students = await User.find({
       role: 'student',

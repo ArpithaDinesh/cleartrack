@@ -158,7 +158,7 @@ const getDepartmentPending = async (req, res) => {
       }
     };
 
-    // High-Visibility Routing for Class Teachers
+    // High-Flexibility Routing for Class Teachers
     if (dept === 'class_teacher') {
       const classDepartment = (req.user.classDepartment || '').trim();
       const classYear = (req.user.classYear || '').trim();
@@ -167,11 +167,17 @@ const getDepartmentPending = async (req, res) => {
         return res.json({ success: true, requests: [], message: 'Profile incomplete: No class assigned.' });
       }
 
-      // 1. Create a broad match for the teacher's class (Handling 1st/First, spaces, case)
+      // 1. Create a broad match for the teacher's class (Handling Fuzzy Depts and Year variations)
       const yearPatterns = { '1': '(1st|First)', '2': '(2nd|Second)', '3': '(3rd|Third)', '4': '(4th|Fourth)' };
       const yearNum = classYear.match(/\d/)?.[0];
-      const yearRegex = yearNum ? new RegExp(`^\\s*${yearPatterns[yearNum]}`, 'i') : new RegExp(`^\\s*${classYear.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i');
-      const deptRegex = new RegExp(`^\\s*${classDepartment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i');
+      const yearRegex = yearNum ? new RegExp(`^\\s*${yearPatterns[yearNum]}`, 'i') : new RegExp(`^\\s*${classYear}\\s*$`, 'i');
+      
+      // Fuzzy Dept: Match 'CS' with 'Computer Science', 'IT' with 'Information Technology', etc.
+      // We use a prefix match if the dept is short, or an inclusion match if it's long.
+      const deptPattern = classDepartment.length <= 3 
+        ? `^\\s*${classDepartment}` // Prefix match for short codes like CS, IT, ME
+        : classDepartment.split(' ')[0]; // Match first word for longer names
+      const deptRegex = new RegExp(deptPattern, 'i');
 
       // 2. Find ALL students matching this class
       const studentIds = await User.find({
