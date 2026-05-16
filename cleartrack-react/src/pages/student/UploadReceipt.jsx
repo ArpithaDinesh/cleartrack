@@ -31,8 +31,15 @@ export default function UploadReceipt() {
 
   const onFile = (f) => {
     if (f && f.size <= 10 * 1024 * 1024) {
+      // Clear previous results immediately
+      setRawOcrText('')
+      setOcrStatus('')
+      setOcrProgress(0)
+      setError('')
+      
       setFile(f)
       if (f.type.startsWith('image/') || f.type === 'application/pdf') {
+        if (previewUrl) URL.revokeObjectURL(previewUrl)
         setPreviewUrl(URL.createObjectURL(f))
       } else {
         setPreviewUrl('')
@@ -66,8 +73,12 @@ export default function UploadReceipt() {
       await waitForCV();
       
       const img = new Image();
-      img.src = previewUrl || URL.createObjectURL(file);
-      await new Promise(r => img.onload = r);
+      // Add a timestamp or unique hash to avoid browser caching if the same blob URL is reused
+      img.src = previewUrl + (previewUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = () => reject(new Error('Failed to load image for processing.'));
+      });
       
       const processedSrc = await preprocessImage(img);
       setOcrStatus('Initializing OCR engine...')

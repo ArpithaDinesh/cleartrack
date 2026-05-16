@@ -15,22 +15,24 @@ export const preprocessImage = async (imageElement) => {
       // 1. Grayscale (Essential for OCR)
       cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY, 0);
 
-      // 2. Standard Resize (Max 2000px)
-      const maxDim = 2000;
+      // 2. Standard Resize (Max 2500px for better OCR)
+      const maxDim = 2500;
       if (dst.cols > maxDim || dst.rows > maxDim) {
         const scale = maxDim / Math.max(dst.cols, dst.rows);
         const dsize = new cv.Size(Math.round(dst.cols * scale), Math.round(dst.rows * scale));
-        cv.resize(dst, dst, dsize, 0, 0, cv.INTER_AREA);
+        cv.resize(dst, dst, dsize, 0, 0, cv.INTER_CUBIC);
       }
 
-      // 3. Mild Contrast Boost (No thresholding)
-      const clahe = new cv.CLAHE(2.0, new cv.Size(8, 8));
+      // 3. Contrast Boost (CLAHE)
+      const clahe = new cv.CLAHE(3.0, new cv.Size(8, 8));
       clahe.apply(dst, dst);
       clahe.delete();
 
       const canvas = document.createElement('canvas');
+      canvas.width = dst.cols;
+      canvas.height = dst.rows;
       cv.imshow(canvas, dst);
-      const processedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+      const processedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
 
       src.delete(); dst.delete();
       resolve(processedDataUrl);

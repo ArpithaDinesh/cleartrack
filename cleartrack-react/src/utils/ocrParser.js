@@ -30,30 +30,38 @@ const IGNORE_WORDS = new Set([
   'SAVINGS', 'AUTHORISED', 'AUTHORIZ', 'PARTICULARS', 'AMOUNT', 'DATE', 'CUSTOMER',
   'CHALAN', 'RUPEES', 'TOTAL', 'WORDS', 'CHALLAN', 'ADMISSION', 'ISO', 'YEAR', 'TEL',
   'OL', 'THE', 'AND', 'BRANCH', 'EXTN', 'KSEB', 'KSCB', 'AC', 'NO', 'TYPE', 'AMOU', 'AMNT',
-  'PARTIC', 'PART', 'PARTI', 'AMN', 'AMT', 'CUSTOMER', 'NAME', 'COLLEGE', 'ENGINEERING',
-  'BY', 'CASH', 'NEW'
+  'PARTIC', 'PART', 'PARTI', 'AMN', 'AMT', 'NAME', 'BY', 'CASH', 'NEW',
+  'STUDENT', 'COPY', 'OFFICE', 'ORIGINAL', 'DUPLICATE', 'MEMO', 'VOUCHER', 'SYSTEM', 
+  'VERSION', 'REPORT', 'STATEMENT', 'ACCOUNT', 'TIME', 'USER', 'ID', 'REFERENCE', 'SL', 'SR'
 ]);
 
 const extractCleanName = (raw = '') => {
-  const DEPTS = ['CSE', 'IT', 'EEE', 'ECE', 'ME', 'CE', 'CIVIL', 'MCA', 'MBA'];
+  const DEPTS = ['CSE', 'IT', 'EEE', 'ECE', 'ME', 'CE', 'CIVIL', 'MCA', 'MBA', 'BCA', 'BBA'];
   const tokens = raw.split(/[\s,.\-\/]+/).filter(t => {
     const up = t.toUpperCase();
-    if (t.length < 2) return /^[A-Z]$/.test(t);
+    if (t.length < 2) return false; // Ignore single characters (often OCR noise)
     if (/\d/.test(t)) return false; 
     if (IGNORE_WORDS.has(up)) return false;
     if (DEPTS.includes(up)) return false;
-    if (['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'EVEN', 'ODD'].includes(up)) return false;
+    if (['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'EVEN', 'ODD', 'COPY', 'STUDENT'].includes(up)) return false;
     const letterRatio = (t.match(/[A-Za-z]/g) || []).length / t.length;
-    return letterRatio >= 0.7;
+    return letterRatio >= 0.8; // Stricter letter ratio for names
   });
+
+  // Names are usually 2-3 words. If we only found 1 word and it's "STUDENT" or "COPY", ignore it.
+  if (tokens.length < 2) {
+    const up = (tokens[0] || '').toUpperCase();
+    if (['STUDENT', 'COPY', 'OFFICE', 'BANK', 'RECEIPT'].includes(up)) return '';
+  }
+
   return tokens.slice(0, 3)
     .map(t => t.charAt(0).toUpperCase() + t.slice(1).toLowerCase())
     .join(' ');
 };
 
 export const parseOCRFields = (rawText) => {
-  console.warn('⚡ OCR System Version: 1.3.0 | 🛠️ Mode: Smart Field Matching');
-  const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  console.warn('⚡ OCR System Version: 1.4.0 | 🛠️ Mode: Smart Field Matching');
+  const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 2);
   const oneLine = rawText.replace(/\r?\n/g, ' ').replace(/\s{2,}/g, ' ');
   const UP = oneLine.toUpperCase();
 
@@ -109,17 +117,29 @@ export const parseOCRFields = (rawText) => {
     if (dM) result.department = dM[1].toUpperCase();
   }
 
-  // 5. Fallback Name
+  // 5. Fallback Name (Avoid headers)
   if (!result.name) {
     const nameMatch = oneLine.match(/(?:NAME|STUDENT|MR|MS|MRS)[\s:]+([A-Z\s]{3,30})(?:\s|$)/i);
     if (nameMatch) {
       result.name = extractCleanName(nameMatch[1]);
-    } else {
-      for (let i = 0; i < Math.min(8, lines.length); i++) {
-        const up = lines[i].toUpperCase();
-        if (lines[i].length > 5 && !IGNORE_WORDS.has(up.split(' ')[0]) && !/KADIRUR|BANK|SERVICE|CO-OP/i.test(up)) {
-          result.name = extractCleanName(lines[i]);
-          if (result.name) break;
+      if (result.name) console.log('✅ Name found via regex anchor:', result.name);
+    }
+    
+    if (!result.name) {
+      // Look for name in first few lines, but skip common bank/college headers
+      for (let i = 0; i < Math.min(10, lines.length); i++) {
+        const line = lines[i];
+        const up = line.toUpperCase();
+        
+        // Skip obvious headers
+        if (/COLLEGE|ENGINEERING|BANK|SERVICE|CO-OP|KADIRUR|CHALLAN|RECEIPT|CASHIER/i.test(up)) continue;
+        if (up.includes('STUDENT COPY') || up.includes('OFFICE COPY')) continue;
+        
+        const candidate = extractCleanName(line);
+        if (candidate && candidate.split(' ').length >= 2) {
+          result.name = candidate;
+          console.log(`✅ Name found in line ${i}:`, result.name);
+          break;
         }
       }
     }
