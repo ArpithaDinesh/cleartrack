@@ -23,7 +23,8 @@ export default function StudentDashboard() {
     tuition: { status: 'idle', ocrData: null, requestId: null, message: '' },
     bus:     { status: 'idle', ocrData: null, requestId: null, message: '' },
     hostel:  { status: 'idle', ocrData: null, requestId: null, message: '' }
-  })
+  });
+  const [rawOcrText, setRawOcrText] = useState('');
   
   const [showDropdown, setShowDropdown] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
@@ -98,6 +99,7 @@ export default function StudentDashboard() {
       const { data: { text } } = await worker.recognize(processedSrc);
       const hintAmount = feeType === 'tuition' ? calculatedTuitionFee : feeType === 'bus' ? calculatedBusFee : 0;
       const ocrData = parseOCRFields(text, user?.fullName, hintAmount);
+      setRawOcrText(text);
       await worker.terminate();
       worker = null;
 
@@ -426,6 +428,12 @@ export default function StudentDashboard() {
                             onClick={() => handleSubmitFee('tuition')}>
                             {submitLoading ? 'Submitting...' : '🚀 Final Submit for Approval'}
                           </button>
+                          {rawOcrText && (
+                            <div style={{marginTop: 10, padding: 8, background: '#f8fafc', color: '#64748b', fontSize: '.65rem', borderRadius: 6, border: '1px solid #e2e8f0', whiteSpace: 'pre-wrap', maxHeight: '100px', overflow: 'auto'}}>
+                              <strong>🔍 RAW OCR OUTPUT:</strong><br/>
+                              {rawOcrText}
+                            </div>
+                          )}
                           {ocrStates.tuition.status === 'confirmed' && (
                             <div style={{marginTop: 10, padding: 8, background: '#fffbeb', color: '#92400e', fontSize: '.75rem', borderRadius: 6, border: '1px solid #fde68a', textAlign: 'center'}}>
                               ⚠️ One step left! Click the button above to send to your teacher.

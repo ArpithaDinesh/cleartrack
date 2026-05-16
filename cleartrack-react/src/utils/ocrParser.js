@@ -3,8 +3,21 @@
  * Replicates the parsing logic from the backend to process OCR text in the browser.
  */
 
-const sanitizeAmount = (str = '') => {
-  const clean = str.replace(/[\s,]/g, '');
+const sanitizeAmount = (s) => {
+  if (!s) return null;
+  // Remove currency symbols and non-numeric junk except dots/commas
+  let clean = s.replace(/[^0-9.,]/g, '');
+  
+  // Heuristic: If there's a dot or comma followed by exactly 2 digits at the end, it's a decimal.
+  // Otherwise, it's likely a thousands separator.
+  if (/[.,]\d{2}$/.test(clean)) {
+    const decimals = clean.slice(-2);
+    const main = clean.slice(0, -3).replace(/[.,]/g, '');
+    clean = main + '.' + decimals;
+  } else {
+    clean = clean.replace(/[.,]/g, '');
+  }
+  
   const val = parseFloat(clean);
   return isNaN(val) ? null : clean;
 };
@@ -65,7 +78,7 @@ const extractCleanName = (raw = '') => {
 };
 
 export const parseOCRFields = (rawText, knownStudentName = '', expectedAmount = 0) => {
-  console.warn('⚡ OCR System Version: 1.9.0 | 🛠️ Mode: Smart Hint Matching');
+  console.warn(`⚡ OCR System Version: 1.12.0 | 🛠️ Mode: Smart Bias | Expected Hint: ₹${expectedAmount}`);
   const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   const oneLine = rawText.replace(/\r?\n/g, ' ').replace(/\s{2,}/g, ' ');
   const UP = oneLine.toUpperCase();
@@ -168,18 +181,18 @@ export const parseOCRFields = (rawText, knownStudentName = '', expectedAmount = 
 
   // 6. Global Scored Search (Robust Fallback)
   if (!result.amount || result.amount.length < 3) {
-    const allNumbers = [...oneLine.matchAll(/\b(\d{2,}(?:[,\s]\d{3})*(?:\.\d{2})?)\b/g)];
+    // Greedier regex: finds any sequence of digits with spaces/commas/dots in between
+    const allNumbers = [...oneLine.matchAll(/\b(\d[\d\s,.]*\d)\b/g)];
     let bestScore = -1;
-    let bestMatch = '';
+    let bestMatch = null;
     
-    for (const [, raw] of allNumbers) {
+    for (const [raw] of allNumbers) {
       const clean = sanitizeAmount(raw);
       const val = parseFloat(clean);
       if (isNaN(val) || val < 1) continue;
       
       // Skip things that look like years or small fees
       if (val >= 1900 && val <= 2100) continue;
-      if (val < 50 && !oneLine.toLowerCase().includes('fine')) continue; 
 
       let score = 0;
       const idx = oneLine.indexOf(raw);
@@ -190,29 +203,35 @@ export const parseOCRFields = (rawText, knownStudentName = '', expectedAmount = 
       if (/(?:rs|inr|rupees|₹)/i.test(context)) score += 50000;
       
       // Formatting hints
-      if (raw.includes('.00')) score += 20000;
-      if (raw.length >= 4) score += 10000; // Prefer larger numbers for totals
+      if (raw.includes('.00') || raw.includes(',00')) score += 20000;
+      if (raw.length >= 4) score += 10000; 
       
-      // Negative hints (Penalize things that look like dates or IDs)
-      if (/\d{1,2}[/-]\d{1,2}[/-]\d{2,4}/.test(context)) score -= 30000; // Nearby date
+      // Negative hints
+      if (/\d{1,2}[/-]\d{1,2}[/-]\d{2,4}/.test(context)) score -= 30000;
       if (/(?:date|time|sl|no|id|ref|mob|phone|tel)/i.test(context)) score -= 40000;
+
+      // Size-based bias (Larger numbers are more likely to be fee totals)
+      if (val > 1000) score += 50000;
+      if (val > 10000) score += 50000;
       
-      // Hint matching (Massive boost if it matches what we expect from the fee structure)
+      // Hint matching
       if (expectedAmount > 0) {
         const diff = Math.abs(val - expectedAmount);
-        if (diff < 1) score += 500000; // Perfect match
-        else if (diff < (expectedAmount * 0.05)) score += 200000; // Within 5%
+        if (diff < 1) score += 1000000; // Perfect match (even higher priority)
+        else if (diff < (expectedAmount * 0.05)) score += 300000;
       }
       
+      console.log(`🔍 Candidate: "${raw}" -> val: ${val}, score: ${score}`);
+
       if (score > bestScore && val < 2000000) {
         bestScore = score;
-        bestMatch = clean;
+        bestMatch = val;
       }
     }
     
     if (bestMatch) {
-      result.amount = '₹' + bestMatch;
-      console.log(`💰 Best amount match: ${result.amount} (Score: ${bestScore})`);
+      result.amount = '₹' + bestMatch.toLocaleString('en-IN');
+      console.log(`✅ Selected Final Amount: ${result.amount} (Confidence: ${bestScore})`);
     }
   }
 
