@@ -13,6 +13,9 @@ export default function StudentDashboard() {
   const initials = user?.fullName?.charAt(0)?.toUpperCase() || 'S'
   const [tuitionFile, setTuitionFile] = useState(null)
   const [busFile, setBusFile] = useState(null)
+  const [hostelFile, setHostelFile] = useState(null)
+  const [busOpted, setBusOpted] = useState(false)
+  const [hostelOpted, setHostelOpted] = useState(false)
   
   // OCR State maps for fee sections ('tuition', 'bus', 'hostel')
   // state: { status: 'idle' | 'processing' | 'success' | 'error', ocrData: null, requestId: null, message: '' }
