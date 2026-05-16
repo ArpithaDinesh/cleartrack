@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Sidebar from '../../components/Sidebar'
 import { useAuth } from '../../context/AuthContext'
 import { clearanceAPI, ocrAPI, busAPI, tuitionFeeAPI, API_ROOT } from '../../services/api'
+import ProfileModal from '../../components/ProfileModal'
 import { createWorker } from 'tesseract.js'
 import { parseOCRFields } from '../../utils/ocrParser'
 import { preprocessImage, waitForCV } from '../../utils/cvPreprocessor'
@@ -880,7 +881,7 @@ export default function StudentDashboard() {
                     )}
 
                     {/* ── Hostel Fee Row ── */}
-                    {hostelOpted ? (() => {
+                    {false ? (() => {
                       const req = clearanceRequests.find(r => r.feeType === 'hostel');
                       const hostelAmountPaid = req?.ocrData?.amount || '—';
                       
