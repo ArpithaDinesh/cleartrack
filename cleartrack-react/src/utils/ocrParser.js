@@ -78,7 +78,7 @@ const extractCleanName = (raw = '') => {
 };
 
 export const parseOCRFields = (rawText, knownStudentName = '', expectedAmount = 0) => {
-  console.warn(`⚡ OCR System Version: 1.12.0 | 🛠️ Mode: Smart Bias | Expected Hint: ₹${expectedAmount}`);
+  console.warn(`⚡ OCR System Version: 1.13.0 | 🛠️ Mode: Sweet-Spot Bias | Hint: ₹${expectedAmount}`);
   const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   const oneLine = rawText.replace(/\r?\n/g, ' ').replace(/\s{2,}/g, ' ');
   const UP = oneLine.toUpperCase();
@@ -90,6 +90,7 @@ export const parseOCRFields = (rawText, knownStudentName = '', expectedAmount = 
     amount: '',
     bank: '',
     date: '',
+    hintUsed: expectedAmount,
     rawText
   };
 
@@ -210,9 +211,9 @@ export const parseOCRFields = (rawText, knownStudentName = '', expectedAmount = 
       if (/\d{1,2}[/-]\d{1,2}[/-]\d{2,4}/.test(context)) score -= 30000;
       if (/(?:date|time|sl|no|id|ref|mob|phone|tel)/i.test(context)) score -= 40000;
 
-      // Size-based bias (Larger numbers are more likely to be fee totals)
-      if (val > 1000) score += 50000;
-      if (val > 10000) score += 50000;
+      // Size-based bias (Sweet spot for fees is 5k to 150k)
+      if (val > 5000 && val < 150000) score += 80000;
+      if (val > 150000) score -= 100000; // Penalize extremely large numbers (likely serials or limits)
       
       // Hint matching
       if (expectedAmount > 0) {

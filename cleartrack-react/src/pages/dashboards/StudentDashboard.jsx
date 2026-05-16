@@ -396,6 +396,11 @@ export default function StudentDashboard() {
 
                           {ocrStates.tuition.status === 'success' && ocrStates.tuition.ocrData && (
                               <div className="ocr-fields">
+                                {ocrStates.tuition.ocrData.hintUsed > 0 && (
+                                  <div style={{gridColumn:'1/-1', background:'#f0f9ff', padding:'4px 8px', borderRadius:4, fontSize:'.7rem', color:'#0369a1', marginBottom:5}}>
+                                    💡 <strong>Hinting active:</strong> Searching for approx. ₹{ocrStates.tuition.ocrData.hintUsed.toLocaleString()}
+                                  </div>
+                                )}
                                 <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Student Name</label><span>{ocrStates.tuition.ocrData.name || '—'}</span></div>
                                 <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Department</label><span>{ocrStates.tuition.ocrData.department || '—'}</span></div>
                                 <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Particulars</label><span>{ocrStates.tuition.ocrData.particulars || '—'}</span></div>
