@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import Sidebar from '../../components/Sidebar'
 import { useAuth } from '../../context/AuthContext'
 import { clearanceAPI, ocrAPI, busAPI, tuitionFeeAPI, API_ROOT } from '../../services/api'
 import { createWorker } from 'tesseract.js'
@@ -193,19 +194,6 @@ export default function StudentDashboard() {
       return <span className="badge badge-success">Fully Paid</span>;
     }
   };
-
-  const handleSubmitFee = async (feeType) => {
-    try {
-      setSubmitLoading(true);
-      await clearanceAPI.submitAllRequests();
-      alert(`✅ ${feeType.charAt(0).toUpperCase() + feeType.slice(1)} Fee clearance request has been sent to your Teacher Dashboard for approval.`);
-      window.location.reload();
-    } catch (err) {
-      alert('Submission failed: ' + (err.message || 'Unknown error'));
-    } finally {
-      setSubmitLoading(false);
-    }
-  }
 
   return (
     <div className="dashboard-body">
