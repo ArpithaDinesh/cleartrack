@@ -59,8 +59,8 @@ const extractCleanName = (raw = '') => {
     .join(' ');
 };
 
-export const parseOCRFields = (rawText) => {
-  console.warn('⚡ OCR System Version: 1.4.0 | 🛠️ Mode: Smart Field Matching');
+export const parseOCRFields = (rawText, knownStudentName = '') => {
+  console.warn('⚡ OCR System Version: 1.5.0 | 🛠️ Mode: Personalized Matching');
   const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 2);
   const oneLine = rawText.replace(/\r?\n/g, ' ').replace(/\s{2,}/g, ' ');
   const UP = oneLine.toUpperCase();
@@ -82,10 +82,24 @@ export const parseOCRFields = (rawText) => {
   const dateMatch = oneLine.match(/\b(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\b/);
   if (dateMatch) result.date = dateMatch[1];
 
-  // 2. Extract Amount (Priority to patterns like 45720.00)
-  const amtMatch = oneLine.match(/\b(\d{3,}\.\d{2})\b/);
-  if (amtMatch) {
-    result.amount = '₹' + amtMatch[1];
+  // 2. Personalized Name Identification (Highest Priority)
+  if (knownStudentName) {
+    const searchName = knownStudentName.toUpperCase();
+    const nameParts = searchName.split(/\s+/).filter(p => p.length > 2);
+    
+    // Check for full name match
+    if (UP.includes(searchName)) {
+      result.name = knownStudentName;
+      console.log('🎯 Exact student name match found:', result.name);
+    } else {
+      // Check for partial match (at least 2 parts of the name)
+      let matches = 0;
+      for (const part of nameParts) { if (UP.includes(part)) matches++; }
+      if (matches >= Math.min(2, nameParts.length)) {
+        result.name = knownStudentName;
+        console.log('🎯 Partial student name match found:', result.name);
+      }
+    }
   }
 
   // 3. Extract Particulars & Anchored Info
@@ -145,27 +159,47 @@ export const parseOCRFields = (rawText) => {
     }
   }
 
-  // 6. Global Amount Scored Search (if not found)
-  if (!result.amount) {
+  // 6. Advanced Amount Scored Search
+  if (!result.amount || result.amount.length < 2) {
     const allNumbers = [...oneLine.matchAll(/\b(\d{2,}(?:[,\s]\d{3})*(?:\.\d{2})?)\b/g)];
     let bestScore = -1;
     let bestMatch = '';
+    
     for (const [, raw] of allNumbers) {
       const clean = sanitizeAmount(raw);
       const val = parseFloat(clean);
-      if (val >= 1900 && val <= 2099) continue;
+      if (isNaN(val) || val < 1) continue;
+      
+      // Skip things that look like years or small fees
+      if (val >= 1900 && val <= 2100) continue;
+      if (val < 50 && !oneLine.toLowerCase().includes('fine')) continue; 
+
       let score = 0;
       const idx = oneLine.indexOf(raw);
-      const context = oneLine.toLowerCase().substring(Math.max(0, idx - 45), idx + raw.length + 25);
-      if (/(?:rs|inr|rupees|₹)/i.test(context)) score += 100000;
-      if (/(?:total|paid|amount|amt|sum|received)/i.test(context)) score += 50000;
+      const context = oneLine.toLowerCase().substring(Math.max(0, idx - 60), idx + raw.length + 30);
+      
+      // Critical Keywords (High score)
+      if (/(?:total|paid|net|grand|received|collected|sum)/i.test(context)) score += 100000;
+      if (/(?:rs|inr|rupees|₹)/i.test(context)) score += 50000;
+      
+      // Formatting hints
       if (raw.includes('.00')) score += 20000;
-      if (score > bestScore && val < 1000000 && val > 1) {
+      if (raw.length >= 4) score += 10000; // Prefer larger numbers for totals
+      
+      // Negative hints (Penalize things that look like dates or IDs)
+      if (/\d{1,2}[/-]\d{1,2}[/-]\d{2,4}/.test(context)) score -= 30000; // Nearby date
+      if (/(?:date|time|sl|no|id|ref|mob|phone|tel)/i.test(context)) score -= 40000;
+      
+      if (score > bestScore && val < 2000000) {
         bestScore = score;
         bestMatch = clean;
       }
     }
-    if (bestMatch) result.amount = '₹' + bestMatch;
+    
+    if (bestMatch) {
+      result.amount = '₹' + bestMatch;
+      console.log(`💰 Best amount match: ${result.amount} (Score: ${bestScore})`);
+    }
   }
 
   // 7. Bank Name

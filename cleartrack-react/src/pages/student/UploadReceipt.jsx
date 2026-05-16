@@ -105,7 +105,7 @@ export default function UploadReceipt() {
       setRawOcrText(text) // Store the raw text for display
 
       setOcrStatus('Extracting information...')
-      const ocrData = parseOCRFields(text);
+      const ocrData = parseOCRFields(text, user?.fullName);
       ocrData.ocrStatus = 'completed';
 
       // 3. Submit to backend
