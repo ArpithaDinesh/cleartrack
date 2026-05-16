@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Sidebar from '../../components/Sidebar'
 import { useAuth } from '../../context/AuthContext'
-import { clearanceAPI, ocrAPI, busAPI, tuitionFeeAPI } from '../../services/api'
+import { clearanceAPI, ocrAPI, busAPI, tuitionFeeAPI, API_ROOT } from '../../services/api'
 import ProfileModal from '../../components/ProfileModal'
 import { createWorker } from 'tesseract.js'
 import { parseOCRFields } from '../../utils/ocrParser'
@@ -68,6 +68,7 @@ export default function StudentDashboard() {
   const handleOCRProcess = async (feeType, file) => {
     if (!file) return;
     setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], status: 'processing', message: 'Initializing OCR...' } }))
+    let worker = null;
     
     try {
       // 1. Run Preprocessing (OpenCV)
@@ -95,8 +96,9 @@ export default function StudentDashboard() {
       });
       
       const { data: { text } } = await worker.recognize(processedSrc);
-      const ocrData = parseOCRFields(text);
+      const ocrData = parseOCRFields(text, user?.fullName);
       await worker.terminate();
+      worker = null;
 
       // 3. Submit Request with File and OCR data
       setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], message: 'Uploading to server...' } }))
@@ -118,7 +120,10 @@ export default function StudentDashboard() {
 
       setOcrStates(prev => ({ ...prev, [feeType]: { status: 'success', ocrData, requestId, message: '' } }))
     } catch (err) {
+      console.error('OCR Error:', err);
       setOcrStates(prev => ({ ...prev, [feeType]: { status: 'error', ocrData: null, requestId: null, message: err.message || 'OCR Processing failed.' } }))
+    } finally {
+      if (worker) await worker.terminate();
     }
   }
 
@@ -365,7 +370,14 @@ export default function StudentDashboard() {
                       <div>
                         <div className="field-label">OCR Extracted Details</div>
                         <div className="ocr-panel">
-                          <div className="ocr-ptitle">Extracted from Receipt</div>
+                          <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:5}}>
+                            <div className="ocr-ptitle">Extracted from Receipt</div>
+                            {tuitionFile && (
+                              <a href={URL.createObjectURL(tuitionFile)} target="_blank" rel="noreferrer" style={{fontSize:'.75rem', color:'var(--primary)', textDecoration:'underline'}}>
+                                Preview Receipt
+                              </a>
+                            )}
+                          </div>
                           
                           {ocrStates.tuition.status === 'processing' && (
                             <div className="ocr-fields" style={{ justifyContent: 'center', padding: '20px' }}>
@@ -741,10 +753,17 @@ export default function StudentDashboard() {
                         )}
                       </div>
                       <div className="sb-info" style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <h3 style={{ textTransform: 'capitalize' }}>{r.feeType} Fee Clearance</h3>
-                          <span style={{ fontSize: '.75rem', opacity: 0.8 }}>ID: {r.requestNumber}</span>
-                        </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h3 style={{ textTransform: 'capitalize' }}>{r.feeType} Fee Clearance</h3>
+                            <div style={{display:'flex', gap:8, alignItems:'center'}}>
+                              {r.receiptFile?.filename && (
+                                <a href={`${API_ROOT}/uploads/${r.receiptFile.filename}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline" style={{padding:'2px 8px', fontSize:'.65rem'}}>
+                                  View Receipt
+                                </a>
+                              )}
+                              <span style={{ fontSize: '.75rem', opacity: 0.8 }}>ID: {r.requestNumber}</span>
+                            </div>
+                          </div>
                         <p style={{ margin: '4px 0' }}>
                           {isApproved ? 'All departments have approved your clearance!' : 
                            isRejected ? 'Your request was rejected. Please check remarks and re-submit.' : 

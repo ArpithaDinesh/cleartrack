@@ -42,10 +42,15 @@ const extractCleanName = (raw = '') => {
     if (t.length < 2) return false; // Ignore single characters (often OCR noise)
     if (/\d/.test(t)) return false; 
     if (IGNORE_WORDS.has(up)) return false;
-    if (DEPTS.includes(up)) return false;
-    if (['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'EVEN', 'ODD', 'COPY', 'STUDENT'].includes(up)) return false;
+    // Filter out nonsense strings (no vowels, mostly random letters)
+    const vowels = (t.match(/[aeiou]/gi) || []).length;
+    if (vowels === 0 && t.length > 3) return false;
+    
+    // Filter out strings with too many spaces relative to length
+    if (t.split(' ').length > 4) return false;
+
     const letterRatio = (t.match(/[A-Za-z]/g) || []).length / t.length;
-    return letterRatio >= 0.7; // Reverted to 0.7 for better OCR tolerance
+    return letterRatio >= 0.7;
   });
 
   // Names are usually 2-3 words. If we only found 1 word and it's "STUDENT" or "COPY", ignore it.
@@ -60,7 +65,7 @@ const extractCleanName = (raw = '') => {
 };
 
 export const parseOCRFields = (rawText, knownStudentName = '') => {
-  console.warn('⚡ OCR System Version: 1.7.0 | 🛠️ Mode: Hybrid Robust Extraction');
+  console.warn('⚡ OCR System Version: 1.8.0 | 🛠️ Mode: High-Fidelity Matching');
   const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   const oneLine = rawText.replace(/\r?\n/g, ' ').replace(/\s{2,}/g, ' ');
   const UP = oneLine.toUpperCase();
