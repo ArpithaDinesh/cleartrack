@@ -797,7 +797,7 @@ export default function StudentDashboard() {
                             <h3 style={{ textTransform: 'capitalize' }}>{r.feeType} Fee Clearance</h3>
                             <div style={{display:'flex', gap:8, alignItems:'center'}}>
                               {r.receiptFile?.filename && (
-                                <a href={`${API_ROOT}/uploads/${r.receiptFile.filename}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline" style={{padding:'2px 8px', fontSize:'.65rem'}}>
+                                <a href={`${API_ROOT}/uploads/${r.receiptFile?.filename}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline" style={{padding:'2px 8px', fontSize:'.65rem'}}>
                                   View Receipt
                                 </a>
                               )}
