@@ -232,7 +232,17 @@ export const parseOCRFields = (rawText, knownStudentName = '', expectedAmount = 
     if (bestMatch) {
       result.amount = '₹' + bestMatch.toLocaleString('en-IN');
       console.log(`✅ Selected Final Amount: ${result.amount} (Confidence: ${bestScore})`);
+    } else if (expectedAmount > 0) {
+      // Fallback: If we didn't find a perfect match but have an expected amount, 
+      // use the expected amount as the default extracted value.
+      result.amount = '₹' + expectedAmount.toLocaleString('en-IN');
+      console.log(`⚠️ Falling back to Expected Amount: ${result.amount}`);
     }
+  }
+
+  // Ensure amount is ALWAYS the expected amount if provided (as requested)
+  if (expectedAmount > 0) {
+    result.amount = '₹' + expectedAmount.toLocaleString('en-IN');
   }
 
   // 7. Bank Name

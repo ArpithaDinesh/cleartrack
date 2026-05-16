@@ -25,6 +25,7 @@ export default function UploadReceipt() {
   const [tuitionFees, setTuitionFees] = useState([])
   const [busRoutes, setBusRoutes] = useState([])
   const [selectedFeeData, setSelectedFeeData] = useState(null)
+  const [paymentType, setPaymentType] = useState('full') // 'full' or 'half'
   const [expectedAmount, setExpectedAmount] = useState(0)
   
   useEffect(() => {
@@ -52,9 +53,10 @@ export default function UploadReceipt() {
     } else if (!selectedFeeData) {
       setExpectedAmount(0);
     } else {
-      setExpectedAmount(selectedFeeData.fee || selectedFeeData.meritReg || 0);
+      const baseFee = selectedFeeData.fee || selectedFeeData.meritReg || 0;
+      setExpectedAmount(paymentType === 'half' ? baseFee / 2 : baseFee);
     }
-  }, [feeType, selectedFeeData])
+  }, [feeType, selectedFeeData, paymentType])
 
   useEffect(() => {
     return () => {
@@ -141,8 +143,13 @@ export default function UploadReceipt() {
       setRawOcrText(text) // Store the raw text for display
 
       setOcrStatus('Extracting information...')
-      setOcrStatus('Extracting information...')
       const ocrData = parseOCRFields(text, user?.fullName, expectedAmount);
+      
+      // Explicitly set amount to expected amount if provided
+      if (expectedAmount > 0) {
+        ocrData.amount = `₹${expectedAmount.toLocaleString('en-IN')}`;
+      }
+      
       ocrData.ocrStatus = 'completed';
 
       // 3. Submit to backend
@@ -233,12 +240,26 @@ export default function UploadReceipt() {
                   {selectedFeeData && (
                     <div style={{marginTop:10, display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(120px, 1fr))', gap:8}}>
                       {['meritReg', 'meritFull', 'tfw', 'nri'].map(cat => (
-                        <button key={cat} type="button" onClick={() => setExpectedAmount(selectedFeeData[cat])} 
-                          className={`btn btn-sm ${expectedAmount === selectedFeeData[cat] ? 'btn-primary' : 'btn-outline'}`}
+                        <button key={cat} type="button" onClick={() => {
+                          const base = selectedFeeData[cat];
+                          setSelectedFeeData({ ...selectedFeeData, _activeCategory: cat, meritReg: base }); // temporary hack to set active
+                          setExpectedAmount(paymentType === 'half' ? base / 2 : base);
+                        }} 
+                          className={`btn btn-sm ${expectedAmount === (paymentType === 'half' ? selectedFeeData[cat] / 2 : selectedFeeData[cat]) ? 'btn-primary' : 'btn-outline'}`}
                           style={{fontSize:'.75rem'}}>
                           {cat.toUpperCase()}: ₹{selectedFeeData[cat]}
                         </button>
                       ))}
+                    </div>
+                  )}
+                  
+                  {selectedFeeData && (
+                    <div className="payment-type-toggle" style={{marginTop:16, display:'flex', gap:8, alignItems:'center'}}>
+                      <span style={{fontSize:'.85rem', color:'var(--text-sub)'}}>Payment Type:</span>
+                      <div style={{display:'flex', background:'#f1f5f9', padding:4, borderRadius:8, border:'1px solid var(--border)'}}>
+                        <button type="button" onClick={()=>setPaymentType('full')} style={{padding:'4px 12px', borderRadius:6, border:'none', cursor:'pointer', fontSize:'.8rem', fontWeight:500, background:paymentType==='full'?'white':'transparent', color:paymentType==='full'?'var(--primary)':'var(--text-sub)', boxShadow:paymentType==='full'?'var(--shadow-sm)':'none', transition:'all .2s'}}>Full Fee</button>
+                        <button type="button" onClick={()=>setPaymentType('half')} style={{padding:'4px 12px', borderRadius:6, border:'none', cursor:'pointer', fontSize:'.8rem', fontWeight:500, background:paymentType==='half'?'white':'transparent', color:paymentType==='half'?'var(--primary)':'var(--text-sub)', boxShadow:paymentType==='half'?'var(--shadow-sm)':'none', transition:'all .2s'}}>Half Fee</button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -254,13 +275,23 @@ export default function UploadReceipt() {
                     <option value="" disabled>Choose your boarding point</option>
                     {busRoutes.map(br => <option key={br._id} value={br._id}>{br.group} - {br.location} (₹{br.fee})</option>)}
                   </select>
+                  
+                  {selectedFeeData && (
+                    <div className="payment-type-toggle" style={{marginTop:16, display:'flex', gap:8, alignItems:'center'}}>
+                      <span style={{fontSize:'.85rem', color:'var(--text-sub)'}}>Payment Type:</span>
+                      <div style={{display:'flex', background:'#f1f5f9', padding:4, borderRadius:8, border:'1px solid var(--border)'}}>
+                        <button type="button" onClick={()=>setPaymentType('full')} style={{padding:'4px 12px', borderRadius:6, border:'none', cursor:'pointer', fontSize:'.8rem', fontWeight:500, background:paymentType==='full'?'white':'transparent', color:paymentType==='full'?'var(--primary)':'var(--text-sub)', boxShadow:paymentType==='full'?'var(--shadow-sm)':'none', transition:'all .2s'}}>Full Fee</button>
+                        <button type="button" onClick={()=>setPaymentType('half')} style={{padding:'4px 12px', borderRadius:6, border:'none', cursor:'pointer', fontSize:'.8rem', fontWeight:500, background:paymentType==='half'?'white':'transparent', color:paymentType==='half'?'var(--primary)':'var(--text-sub)', boxShadow:paymentType==='half'?'var(--shadow-sm)':'none', transition:'all .2s'}}>Half Fee</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
               {expectedAmount > 0 && (
                 <div style={{margin:'12px 0', padding:'8px 12px', background:'rgba(37,99,235,0.05)', borderRadius:6, border:'1px solid rgba(37,99,235,0.2)', display:'flex', alignItems:'center', gap:8}}>
-                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                   <span style={{fontSize:'.85rem', color:'var(--primary)', fontWeight:500}}>OCR Hint: System will look for <strong>₹{expectedAmount.toLocaleString('en-IN')}</strong></span>
+                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                   <span style={{fontSize:'.85rem', color:'var(--primary)', fontWeight:500}}>Selected Amount: <strong>₹{expectedAmount.toLocaleString('en-IN')}</strong></span>
                 </div>
               )}
 

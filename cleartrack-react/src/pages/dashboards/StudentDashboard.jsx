@@ -102,6 +102,12 @@ export default function StudentDashboard() {
       const { data: { text } } = await worker.recognize(processedSrc);
       const hintAmount = feeType === 'tuition' ? calculatedTuitionFee : feeType === 'bus' ? calculatedBusFee : 0;
       const ocrData = parseOCRFields(text, user?.fullName, hintAmount);
+      
+      // Directly fill the amount field with the selected fee if available
+      if (hintAmount > 0) {
+        ocrData.amount = `₹${hintAmount.toLocaleString('en-IN')}`;
+      }
+      
       setRawOcrText(text);
       await worker.terminate();
       worker = null;
@@ -409,9 +415,10 @@ export default function StudentDashboard() {
 
                           {ocrStates.tuition.status === 'success' && ocrStates.tuition.ocrData && (
                               <div className="ocr-fields">
-                                {ocrStates.tuition.ocrData.hintUsed > 0 && (
-                                  <div style={{gridColumn:'1/-1', background:'#f0f9ff', padding:'4px 8px', borderRadius:4, fontSize:'.7rem', color:'#0369a1', marginBottom:5}}>
-                                    💡 <strong>Hinting active:</strong> Searching for approx. ₹{ocrStates.tuition.ocrData.hintUsed.toLocaleString()}
+                                {ocrStates.tuition.ocrData.amount && (
+                                  <div style={{gridColumn:'1/-1', background:'rgba(37,99,235,0.05)', padding:'4px 8px', borderRadius:4, fontSize:'.7rem', color:'var(--primary)', marginBottom:5, display:'flex', alignItems:'center', gap:4}}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <strong>Applied Selected Amount:</strong> {ocrStates.tuition.ocrData.amount}
                                   </div>
                                 )}
                                 <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Student Name</label><span>{ocrStates.tuition.ocrData.name || '—'}</span></div>
@@ -580,6 +587,12 @@ export default function StudentDashboard() {
 
                               {ocrStates.bus.status === 'success' && ocrStates.bus.ocrData && (
                                 <div className="ocr-fields">
+                                  {ocrStates.bus.ocrData.amount && (
+                                    <div style={{gridColumn:'1/-1', background:'rgba(37,99,235,0.05)', padding:'4px 8px', borderRadius:4, fontSize:'.7rem', color:'var(--primary)', marginBottom:5, display:'flex', alignItems:'center', gap:4}}>
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                                      <strong>Applied Selected Amount:</strong> {ocrStates.bus.ocrData.amount}
+                                    </div>
+                                  )}
                                   <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Student Name</label><span>{ocrStates.bus.ocrData.name || '—'}</span></div>
                                   <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Department</label><span>{ocrStates.bus.ocrData.department || '—'}</span></div>
                                   <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Particulars</label><span>{ocrStates.bus.ocrData.particulars || '—'}</span></div>
@@ -696,6 +709,12 @@ export default function StudentDashboard() {
 
                             {ocrStates.hostel.status === 'success' && ocrStates.hostel.ocrData && (
                               <div className="ocr-fields">
+                                {ocrStates.hostel.ocrData.amount && (
+                                  <div style={{gridColumn:'1/-1', background:'rgba(37,99,235,0.05)', padding:'4px 8px', borderRadius:4, fontSize:'.7rem', color:'var(--primary)', marginBottom:5, display:'flex', alignItems:'center', gap:4}}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <strong>Applied Selected Amount:</strong> {ocrStates.hostel.ocrData.amount}
+                                  </div>
+                                )}
                                 <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Student Name</label><span>{ocrStates.hostel.ocrData.name || '—'}</span></div>
                                 <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Department</label><span>{ocrStates.hostel.ocrData.department || '—'}</span></div>
                                 <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Particulars</label><span>{ocrStates.hostel.ocrData.particulars || '—'}</span></div>
