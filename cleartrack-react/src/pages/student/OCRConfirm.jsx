@@ -1,36 +1,31 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { ocrAPI, clearanceAPI } from '../../services/api'
+import { ocrAPI, clearanceAPI, API_ROOT } from '../../services/api'
 
 export default function OCRConfirm() {
   const { user, logout } = useAuth()
   const { requestId } = useParams()
   const navigate = useNavigate()
   const [ocr, setOcr] = useState({
-    studentName:'', department:'', feeCategory:'',
-    transactionId:'', amount:'', paymentDate:'',
-    receiptNumber:'', bankName:'', paymentMode:''
+    name:'', department:'', particulars:'',
+    amount:'', bank:''
   })
   const [rawText, setRawText] = useState('')
   const [receiptUrl, setReceiptUrl] = useState('')
-  const [viewMode, setViewMode] = useState('image') // 'image' or 'text'
   const [loading, setLoading] = useState(true)
   const [confirming, setConfirming] = useState(false)
+  const [showRaw, setShowRaw] = useState(false)
   const [error, setError] = useState('')
   const initials = user?.fullName?.charAt(0)?.toUpperCase() || 'S'
 
   const applyOcrData = (d, rt, rUrl) => {
     setOcr({
-      studentName:   d.studentName   || '',
-      department:    d.department    || '',
-      feeCategory:   d.feeCategory   || '',
-      transactionId: d.transactionId || '',
-      amount:        d.amount        || '',
-      paymentDate:   d.paymentDate   || '',
-      receiptNumber: d.receiptNumber || '',
-      bankName:      d.bankName      || '',
-      paymentMode:   d.paymentMode   || '',
+      name:        d.name        || '',
+      department:   d.department   || '',
+      particulars:  d.particulars  || '',
+      amount:       d.amount       || '',
+      bank:         d.bank         || '',
     })
     setRawText(rt || d.rawText || '')
     setReceiptUrl(rUrl || '')
@@ -43,18 +38,16 @@ export default function OCRConfirm() {
         const req = data.request || {};
         const d = req.ocrData || {};
         
-        // Build the full image URL
-        const backendUrl = import.meta.env.VITE_API_URL || 'https://cleartrack-backend.vercel.app';
-        const imgUrl = req.receiptFile?.filename ? `${backendUrl}/uploads/${req.receiptFile.filename}` : '';
+        const imgUrl = req.receiptFile?.filename ? `${API_ROOT}/uploads/${req.receiptFile.filename}` : '';
 
         if (d.ocrStatus === 'completed') {
           applyOcrData(d, d.rawText, imgUrl);
         } else {
-          setError('OCR data not found for this request. Please try re-uploading.');
+          setError('OCR data not found. Please try re-uploading.');
         }
         setLoading(false);
       } catch (err) {
-        setError('Connection lost. Please check your internet or try refreshing.');
+        setError('Connection lost. Please try refreshing.');
         setLoading(false);
       }
     };
@@ -75,11 +68,12 @@ export default function OCRConfirm() {
     }
   }
 
+  const handleChange = (f, v) => setOcr(prev => ({ ...prev, [f]: v }));
 
   return (
     <div className="dashboard-body">
       <aside className="sidebar">
-        <div className="sidebar-logo"><div className="logo-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></div><div className="logo-text"><span>CLEARTRACK</span><small>Student Panel <span style={{opacity:0.5, fontSize:'10px'}}>v1.1.0</span></small></div></div>
+        <div className="sidebar-logo"><div className="logo-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></div><div className="logo-text"><span>CLEARTRACK</span><small>Student Panel</small></div></div>
         <nav className="sidebar-nav">
           <span className="nav-section-label">Main Menu</span>
           <Link to="/dashboard/student"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span>Dashboard</span></Link>
@@ -95,75 +89,74 @@ export default function OCRConfirm() {
       <div className="main-content">
         <header className="topbar"><div className="topbar-title">OCR Confirmation</div><div className="topbar-right"><div className="topbar-avatar">{initials}</div></div></header>
         <main className="page-content">
-          <div className="page-header"><h1>Confirm & Verify</h1><p>Check the extracted details against your uploaded receipt. Correct any mistakes before finishing.</p></div>
+          <div className="page-header"><h1>Confirm & Verify</h1><p>Check the extracted details against your receipt. Correct any errors before finishing.</p></div>
 
           {loading ? (
             <div className="card" style={{textAlign:'center',padding:48}}>
               <div style={{width:48,height:48,border:'4px solid #e2e8f0',borderTopColor:'var(--primary)',borderRadius:'50%',animation:'spin .8s linear infinite',margin:'0 auto 16px'}}/>
-              <p style={{color:'var(--text-sub)'}}>Loading your data…</p>
+              <p style={{color:'var(--text-sub)'}}>Processing your receipt...</p>
             </div>
           ) : error ? (
             <div className="card" style={{textAlign:'center',padding:48}}>
               <p style={{color:'var(--danger)',marginBottom:16}}>{error}</p>
-              <div style={{display:'flex',gap:12,justifyContent:'center'}}>
-                <Link to="/upload-receipt" className="btn btn-primary">Re-upload File</Link>
-              </div>
+              <Link to="/upload-receipt" className="btn btn-primary">Try Again</Link>
             </div>
           ) : (
             <form onSubmit={handleConfirm}>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:24,alignItems:'start'}}>
-                <div className="card" style={{height:'580px', display:'flex', flexDirection:'column'}}>
-                  <h3 className="card-title" style={{marginBottom:20, display:'flex', alignItems:'center', gap:10}}>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{width:18,height:18}}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                    Full Extracted Data
-                  </h3>
-                  
-                  <div style={{flex:1, display:'flex', flexDirection:'column', gap:12}}>
-                    <p style={{fontSize:'.8rem', color:'var(--text-sub)'}}>This is the complete text extracted from your receipt. Please verify it matches the image.</p>
-                    <textarea 
-                      value={rawText} 
-                      onChange={e=>setRawText(e.target.value)}
-                      style={{
-                        flex:1,
-                        padding:'16px',
-                        fontSize:'.85rem',
-                        lineHeight:'1.6',
-                        border:'1.5px solid var(--border)',
-                        borderRadius:8,
-                        fontFamily:'monospace',
-                        resize:'none',
-                        background:'#fff'
-                      }}
-                      placeholder="No text extracted from bill..."
-                    />
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1.2fr',gap:24,alignItems:'start'}}>
+                <div className="card" style={{padding:0, overflow:'hidden', position:'sticky', top:24}}>
+                  <div style={{padding:'16px 20px', borderBottom:'1px solid var(--border)', background:'white', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                    <h3 className="card-title" style={{margin:0, fontSize:'.9rem'}}>Receipt Preview</h3>
+                    <a href={receiptUrl} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline">Full View</a>
                   </div>
-
-                  <div style={{marginTop:20, background:'#f0f9ff', border:'1px solid #bae6fd', borderRadius:8, padding:'12px 16px', fontSize:'.8rem', color:'#0369a1', display:'flex', gap:10, alignItems:'center'}}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                    <span>Click confirm if the extracted text correctly represents your bill.</span>
+                  <div style={{background:'#f1f5f9', padding:10, minHeight:400, display:'flex', justifyContent:'center'}}>
+                    <img src={receiptUrl} alt="Receipt" style={{maxWidth:'100%', display:'block', height:'fit-content', borderRadius:4}} />
                   </div>
                 </div>
 
-                <div className="card" style={{padding:0, overflow:'hidden', display:'flex', flexDirection:'column', height:'580px'}}>
-                  <div style={{padding:'16px 20px', borderBottom:'1px solid var(--border)'}}>
-                    <h3 className="card-title" style={{margin:0, fontSize:'.9rem'}}>Original Receipt Image</h3>
+                <div className="card">
+                  <h3 className="card-title" style={{marginBottom:20}}>Verify Details</h3>
+                  <div style={{display:'flex', flexDirection:'column', gap:16}}>
+                    <div className="form-group">
+                      <label>Student Name</label>
+                      <input type="text" value={ocr.name} onChange={e=>handleChange('name', e.target.value)} placeholder="Extracted name" style={{width:'100%', padding:'10px 14px', border:'1.5px solid var(--border)', borderRadius:8}}/>
+                    </div>
+                    <div className="form-group">
+                      <label>Department</label>
+                      <input type="text" value={ocr.department} onChange={e=>handleChange('department', e.target.value)} placeholder="Extracted department" style={{width:'100%', padding:'10px 14px', border:'1.5px solid var(--border)', borderRadius:8}}/>
+                    </div>
+                    <div className="form-group">
+                      <label>Fee Type (Particulars)</label>
+                      <input type="text" value={ocr.particulars} onChange={e=>handleChange('particulars', e.target.value)} placeholder="e.g. Tuition Fee" style={{width:'100%', padding:'10px 14px', border:'1.5px solid var(--border)', borderRadius:8}}/>
+                    </div>
+                    <div className="form-group">
+                      <label>Amount Paid</label>
+                      <input type="text" value={ocr.amount} onChange={e=>handleChange('amount', e.target.value)} placeholder="e.g. ₹45,000" style={{width:'100%', padding:'10px 14px', border:'1.5px solid var(--border)', borderRadius:8, fontWeight:600, color:'var(--primary)'}}/>
+                    </div>
+                    <div className="form-group">
+                      <label>Bank Name</label>
+                      <input type="text" value={ocr.bank} onChange={e=>handleChange('bank', e.target.value)} placeholder="Extracted bank" style={{width:'100%', padding:'10px 14px', border:'1.5px solid var(--border)', borderRadius:8}}/>
+                    </div>
+
+                    <div style={{marginTop:10}}>
+                      <button type="button" onClick={()=>setShowRaw(!showRaw)} style={{background:'none', border:'none', color:'var(--primary)', fontSize:'.85rem', cursor:'pointer', padding:0}}>
+                        {showRaw ? 'hide' : 'show'} raw extracted text
+                      </button>
+                      {showRaw && (
+                        <pre style={{marginTop:10, padding:12, background:'#f8fafc', borderRadius:8, border:'1px solid var(--border)', fontSize:'.75rem', whiteSpace:'pre-wrap', maxHeight:150, overflowY:'auto', color:'#64748b'}}>
+                          {rawText}
+                        </pre>
+                      )}
+                    </div>
                   </div>
-                  
-                  <div style={{flex:1, overflow:'auto', background:'#f1f5f9', display:'flex', justifyContent:'center'}}>
-                    {receiptUrl ? (
-                      <img src={receiptUrl} alt="Uploaded Receipt" style={{maxWidth:'100%', display:'block', height:'fit-content'}} />
-                    ) : (
-                      <div style={{padding:40, textAlign:'center', color:'var(--text-sub)'}}>Receipt image could not be loaded.</div>
-                    )}
+
+                  <div style={{display:'flex',gap:12,justifyContent:'flex-end',marginTop:32}}>
+                    <Link to="/upload-receipt" className="btn btn-outline" style={{padding:'10px 24px'}}>Re-upload</Link>
+                    <button type="submit" className="btn btn-primary" disabled={confirming} style={{padding:'10px 24px'}}>
+                      {confirming ? 'Submitting...' : '✓ Finish Verification'}
+                    </button>
                   </div>
                 </div>
-              </div>
-
-              <div style={{display:'flex',gap:12,justifyContent:'flex-end',marginTop:24}}>
-                <Link to="/upload-receipt" className="btn btn-outline" style={{padding:'12px 28px'}}>← Re-upload</Link>
-                <button type="submit" className="btn btn-primary" disabled={confirming} style={{padding:'12px 28px'}}>
-                  {confirming ? 'Submitting…' : '✓ Confirm Extracted Data'}
-                </button>
               </div>
             </form>
           )}

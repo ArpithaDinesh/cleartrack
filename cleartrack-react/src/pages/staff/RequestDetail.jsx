@@ -95,6 +95,8 @@ export default function RequestDetail() {
                     <h3 className="card-title">Extracted Payment Details</h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: 20 }}>
                       {[
+                        { label: 'Student Name', value: req.ocrData?.name || '—' },
+                        { label: 'Department', value: req.ocrData?.department || '—' },
                         { label: 'Particulars', value: req.ocrData?.particulars || '—', bold: true },
                         { label: 'Amount Paid', value: req.ocrData?.amount || '—', bold: true },
                         { label: 'Bank Name', value: req.ocrData?.bank || '—' },

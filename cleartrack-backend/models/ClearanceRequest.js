@@ -21,6 +21,8 @@ const departmentApprovalSchema = new mongoose.Schema({
 });
 
 const ocrDataSchema = new mongoose.Schema({
+  name: { type: String, default: '' },
+  department: { type: String, default: '' },
   particulars: { type: String, default: '' },
   amount: { type: String, default: '' },
   bank: { type: String, default: '' },

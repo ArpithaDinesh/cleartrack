@@ -301,7 +301,7 @@ const confirmOCR = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Access denied.' });
     }
 
-    const fields = ['particulars', 'amount', 'bank'];
+    const fields = ['name', 'department', 'particulars', 'amount', 'bank'];
     for (const f of fields) {
       if (req.body[f] !== undefined) request.ocrData[f] = req.body[f];
     }

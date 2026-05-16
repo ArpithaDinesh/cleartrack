@@ -63,6 +63,8 @@ export const parseOCRFields = (rawText) => {
   const UP = oneLine.toUpperCase();
 
   const result = {
+    name: '',
+    department: '',
     particulars: '',
     amount: '',
     bank: '',
@@ -71,6 +73,29 @@ export const parseOCRFields = (rawText) => {
 
   const DEPTS = ['CSE','IT','EEE','ECE','ME','CE','CIVIL','MCA','MBA','BCA','BBA','MTECH'];
   const DEPT_REGEX = new RegExp(`\\b(${DEPTS.join('|')})\\b`, 'i');
+
+  // 1. Extract Name (Look for common name patterns or use extractCleanName on likely lines)
+  // We try to find a line that looks like a name (usually near the top or after "Name:")
+  let nameLine = '';
+  const nameMatch = oneLine.match(/(?:NAME|STUDENT|MR|MS|MRS)[\s:]+([A-Z\s]{3,30})(?:\s|$)/i);
+  if (nameMatch) {
+    nameLine = nameMatch[1];
+  } else {
+    // Fallback: search first few lines for something that looks like a name
+    for (let i = 0; i < Math.min(10, lines.length); i++) {
+      if (lines[i].length > 5 && !IGNORE_WORDS.has(lines[i].toUpperCase().split(' ')[0])) {
+        nameLine = lines[i];
+        break;
+      }
+    }
+  }
+  result.name = extractCleanName(nameLine);
+
+  // 2. Extract Department
+  const deptMatch = oneLine.match(DEPT_REGEX);
+  if (deptMatch) {
+    result.department = deptMatch[1].toUpperCase();
+  }
 
   // --- NEW: TABLE AWARE EXTRACTION ---
   // Many bills have "Particulars" and "Amount" side-by-side or as headers
