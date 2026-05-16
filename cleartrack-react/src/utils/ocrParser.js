@@ -45,7 +45,7 @@ const extractCleanName = (raw = '') => {
     if (DEPTS.includes(up)) return false;
     if (['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'EVEN', 'ODD', 'COPY', 'STUDENT'].includes(up)) return false;
     const letterRatio = (t.match(/[A-Za-z]/g) || []).length / t.length;
-    return letterRatio >= 0.8; // Stricter letter ratio for names
+    return letterRatio >= 0.7; // Reverted to 0.7 for better OCR tolerance
   });
 
   // Names are usually 2-3 words. If we only found 1 word and it's "STUDENT" or "COPY", ignore it.
@@ -60,8 +60,8 @@ const extractCleanName = (raw = '') => {
 };
 
 export const parseOCRFields = (rawText, knownStudentName = '') => {
-  console.warn('⚡ OCR System Version: 1.6.0 | 🛠️ Mode: Deep Table Extraction');
-  const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 1);
+  console.warn('⚡ OCR System Version: 1.7.0 | 🛠️ Mode: Hybrid Robust Extraction');
+  const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   const oneLine = rawText.replace(/\r?\n/g, ' ').replace(/\s{2,}/g, ' ');
   const UP = oneLine.toUpperCase();
 
@@ -78,9 +78,12 @@ export const parseOCRFields = (rawText, knownStudentName = '') => {
   const DEPTS = ['CSE','IT','EEE','ECE','ME','CE','CIVIL','MCA','MBA','BCA','BBA','MTECH'];
   const DEPT_REGEX = new RegExp(`\\b(${DEPTS.join('|')})\\b`, 'i');
 
-  // 1. Extract Date
+  // 1. Extract Date & Amount (Quick Match)
   const dateMatch = oneLine.match(/\b(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\b/);
   if (dateMatch) result.date = dateMatch[1];
+
+  const quickAmt = oneLine.match(/\b(\d{3,}\.\d{2})\b/);
+  if (quickAmt) result.amount = '₹' + quickAmt[1];
 
   // 2. Personalized Name Identification (Highest Priority)
   if (knownStudentName) {
@@ -115,44 +118,13 @@ export const parseOCRFields = (rawText, knownStudentName = '') => {
 
   if (headerLineIdx !== -1) {
     const tableItems = [];
-    let tableTotal = 0;
-    
-    // Scan up to 10 lines below header
-    for (let i = headerLineIdx + 1; i < Math.min(headerLineIdx + 11, lines.length); i++) {
+    for (let i = headerLineIdx + 1; i < Math.min(headerLineIdx + 6, lines.length); i++) {
       const line = lines[i];
-      const upLine = line.toUpperCase();
-      
-      // Stop if we hit a total line or common footer
-      if (/TOTAL|RUPEES|WORDS|SIGNATURE|CASHIER|MANAGER/i.test(upLine)) {
-        // If this line has a number, it might be the grand total
-        const totalMatch = line.match(/\b(\d{3,}(?:\.\d{2})?)\b/);
-        if (totalMatch) tableTotal = parseFloat(totalMatch[1]);
-        break;
-      }
-      
-      // Extract amount from this line (usually at the end)
-      const lineAmtMatch = line.match(/\b(\d{2,}(?:\.\d{2})?)\b$/);
-      const particularsPart = line.replace(/\b(\d{2,}(?:\.\d{2})?)\b$/, '').trim();
-      
-      if (particularsPart.length > 3) {
-        const cleanPart = normalizeFeeCategory(particularsPart);
-        tableItems.push(cleanPart);
-      }
-      
-      if (lineAmtMatch) {
-        const val = parseFloat(lineAmtMatch[1]);
-        if (val > 10) tableTotal += val; // Summing up items if no total line found yet
-      }
+      if (/TOTAL|RUPEES|WORDS|SIGNATURE|CASHIER/i.test(line)) break;
+      const part = line.replace(/\b(\d{2,}(?:\.\d{2})?)\b$/, '').trim();
+      if (part.length > 3) tableItems.push(normalizeFeeCategory(part));
     }
-    
-    if (tableItems.length > 0) {
-      result.particulars = tableItems.join(' + ');
-    }
-    
-    if (tableTotal > 0 && (!result.amount || result.amount === '₹0')) {
-      result.amount = '₹' + tableTotal.toLocaleString('en-IN');
-      console.log('📊 Table extraction successful. Total:', result.amount);
-    }
+    if (tableItems.length > 0) result.particulars = tableItems.join(' + ');
   }
 
   // 4. Fallback Department
@@ -189,8 +161,8 @@ export const parseOCRFields = (rawText, knownStudentName = '') => {
     }
   }
 
-  // 6. Advanced Amount Scored Search
-  if (!result.amount || result.amount.length < 2) {
+  // 6. Global Scored Search (Robust Fallback)
+  if (!result.amount || result.amount.length < 3) {
     const allNumbers = [...oneLine.matchAll(/\b(\d{2,}(?:[,\s]\d{3})*(?:\.\d{2})?)\b/g)];
     let bestScore = -1;
     let bestMatch = '';
