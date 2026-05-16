@@ -41,7 +41,6 @@ export default function StaffPending() {
             <div className="cr-list">
               {requests.map(r => {
                 const stu = r.student || {}
-                const initS = stu.fullName?.charAt(0)?.toUpperCase() || 'S'
                 return (
                   <div key={r._id} className="cr-card" onClick={() => navigate(`/staff/request/${r._id}`)} style={{ cursor: 'pointer' }}>
                     <div className="cr-card-header">

@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react'
-import Sidebar from '../../components/Sidebar'
 import { useAuth } from '../../context/AuthContext'
 import { clearanceAPI, ocrAPI, busAPI, tuitionFeeAPI, API_ROOT } from '../../services/api'
-import ProfileModal from '../../components/ProfileModal'
 import { createWorker } from 'tesseract.js'
 import { parseOCRFields } from '../../utils/ocrParser'
 import { preprocessImage, waitForCV } from '../../utils/cvPreprocessor'
@@ -10,12 +8,9 @@ import './StudentDashboard.css'
 
 export default function StudentDashboard() {
   const { user } = useAuth()
-  const [busOpted, setBusOpted] = useState(user?.isBusUser || false)
-  const [hostelOpted, setHostelOpted] = useState(user?.isHostelUser || false)
   const initials = user?.fullName?.charAt(0)?.toUpperCase() || 'S'
   const [tuitionFile, setTuitionFile] = useState(null)
   const [busFile, setBusFile] = useState(null)
-  const [hostelFile, setHostelFile] = useState(null)
   
   // OCR State maps for fee sections ('tuition', 'bus', 'hostel')
   // state: { status: 'idle' | 'processing' | 'success' | 'error', ocrData: null, requestId: null, message: '' }

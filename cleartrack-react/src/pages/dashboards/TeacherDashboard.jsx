@@ -4,10 +4,6 @@ import { useAuth } from '../../context/AuthContext'
 import { clearanceAPI, userAPI, API_ROOT } from '../../services/api'
 import ProfileModal from '../../components/ProfileModal'
 
-const badgeMap = {
-  'Fully Paid': 'badge-success', 'partial': 'badge-warning', 'Not Paid': 'badge-danger',
-  approved: 'badge-success', rejected: 'badge-danger', pending: 'badge-warning', not_applicable: 'badge-neutral'
-}
 
 export default function TeacherDashboard() {
   const { user, logout } = useAuth()
