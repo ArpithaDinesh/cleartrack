@@ -35,8 +35,8 @@ router.get('/my-students', protect, async (req, res) => {
 
     const students = await User.find({
       role: 'student',
-      department: classDepartment,
-      classYear: classYear
+      department: { $regex: new RegExp(`^${classDepartment}$`, 'i') },
+      classYear: { $regex: new RegExp(`^${classYear}$`, 'i') }
     }).select('fullName email phone universityNumber rollNumber admissionNumber section isActive');
 
     res.json({ success: true, students });
