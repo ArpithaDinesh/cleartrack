@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { clearanceAPI } from '../../services/api'
+import { clearanceAPI, API_ROOT } from '../../services/api'
 
 const statusColor = { draft:'neutral', submitted:'info', under_review:'warning', partially_approved:'warning', approved:'success', rejected:'danger' }
 const statusLabel = { draft:'Draft', submitted:'Submitted', under_review:'Under Review', partially_approved:'Partially Approved', approved:'Approved ✓', rejected:'Rejected' }
@@ -62,7 +62,14 @@ export default function ClearanceStatus() {
                 </div>
                 <div className="sb-info">
                   <h3>{statusLabel[latest.overallStatus] || latest.overallStatus}</h3>
-                  <p>Request #{latest.requestNumber} · Submitted {new Date(latest.submittedAt).toLocaleDateString()}</p>
+                  <div style={{display:'flex', alignItems:'center', gap:10}}>
+                    <p style={{margin:0}}>Request #{latest.requestNumber} · Submitted {new Date(latest.submittedAt).toLocaleDateString()}</p>
+                    {latest.receiptFile?.filename && (
+                      <a href={`${API_ROOT}/uploads/${latest.receiptFile.filename}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline" style={{padding:'2px 10px', fontSize:'.7rem', background:'rgba(255,255,255,0.8)'}}>
+                        View Bill
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
 

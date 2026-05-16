@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { clearanceAPI } from '../../services/api'
+import { clearanceAPI, API_ROOT } from '../../services/api'
 
 const badgeClass = { draft:'neutral', submitted:'info', under_review:'warning', partially_approved:'warning', approved:'success', rejected:'danger' }
 
@@ -52,7 +52,7 @@ export default function RequestHistory() {
             : (
               <div className="table-wrap" style={{border:'none',borderRadius:0,boxShadow:'none'}}>
                 <table>
-                  <thead><tr><th>Request #</th><th>Fee Type</th><th>Semester</th><th>Submitted</th><th>Status</th></tr></thead>
+                  <thead><tr><th>Request #</th><th>Fee Type</th><th>Semester</th><th>Submitted</th><th>Status</th><th>Action</th></tr></thead>
                   <tbody>
                     {requests.map(r => (
                       <tr key={r._id}>
@@ -61,6 +61,13 @@ export default function RequestHistory() {
                         <td>{r.semester || '—'}</td>
                         <td>{r.submittedAt ? new Date(r.submittedAt).toLocaleDateString() : '—'}</td>
                         <td><span className={`badge badge-${badgeClass[r.overallStatus]||'neutral'}`}>{r.overallStatus?.replace('_',' ')}</span></td>
+                        <td>
+                          {r.receiptFile?.filename && (
+                            <a href={`${API_ROOT}/uploads/${r.receiptFile.filename}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline" style={{padding:'4px 8px', fontSize:'.7rem'}}>
+                              View Bill
+                            </a>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

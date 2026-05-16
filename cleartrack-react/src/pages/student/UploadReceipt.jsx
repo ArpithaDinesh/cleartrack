@@ -66,6 +66,7 @@ export default function UploadReceipt() {
     e.preventDefault()
     if (!file) return setError('Please select a receipt file.')
     setLoading(true); setError('')
+    let worker = null;
     
     try {
       // 1. Run Preprocessing (OpenCV)
@@ -73,18 +74,19 @@ export default function UploadReceipt() {
       await waitForCV();
       
       const img = new Image();
-      // Add a timestamp or unique hash to avoid browser caching if the same blob URL is reused
-      img.src = previewUrl + (previewUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+      img.src = previewUrl; // Removed invalid cache buster (?t=...) for blob URLs
       await new Promise((resolve, reject) => {
         img.onload = resolve;
-        img.onerror = () => reject(new Error('Failed to load image for processing.'));
+        img.onerror = (e) => {
+          console.error('Image load error:', e);
+          reject(new Error('Failed to load receipt image. Please try re-selecting the file.'));
+        };
       });
       
       const processedSrc = await preprocessImage(img);
       setOcrStatus('Initializing OCR engine...')
-
       // 2. Run OCR in the browser
-      const worker = await createWorker('eng', 1, {
+      worker = await createWorker('eng', 1, {
         logger: m => {
           if (m.status === 'recognizing text') {
             setOcrStatus(`Analyzing receipt... ${Math.round(m.progress * 100)}%`)
@@ -101,6 +103,7 @@ export default function UploadReceipt() {
       setOcrStatus('Reading receipt content...')
       const { data: { text } } = await worker.recognize(processedSrc);
       await worker.terminate();
+      worker = null;
       
       setRawOcrText(text) // Store the raw text for display
 
@@ -127,8 +130,10 @@ export default function UploadReceipt() {
       const { request } = await clearanceAPI.submitRequest(fd)
       navigate(`/ocr-confirm/${request._id}`)
     } catch (err) {
+      console.error('OCR Process Error:', err);
       setError(err.message || 'Failed to process receipt. Please try again.')
     } finally {
+      if (worker) await worker.terminate();
       setLoading(false)
       setOcrStatus('')
       setOcrProgress(0)
@@ -231,7 +236,9 @@ export default function UploadReceipt() {
                     </div>
                     <strong style={{color:'var(--text-main)', display:'block'}}>Click to upload or drag & drop</strong>
                     <span style={{fontSize:'.78rem',color:'var(--text-sub)'}}>JPG, PNG, PDF — max 10 MB</span>
-                    <input id="receipt-file" type="file" accept="image/*,.pdf" style={{display:'none'}} ref={fileRef} onChange={e=>onFile(e.target.files[0])}/>
+                    <input id="receipt-file" type="file" accept="image/*,.pdf" style={{display:'none'}} ref={fileRef} 
+                      onClick={(e) => { e.target.value = null; }}
+                      onChange={e=>onFile(e.target.files[0])}/>
                   </label>
                 )}
               </div>
