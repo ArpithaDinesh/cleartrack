@@ -182,6 +182,7 @@ export default function TeacherDashboard() {
                         <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-main)' }}>{stu.fullName || 'Unknown Student'}</div>
                         <div style={{ fontSize: '.85rem', color: '#64748b', marginTop: 2 }}>
                           {stu.universityNumber} • <span style={{ textTransform: 'capitalize', color: 'var(--primary)', fontWeight: 600 }}>{r.ocrData?.particulars || r.feeType + ' Fee'}</span>
+                          {r.ocrData?.bank && <span style={{ marginLeft: 8, color: '#94a3b8' }}>• {r.ocrData.bank}</span>}
                         </div>
                       </div>
 

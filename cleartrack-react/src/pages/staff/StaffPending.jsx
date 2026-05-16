@@ -64,9 +64,10 @@ export default function StaffPending() {
                       </div>
                     </div>
                     <div style={{ padding: '14px 20px', borderTop: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '.85rem', color: '#64748b' }}>Department: <strong style={{ color: '#334155' }}>{stu.department}</strong></span>
-                      <span style={{ fontSize: '.85rem', color: '#64748b' }}>Year: <strong style={{ color: '#334155' }}>{stu.classYear}</strong></span>
-                      <span style={{ fontSize: '.85rem', color: '#64748b' }}>Fee Type: <strong style={{ color: 'var(--primary)', textTransform: 'capitalize' }}>{r.feeType}</strong></span>
+                      <span style={{ fontSize: '.85rem', color: '#64748b' }}>Dept: <strong style={{ color: '#334155' }}>{stu.department}</strong></span>
+                      <span style={{ fontSize: '.85rem', color: '#64748b' }}>Type: <strong style={{ color: 'var(--primary)', textTransform: 'capitalize' }}>{r.feeType}</strong></span>
+                      <span style={{ fontSize: '.85rem', color: '#64748b' }}>Amount: <strong style={{ color: '#334155' }}>{r.ocrData?.amount || '—'}</strong></span>
+                      <span style={{ fontSize: '.85rem', color: '#64748b' }}>Bank: <strong style={{ color: '#334155' }}>{r.ocrData?.bank || '—'}</strong></span>
                       <div style={{ marginLeft: 'auto' }}>
                         <Link to={`/staff/request/${r._id}`} className="btn btn-primary btn-sm">Review Request →</Link>
                       </div>

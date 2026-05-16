@@ -380,11 +380,14 @@ export default function StudentDashboard() {
                           )}
 
                           {ocrStates.tuition.status === 'success' && ocrStates.tuition.ocrData && (
-                            <div className="ocr-fields">
-                              <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Particulars</label><span>{ocrStates.tuition.ocrData.particulars || '—'}</span></div>
-                              <div className="ocr-field"><label>Amount</label><span>{ocrStates.tuition.ocrData.amount || '—'}</span></div>
-                              <div className="ocr-field"><label>Bank Name</label><span>{ocrStates.tuition.ocrData.bank || '—'}</span></div>
-                            </div>
+                              <div className="ocr-fields">
+                                <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Student Name</label><span>{ocrStates.tuition.ocrData.name || '—'}</span></div>
+                                <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Department</label><span>{ocrStates.tuition.ocrData.department || '—'}</span></div>
+                                <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Particulars</label><span>{ocrStates.tuition.ocrData.particulars || '—'}</span></div>
+                                <div className="ocr-field"><label>Amount</label><span>{ocrStates.tuition.ocrData.amount || '—'}</span></div>
+                                <div className="ocr-field"><label>Bank Name</label><span>{ocrStates.tuition.ocrData.bank || '—'}</span></div>
+                                <div className="ocr-field"><label>Date</label><span>{ocrStates.tuition.ocrData.date || '—'}</span></div>
+                              </div>
                           )}
 
                           {ocrStates.tuition.status === 'idle' && (
@@ -538,9 +541,12 @@ export default function StudentDashboard() {
 
                               {ocrStates.bus.status === 'success' && ocrStates.bus.ocrData && (
                                 <div className="ocr-fields">
+                                  <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Student Name</label><span>{ocrStates.bus.ocrData.name || '—'}</span></div>
+                                  <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Department</label><span>{ocrStates.bus.ocrData.department || '—'}</span></div>
                                   <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Particulars</label><span>{ocrStates.bus.ocrData.particulars || '—'}</span></div>
                                   <div className="ocr-field"><label>Amount</label><span>{ocrStates.bus.ocrData.amount || '—'}</span></div>
                                   <div className="ocr-field"><label>Bank Name</label><span>{ocrStates.bus.ocrData.bank || '—'}</span></div>
+                                  <div className="ocr-field"><label>Date</label><span>{ocrStates.bus.ocrData.date || '—'}</span></div>
                                 </div>
                               )}
 
@@ -651,9 +657,12 @@ export default function StudentDashboard() {
 
                             {ocrStates.hostel.status === 'success' && ocrStates.hostel.ocrData && (
                               <div className="ocr-fields">
+                                <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Student Name</label><span>{ocrStates.hostel.ocrData.name || '—'}</span></div>
+                                <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Department</label><span>{ocrStates.hostel.ocrData.department || '—'}</span></div>
                                 <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Particulars</label><span>{ocrStates.hostel.ocrData.particulars || '—'}</span></div>
                                 <div className="ocr-field"><label>Amount</label><span>{ocrStates.hostel.ocrData.amount || '—'}</span></div>
                                 <div className="ocr-field"><label>Bank Name</label><span>{ocrStates.hostel.ocrData.bank || '—'}</span></div>
+                                <div className="ocr-field"><label>Date</label><span>{ocrStates.hostel.ocrData.date || '—'}</span></div>
                               </div>
                             )}
 

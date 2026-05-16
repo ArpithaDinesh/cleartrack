@@ -9,7 +9,7 @@ export default function OCRConfirm() {
   const navigate = useNavigate()
   const [ocr, setOcr] = useState({
     name:'', department:'', particulars:'',
-    amount:'', bank:''
+    amount:'', bank:'', date:''
   })
   const [rawText, setRawText] = useState('')
   const [receiptUrl, setReceiptUrl] = useState('')
@@ -26,6 +26,7 @@ export default function OCRConfirm() {
       particulars:  d.particulars  || '',
       amount:       d.amount       || '',
       bank:         d.bank         || '',
+      date:         d.date         || '',
     })
     setRawText(rt || d.rawText || '')
     setReceiptUrl(rUrl || '')
@@ -136,6 +137,10 @@ export default function OCRConfirm() {
                     <div className="form-group">
                       <label>Bank Name</label>
                       <input type="text" value={ocr.bank} onChange={e=>handleChange('bank', e.target.value)} placeholder="Extracted bank" style={{width:'100%', padding:'10px 14px', border:'1.5px solid var(--border)', borderRadius:8}}/>
+                    </div>
+                    <div className="form-group">
+                      <label>Payment Date</label>
+                      <input type="text" value={ocr.date} onChange={e=>handleChange('date', e.target.value)} placeholder="DD/MM/YYYY" style={{width:'100%', padding:'10px 14px', border:'1.5px solid var(--border)', borderRadius:8}}/>
                     </div>
 
                     <div style={{marginTop:10}}>

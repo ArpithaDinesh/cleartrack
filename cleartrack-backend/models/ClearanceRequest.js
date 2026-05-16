@@ -26,6 +26,7 @@ const ocrDataSchema = new mongoose.Schema({
   particulars: { type: String, default: '' },
   amount: { type: String, default: '' },
   bank: { type: String, default: '' },
+  date: { type: String, default: '' },
   rawText: { type: String, default: '' },
   ocrStatus: {
     type: String,

@@ -79,11 +79,18 @@ export default function ClearanceStatus() {
               </div>
 
               {/* OCR Data Summary */}
-              {latest.ocrData?.transactionId && (
+              {latest.ocrData && (
                 <div className="card" style={{marginTop:8}}>
-                  <h3 className="card-title" style={{fontSize:'.9rem',marginBottom:14}}>Payment Details</h3>
+                  <h3 className="card-title" style={{fontSize:'.9rem',marginBottom:14}}>Payment Details (Extracted)</h3>
                   <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))',gap:10}}>
-                    {[['Transaction ID', latest.ocrData.transactionId],['Amount', latest.ocrData.amount],['Date', latest.ocrData.paymentDate],['Receipt No.', latest.ocrData.receiptNumber],['Bank', latest.ocrData.bankName],['Mode', latest.ocrData.paymentMode]].map(([l,v])=> v ? (
+                    {[
+                      ['Student Name', latest.ocrData.name],
+                      ['Department', latest.ocrData.department],
+                      ['Particulars', latest.ocrData.particulars],
+                      ['Amount', latest.ocrData.amount],
+                      ['Bank', latest.ocrData.bank],
+                      ['Date', latest.ocrData.date]
+                    ].map(([l,v])=> v ? (
                       <div key={l} className="cf-field"><label>{l}</label><span>{v}</span></div>
                     ) : null)}
                   </div>

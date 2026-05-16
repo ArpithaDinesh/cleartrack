@@ -100,6 +100,7 @@ export default function RequestDetail() {
                         { label: 'Particulars', value: req.ocrData?.particulars || '—', bold: true },
                         { label: 'Amount Paid', value: req.ocrData?.amount || '—', bold: true },
                         { label: 'Bank Name', value: req.ocrData?.bank || '—' },
+                        { label: 'Payment Date', value: req.ocrData?.date || '—' },
                       ].map(item => (
                         <div key={item.label} style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                           <label style={{ fontSize: '.75rem', color: '#64748b', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>{item.label}</label>
