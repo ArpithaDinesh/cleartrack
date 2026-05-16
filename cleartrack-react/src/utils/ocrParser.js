@@ -5,11 +5,13 @@
 
 const sanitizeAmount = (s) => {
   if (!s) return null;
-  // Remove currency symbols and non-numeric junk except dots/commas
-  let clean = s.replace(/[^0-9.,]/g, '');
+  // Remove currency symbols and non-numeric junk, keeping spaces temporarily
+  let clean = s.replace(/(?:rs|inr|rupees|₹)/gi, '');
+  clean = clean.replace(/[^0-9.,\s]/g, '');
   
-  // Heuristic: If there's a dot or comma followed by exactly 2 digits at the end, it's a decimal.
-  // Otherwise, it's likely a thousands separator.
+  // Remove all spaces inside the number (e.g., '4 1 0 0 0' -> '41000')
+  clean = clean.replace(/\s/g, '');
+  
   if (/[.,]\d{2}$/.test(clean)) {
     const decimals = clean.slice(-2);
     const main = clean.slice(0, -3).replace(/[.,]/g, '');
@@ -78,7 +80,7 @@ const extractCleanName = (raw = '') => {
 };
 
 export const parseOCRFields = (rawText, knownStudentName = '', expectedAmount = 0) => {
-  console.warn(`⚡ OCR System Version: 1.13.0 | 🛠️ Mode: Sweet-Spot Bias | Hint: ₹${expectedAmount}`);
+  console.warn(`⚡ OCR System Version: 1.14.0 | 🛠️ Mode: Unified Scored Search | Hint: ₹${expectedAmount}`);
   const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   const oneLine = rawText.replace(/\r?\n/g, ' ').replace(/\s{2,}/g, ' ');
   const UP = oneLine.toUpperCase();
@@ -97,12 +99,9 @@ export const parseOCRFields = (rawText, knownStudentName = '', expectedAmount = 
   const DEPTS = ['CSE','IT','EEE','ECE','ME','CE','CIVIL','MCA','MBA','BCA','BBA','MTECH'];
   const DEPT_REGEX = new RegExp(`\\b(${DEPTS.join('|')})\\b`, 'i');
 
-  // 1. Extract Date & Amount (Quick Match)
+  // 1. Extract Date (Quick Match)
   const dateMatch = oneLine.match(/\b(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\b/);
   if (dateMatch) result.date = dateMatch[1];
-
-  const quickAmt = oneLine.match(/\b(\d{3,}\.\d{2})\b/);
-  if (quickAmt) result.amount = '₹' + quickAmt[1];
 
   // 2. Personalized Name Identification (Highest Priority)
   if (knownStudentName) {
