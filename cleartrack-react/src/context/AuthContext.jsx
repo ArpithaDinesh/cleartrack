@@ -10,9 +10,16 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const token = localStorage.getItem('cleartrack_token')
     if (token) {
+      // Try once, then retry once more on failure (handles Vercel cold starts)
       authAPI.getMe()
         .then(data => setUser(data.user))
-        .catch(() => localStorage.removeItem('cleartrack_token'))
+        .catch(() => {
+          // Retry after 2 seconds for cold start
+          return new Promise(resolve => setTimeout(resolve, 2000))
+            .then(() => authAPI.getMe())
+            .then(data => setUser(data.user))
+            .catch(() => localStorage.removeItem('cleartrack_token'))
+        })
         .finally(() => setLoading(false))
     } else {
       setLoading(false)

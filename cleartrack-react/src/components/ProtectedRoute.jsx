@@ -3,8 +3,10 @@ import { useAuth } from '../context/AuthContext'
 
 export default function ProtectedRoute({ children, role }) {
   const { user, loading } = useAuth()
+  const hasToken = !!localStorage.getItem('cleartrack_token')
 
-  if (loading) {
+  // Show spinner while loading OR if token exists but user not yet hydrated
+  if (loading || (hasToken && !user)) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
         <div style={{ textAlign: 'center' }}>
