@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { clearanceAPI, userAPI } from '../../services/api'
+import { clearanceAPI, userAPI, API_ROOT } from '../../services/api'
 import ProfileModal from '../../components/ProfileModal'
 
 const badgeMap = {

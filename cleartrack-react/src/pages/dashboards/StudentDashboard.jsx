@@ -44,6 +44,12 @@ export default function StudentDashboard() {
 
   const [clearanceRequests, setClearanceRequests] = useState([])
 
+  const fetchMyRequests = () => {
+    clearanceAPI.getMyRequests()
+      .then(res => setClearanceRequests(res.requests || []))
+      .catch(console.error)
+  }
+
   useEffect(() => {
     busAPI.getRoutes().then(res => setBusRoutes(res.routes || [])).catch(console.error)
     tuitionFeeAPI.getFees()
@@ -53,10 +59,7 @@ export default function StudentDashboard() {
         setFeeError('Failed to load fee structure.');
       })
     
-    // Fetch clearance requests to show real status
-    clearanceAPI.getMyRequests()
-      .then(res => setClearanceRequests(res.requests || []))
-      .catch(console.error)
+    fetchMyRequests()
   }, [])
 
   const studentYearFees = allTuitionFees.find(f => f.year === user?.classYear)
@@ -149,6 +152,29 @@ export default function StudentDashboard() {
       alert(`✅ ${feeType.toUpperCase()} Fee details confirmed. \n\nIMPORTANT: Your teacher won't see this yet! \n\nPlease click the "🚀 Submit for Approval" button to finalize.`);
     } catch (err) {
       setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], status: 'error', message: err.message || 'Failed to confirm.' } }))
+    }
+  }
+
+  const handleSubmitFee = async (feeType) => {
+    const state = ocrStates[feeType];
+    if (!state.requestId) return;
+
+    try {
+      setSubmitLoading(true);
+      await clearanceAPI.submitDraft(state.requestId);
+      
+      setOcrStates(prev => ({ 
+        ...prev, 
+        [feeType]: { ...prev[feeType], status: 'submitted', message: 'Success! Your receipt has been sent to your teacher.' } 
+      }));
+
+      fetchMyRequests();
+      
+      alert(`🚀 SUCCESS! \n\nYour ${feeType.toUpperCase()} Fee receipt has been sent to your teacher for approval. \n\nYou can track the status in the "Clearance Status" section below.`);
+    } catch (err) {
+      alert(`❌ Submission Failed: ${err.message}`);
+    } finally {
+      setSubmitLoading(false);
     }
   }
 

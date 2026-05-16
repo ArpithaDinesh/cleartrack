@@ -289,6 +289,37 @@ const submitAllRequests = async (req, res) => {
   }
 };
 
+// @desc  Submit a single draft request
+// @route POST /api/clearance/:id/submit
+const submitDraft = async (req, res) => {
+  try {
+    const request = await ClearanceRequest.findOne({ 
+      _id: req.params.id, 
+      student: req.user._id,
+      overallStatus: 'draft'
+    });
+
+    if (!request) {
+      return res.status(404).json({ success: false, message: 'Draft request not found.' });
+    }
+
+    request.overallStatus = 'submitted';
+    request.submittedAt = new Date();
+    await request.save();
+
+    await ApprovalLog.create({
+      clearanceRequest: request._id,
+      action: 'submitted',
+      performedBy: req.user._id,
+      newStatus: 'submitted'
+    });
+
+    res.json({ success: true, request });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 // @desc  Student confirm OCR data
 // @route PATCH /api/clearance/:id/confirm
 const confirmOCR = async (req, res) => {
@@ -318,5 +349,5 @@ const confirmOCR = async (req, res) => {
 module.exports = {
   submitRequest, getMyRequests, getRequest,
   getDepartmentPending, reviewRequest, getAllRequests, getRequestLogs,
-  submitAllRequests, confirmOCR
+  submitAllRequests, submitDraft, confirmOCR
 };

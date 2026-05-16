@@ -50,6 +50,7 @@ export const authAPI = {
 export const clearanceAPI = {
   submitRequest: (formData) => request('POST', '/clearance/submit', formData, true),
   submitAllRequests: () => request('POST', '/clearance/submit-all'),
+  submitDraft: (id) => request('POST', `/clearance/${id}/submit`),
   getMyRequests: () => request('GET', '/clearance/my'),
   getRequest: (id) => request('GET', `/clearance/${id}`),
   getRequestLogs: (id) => request('GET', `/clearance/${id}/logs`),
