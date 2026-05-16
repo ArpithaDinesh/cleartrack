@@ -174,6 +174,20 @@ const getDepartmentPending = async (req, res) => {
       }).distinct('_id');
 
       console.log(`🎯 Class Teacher Query: dept=${classDepartment}, year=${classYear}, studentIds found: ${studentIds.length}`);
+      
+      if (studentIds.length === 0) {
+        // Fallback: No students matched — return ALL pending class_teacher requests
+        // This handles registration mismatches between teacher and student profiles
+        console.log('⚠️ No students matched — falling back to ALL class_teacher pending requests');
+        const allPending = await ClearanceRequest.find({
+          overallStatus: { $ne: 'draft' },
+          'departmentApprovals': { $elemMatch: { department: 'class_teacher', status: 'pending' } }
+        })
+          .sort({ submittedAt: 1 })
+          .populate('student', 'fullName universityNumber rollNumber department classYear admissionNumber');
+        return res.json({ success: true, requests: allPending, fallback: true });
+      }
+
       query.student = { $in: studentIds };
     }
 
