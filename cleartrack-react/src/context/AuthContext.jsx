@@ -8,22 +8,29 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const token = localStorage.getItem('cleartrack_token')
-    if (token) {
-      // Try once, then retry once more on failure (handles Vercel cold starts)
-      authAPI.getMe()
-        .then(data => setUser(data.user))
-        .catch(() => {
-          // Retry after 2 seconds for cold start
-          return new Promise(resolve => setTimeout(resolve, 2000))
-            .then(() => authAPI.getMe())
-            .then(data => setUser(data.user))
-            .catch(() => localStorage.removeItem('cleartrack_token'))
-        })
-        .finally(() => setLoading(false))
-    } else {
-      setLoading(false)
+    const initAuth = async () => {
+      const token = localStorage.getItem('cleartrack_token')
+      if (!token) return setLoading(false)
+
+      try {
+        const data = await authAPI.getMe()
+        setUser(data.user)
+      } catch (err) {
+        console.warn('Auth check failed, retrying...', err)
+        // Retry after 2 seconds (handles cold starts)
+        await new Promise(r => setTimeout(r, 2000))
+        try {
+          const data = await authAPI.getMe()
+          setUser(data.user)
+        } catch (e) {
+          console.error('Auth check final failure', e)
+          localStorage.removeItem('cleartrack_token')
+        }
+      } finally {
+        setLoading(false)
+      }
     }
+    initAuth()
   }, [])
 
   const login = (token, userData) => {

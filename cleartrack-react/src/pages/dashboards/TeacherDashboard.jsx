@@ -16,35 +16,28 @@ export default function TeacherDashboard() {
   
   const [showDropdown, setShowDropdown] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
+  const [showDiagnostics, setShowDiagnostics] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+
+  const fetchData = async () => {
+    setRefreshing(true)
+    try {
+      const d = await clearanceAPI.getDepartmentPending()
+      setPending(d.requests || [])
+      
+      const res = await userAPI.getMyStudents()
+      setStudents(res.students || [])
+    } catch (err) {
+      console.error('Fetch Error:', err)
+    } finally {
+      setRefreshing(false)
+      setLoading(false)
+      setLoadingStudents(false)
+    }
+  }
 
   useEffect(() => {
-    setLoading(true)
-    console.log('🔍 Fetching pending requests for teacher...', { 
-      dept: user?.classDepartment, 
-      year: user?.classYear,
-      token: !!localStorage.getItem('cleartrack_token')
-    });
-    
-    clearanceAPI.getDepartmentPending()
-      .then(d => {
-        console.log('✅ Pending API Response:', d);
-        setPending(d.requests || [])
-      })
-      .catch(err => {
-        console.error('❌ Pending API Error:', err);
-      })
-      .finally(() => setLoading(false))
-
-    setLoadingStudents(true)
-    userAPI.getMyStudents()
-      .then(res => {
-        console.log('✅ Students API Response:', res);
-        setStudents(res.students || [])
-      })
-      .catch(err => {
-        console.error('❌ Students API Error:', err);
-      })
-      .finally(() => setLoadingStudents(false))
+    fetchData()
   }, [user])
 
   return (
@@ -100,7 +93,44 @@ export default function TeacherDashboard() {
             </div>
           )}
 
-          <div className="page-header"><h1>Faculty Overview</h1></div>
+          <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <h1>Faculty Overview</h1>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button className="btn btn-outline btn-sm" onClick={() => setShowDiagnostics(!showDiagnostics)}>
+                {showDiagnostics ? 'Hide Diagnostics' : 'Show Diagnostics'}
+              </button>
+              <button className="btn btn-primary btn-sm" onClick={fetchData} disabled={refreshing}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px', animation: refreshing ? 'spin 1s linear infinite' : 'none' }}>
+                  <path d="M21 12a9 9 0 1 1-6.21-8.58" /><path d="M22 2v6h-6" />
+                </svg>
+                {refreshing ? 'Refreshing...' : 'Refresh List'}
+              </button>
+            </div>
+          </div>
+
+          {/* Diagnostics Panel */}
+          {showDiagnostics && (
+            <div className="card" style={{ marginBottom: '25px', border: '1px solid var(--primary)', background: '#f0f9ff' }}>
+              <h3 style={{ marginTop: 0, fontSize: '1rem', color: 'var(--primary)' }}>System Diagnostics</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+                <div style={{ fontSize: '.85rem' }}>
+                  <strong>Profile Dept:</strong> <code style={{ color: '#0369a1' }}>{user?.classDepartment || '(None)'}</code>
+                </div>
+                <div style={{ fontSize: '.85rem' }}>
+                  <strong>Profile Year:</strong> <code style={{ color: '#0369a1' }}>{user?.classYear || '(None)'}</code>
+                </div>
+                <div style={{ fontSize: '.85rem' }}>
+                  <strong>Assigned Role:</strong> <code style={{ color: '#0369a1' }}>{user?.assignedDepartment || '(None)'}</code>
+                </div>
+                <div style={{ fontSize: '.85rem' }}>
+                  <strong>Pending Requests:</strong> <code style={{ color: '#0369a1' }}>{pending.length}</code>
+                </div>
+              </div>
+              <p style={{ fontSize: '.75rem', color: '#64748b', marginTop: '10px', marginBottom: 0 }}>
+                * If <strong>Profile Dept/Year</strong> is empty, submissions will not show up. Use the "Update Profile" button to fix it.
+              </p>
+            </div>
+          )}
 
           {/* Profile */}
           <div className="profile-card" style={{flexDirection:'column',gap:0,marginBottom:28}}>
