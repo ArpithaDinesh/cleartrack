@@ -162,31 +162,25 @@ const getDepartmentPending = async (req, res) => {
     if (dept === 'class_teacher') {
       const { classDepartment, classYear } = req.user;
       if (!classDepartment || !classYear) {
-        // Teacher has no class assigned - return empty but success
         return res.json({ success: true, requests: [], message: 'No class assigned to this teacher.' });
       }
 
-      // Optimization: Find students in this class first to filter requests in the DB query
+      // Map common year formats to regex patterns
+      const yearPatterns = {
+        '1': '(1st|First)',
+        '2': '(2nd|Second)',
+        '3': '(3rd|Third)',
+        '4': '(4th|Fourth)'
+      };
+
+      const yearNum = classYear.match(/\d/)?.[0];
+      const yearRegex = yearNum ? new RegExp(`^${yearPatterns[yearNum]}`, 'i') : new RegExp(`^${classYear}$`, 'i');
+
       const studentIds = await User.find({
         role: 'student',
         department: { $regex: new RegExp(`^${classDepartment}$`, 'i') },
-        classYear: { $regex: new RegExp(`^${classYear}$`, 'i') }
+        classYear: { $regex: yearRegex }
       }).distinct('_id');
-
-      console.log(`🎯 Class Teacher Query: dept=${classDepartment}, year=${classYear}, studentIds found: ${studentIds.length}`);
-      
-      if (studentIds.length === 0) {
-        // Fallback: No students matched — return ALL pending class_teacher requests
-        // This handles registration mismatches between teacher and student profiles
-        console.log('⚠️ No students matched — falling back to ALL class_teacher pending requests');
-        const allPending = await ClearanceRequest.find({
-          overallStatus: { $ne: 'draft' },
-          'departmentApprovals': { $elemMatch: { department: 'class_teacher', status: 'pending' } }
-        })
-          .sort({ submittedAt: 1 })
-          .populate('student', 'fullName universityNumber rollNumber department classYear admissionNumber');
-        return res.json({ success: true, requests: allPending, fallback: true });
-      }
 
       query.student = { $in: studentIds };
     }
