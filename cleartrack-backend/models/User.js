@@ -47,7 +47,6 @@ const userSchema = new mongoose.Schema({
   },
   // Class teacher specific fields
   classDepartment: { type: String, trim: true, default: null },
-  classYear: { type: String, trim: true, default: null },
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 

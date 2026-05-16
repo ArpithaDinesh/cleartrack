@@ -169,10 +169,11 @@ const getDepartmentPending = async (req, res) => {
       // Optimization: Find students in this class first to filter requests in the DB query
       const studentIds = await User.find({
         role: 'student',
-        department: classDepartment,
-        classYear: classYear
+        department: { $regex: new RegExp(`^${classDepartment}$`, 'i') },
+        classYear: { $regex: new RegExp(`^${classYear}$`, 'i') }
       }).distinct('_id');
 
+      console.log(`🎯 Class Teacher Query: dept=${classDepartment}, year=${classYear}, studentIds found: ${studentIds.length}`);
       query.student = { $in: studentIds };
     }
 
