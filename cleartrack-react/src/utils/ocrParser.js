@@ -60,8 +60,8 @@ const extractCleanName = (raw = '') => {
 };
 
 export const parseOCRFields = (rawText, knownStudentName = '') => {
-  console.warn('⚡ OCR System Version: 1.5.0 | 🛠️ Mode: Personalized Matching');
-  const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 2);
+  console.warn('⚡ OCR System Version: 1.6.0 | 🛠️ Mode: Deep Table Extraction');
+  const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 1);
   const oneLine = rawText.replace(/\r?\n/g, ' ').replace(/\s{2,}/g, ' ');
   const UP = oneLine.toUpperCase();
 
@@ -102,26 +102,56 @@ export const parseOCRFields = (rawText, knownStudentName = '') => {
     }
   }
 
-  // 3. Extract Particulars & Anchored Info
+  // 3. Deep Table Extraction (Particulars & Amount)
   let headerLineIdx = -1;
   for (let i = 0; i < lines.length; i++) {
     const upLine = lines[i].toUpperCase();
-    if (upLine.includes('PARTICULAR') && upLine.includes('AMOU')) {
+    if ((upLine.includes('PARTICULAR') || upLine.includes('DESCRIPTION')) && 
+        (upLine.includes('AMOU') || upLine.includes('RS') || upLine.includes('AMT'))) {
       headerLineIdx = i;
       break;
     }
   }
 
   if (headerLineIdx !== -1) {
-    const tableArea = (lines[headerLineIdx + 1] || '') + ' ' + (lines[headerLineIdx + 2] || '');
-    result.particulars = normalizeFeeCategory(tableArea);
+    const tableItems = [];
+    let tableTotal = 0;
     
-    // Check if particulars contains name/dept (e.g. "By Cash Arpitha Dinesh IT")
-    if (/BY CASH/i.test(tableArea)) {
-      const cleanPart = tableArea.replace(/BY CASH/i, '').trim();
-      const dM = cleanPart.match(DEPT_REGEX);
-      if (dM) result.department = dM[1].toUpperCase();
-      result.name = extractCleanName(cleanPart);
+    // Scan up to 10 lines below header
+    for (let i = headerLineIdx + 1; i < Math.min(headerLineIdx + 11, lines.length); i++) {
+      const line = lines[i];
+      const upLine = line.toUpperCase();
+      
+      // Stop if we hit a total line or common footer
+      if (/TOTAL|RUPEES|WORDS|SIGNATURE|CASHIER|MANAGER/i.test(upLine)) {
+        // If this line has a number, it might be the grand total
+        const totalMatch = line.match(/\b(\d{3,}(?:\.\d{2})?)\b/);
+        if (totalMatch) tableTotal = parseFloat(totalMatch[1]);
+        break;
+      }
+      
+      // Extract amount from this line (usually at the end)
+      const lineAmtMatch = line.match(/\b(\d{2,}(?:\.\d{2})?)\b$/);
+      const particularsPart = line.replace(/\b(\d{2,}(?:\.\d{2})?)\b$/, '').trim();
+      
+      if (particularsPart.length > 3) {
+        const cleanPart = normalizeFeeCategory(particularsPart);
+        tableItems.push(cleanPart);
+      }
+      
+      if (lineAmtMatch) {
+        const val = parseFloat(lineAmtMatch[1]);
+        if (val > 10) tableTotal += val; // Summing up items if no total line found yet
+      }
+    }
+    
+    if (tableItems.length > 0) {
+      result.particulars = tableItems.join(' + ');
+    }
+    
+    if (tableTotal > 0 && (!result.amount || result.amount === '₹0')) {
+      result.amount = '₹' + tableTotal.toLocaleString('en-IN');
+      console.log('📊 Table extraction successful. Total:', result.amount);
     }
   }
 
