@@ -160,16 +160,18 @@ const getDepartmentPending = async (req, res) => {
 
     // High-Visibility Routing for Class Teachers
     if (dept === 'class_teacher') {
-      const { classDepartment, classYear } = req.user;
+      const classDepartment = (req.user.classDepartment || '').trim();
+      const classYear = (req.user.classYear || '').trim();
+
       if (!classDepartment || !classYear) {
         return res.json({ success: true, requests: [], message: 'Profile incomplete: No class assigned.' });
       }
 
-      // 1. Create a broad match for the teacher's class
+      // 1. Create a broad match for the teacher's class (Handling 1st/First, spaces, case)
       const yearPatterns = { '1': '(1st|First)', '2': '(2nd|Second)', '3': '(3rd|Third)', '4': '(4th|Fourth)' };
       const yearNum = classYear.match(/\d/)?.[0];
-      const yearRegex = yearNum ? new RegExp(`^${yearPatterns[yearNum]}`, 'i') : new RegExp(`^${classYear}$`, 'i');
-      const deptRegex = new RegExp(`^${classDepartment}$`, 'i');
+      const yearRegex = yearNum ? new RegExp(`^\\s*${yearPatterns[yearNum]}`, 'i') : new RegExp(`^\\s*${classYear.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i');
+      const deptRegex = new RegExp(`^\\s*${classDepartment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i');
 
       // 2. Find ALL students matching this class
       const studentIds = await User.find({
@@ -178,7 +180,7 @@ const getDepartmentPending = async (req, res) => {
         classYear: { $regex: yearRegex }
       }).distinct('_id');
 
-      // 3. Find ALL active (non-draft, non-approved) requests from these students
+      // 3. Find ALL active requests from these students
       const requests = await ClearanceRequest.find({
         student: { $in: studentIds },
         overallStatus: { $in: ['submitted', 'under_review', 'partially_approved'] },
@@ -187,7 +189,6 @@ const getDepartmentPending = async (req, res) => {
         }
       }).populate('student', 'fullName universityNumber rollNumber department classYear admissionNumber');
 
-      console.log(`✅ Class-First Routing: Found ${requests.length} active requests for ${classDepartment} ${classYear}`);
       return res.json({ success: true, requests });
     }
 

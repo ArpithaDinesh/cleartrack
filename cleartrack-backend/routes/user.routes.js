@@ -28,16 +28,18 @@ router.get('/my-students', protect, async (req, res) => {
       return res.status(403).json({ success: false, message: 'Access denied. Teachers only.' });
     }
 
-    const { classDepartment, classYear } = req.user;
+    const classDepartment = (req.user.classDepartment || '').trim();
+    const classYear = (req.user.classYear || '').trim();
+    
     if (!classDepartment || !classYear) {
       return res.json({ success: true, students: [] });
     }
 
-    // Loose matching for year (handles "4th" vs "Fourth" etc)
+    // Bulletproof matching (Trims spaces, handles common year variations)
     const yearPatterns = { '1': '(1st|First)', '2': '(2nd|Second)', '3': '(3rd|Third)', '4': '(4th|Fourth)' };
     const yearNum = classYear.match(/\d/)?.[0];
-    const yearRegex = yearNum ? new RegExp(`^${yearPatterns[yearNum]}`, 'i') : new RegExp(`^${classYear}$`, 'i');
-    const deptRegex = new RegExp(`^${classDepartment}$`, 'i');
+    const yearRegex = yearNum ? new RegExp(`^\\s*${yearPatterns[yearNum]}`, 'i') : new RegExp(`^\\s*${classYear.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i');
+    const deptRegex = new RegExp(`^\\s*${classDepartment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i');
 
     const students = await User.find({
       role: 'student',

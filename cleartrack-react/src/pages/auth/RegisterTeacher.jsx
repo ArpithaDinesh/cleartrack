@@ -25,14 +25,14 @@ export default function RegisterTeacher() {
     setLoading(true)
     try {
       await authAPI.registerTeacher({
-        fullName: form.fullName,
-        email: form.email,
+        fullName: form.fullName.trim(),
+        email: form.email.trim(),
         password: form.password,
-        phone: form.phone,
-        staffId: form.staffId,
+        phone: form.phone.trim(),
+        staffId: form.staffId.trim(),
         assignedDepartment: 'class_teacher',
-        classDepartment: form.classDepartment || null,
-        classYear: form.classYear || null,
+        classDepartment: (form.classDepartment || '').trim() || null,
+        classYear: (form.classYear || '').trim() || null,
       })
       alert('✅ Registration successful! Please login.')
       navigate('/login/teacher')

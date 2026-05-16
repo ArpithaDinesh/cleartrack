@@ -29,15 +29,18 @@ export default function RegisterStudent() {
     setLoading(true)
     try {
       await authAPI.registerStudent({
-        fullName: form.fullName,
-        email: form.email,
+        fullName: form.fullName.trim(),
+        email: form.email.trim(),
         password: form.password,
-        phone: form.phone,
-        admissionNumber: form.admissionNumber,
-        universityNumber: form.universityNumber,
-        rollNumber: form.rollNumber,
-        department: form.department,
-        classYear: form.classYear,
+        phone: form.phone.trim(),
+        universityNumber: form.universityNumber.trim(),
+        rollNumber: form.rollNumber.trim(),
+        admissionNumber: form.admissionNumber.trim(),
+        department: (form.department || '').trim(),
+        classYear: (form.classYear || '').trim(),
+        section: form.section.trim(),
+        isBusUser: form.isBusUser,
+        isHostelUser: form.isHostelUser
       })
       alert('✅ Registration successful! Please login.')
       navigate('/login/student')
