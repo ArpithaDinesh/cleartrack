@@ -83,7 +83,7 @@ export default function StudentDashboard() {
       setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], message: 'Initializing OCR engine...' } }))
 
       // 2. Run OCR in the browser
-      const worker = await createWorker('eng', 1, {
+      worker = await createWorker('eng', 1, {
         logger: m => {
           if (m.status === 'recognizing text') {
             setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], message: `Analyzing receipt... ${Math.round(m.progress * 100)}%` } }))
