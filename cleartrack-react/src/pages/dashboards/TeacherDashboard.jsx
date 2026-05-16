@@ -88,6 +88,18 @@ export default function TeacherDashboard() {
           </div>
         </header>
         <main className="page-content">
+          {/* Profile Completeness Check */}
+          {(!user?.classDepartment || !user?.classYear) && user?.assignedDepartment === 'class_teacher' && (
+            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', padding: '15px', borderRadius: '10px', marginBottom: '20px', display: 'flex', gap: '15px', alignItems: 'center' }}>
+              <div style={{ background: '#f59e0b', color: 'white', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontWeight: 700 }}>!</div>
+              <div>
+                <h4 style={{ margin: 0, color: '#92400e', fontSize: '.95rem' }}>Incomplete Class Assignment</h4>
+                <p style={{ margin: '2px 0 0', color: '#b45309', fontSize: '.85rem' }}>Your profile is missing a Department or Year assignment. You won't see any student requests until this is fixed in your profile settings.</p>
+              </div>
+              <button className="btn btn-sm btn-outline" style={{ marginLeft: 'auto' }} onClick={() => setShowProfileModal(true)}>Update Profile</button>
+            </div>
+          )}
+
           <div className="page-header"><h1>Faculty Overview</h1></div>
 
           {/* Profile */}
