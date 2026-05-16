@@ -64,8 +64,8 @@ const extractCleanName = (raw = '') => {
     .join(' ');
 };
 
-export const parseOCRFields = (rawText, knownStudentName = '') => {
-  console.warn('⚡ OCR System Version: 1.8.0 | 🛠️ Mode: High-Fidelity Matching');
+export const parseOCRFields = (rawText, knownStudentName = '', expectedAmount = 0) => {
+  console.warn('⚡ OCR System Version: 1.9.0 | 🛠️ Mode: Smart Hint Matching');
   const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   const oneLine = rawText.replace(/\r?\n/g, ' ').replace(/\s{2,}/g, ' ');
   const UP = oneLine.toUpperCase();
@@ -196,6 +196,13 @@ export const parseOCRFields = (rawText, knownStudentName = '') => {
       // Negative hints (Penalize things that look like dates or IDs)
       if (/\d{1,2}[/-]\d{1,2}[/-]\d{2,4}/.test(context)) score -= 30000; // Nearby date
       if (/(?:date|time|sl|no|id|ref|mob|phone|tel)/i.test(context)) score -= 40000;
+      
+      // Hint matching (Massive boost if it matches what we expect from the fee structure)
+      if (expectedAmount > 0) {
+        const diff = Math.abs(val - expectedAmount);
+        if (diff < 1) score += 500000; // Perfect match
+        else if (diff < (expectedAmount * 0.05)) score += 200000; // Within 5%
+      }
       
       if (score > bestScore && val < 2000000) {
         bestScore = score;

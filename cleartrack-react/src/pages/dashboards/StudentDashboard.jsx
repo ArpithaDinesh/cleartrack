@@ -96,7 +96,8 @@ export default function StudentDashboard() {
       });
       
       const { data: { text } } = await worker.recognize(processedSrc);
-      const ocrData = parseOCRFields(text, user?.fullName);
+      const hintAmount = feeType === 'tuition' ? calculatedTuitionFee : feeType === 'bus' ? calculatedBusFee : 0;
+      const ocrData = parseOCRFields(text, user?.fullName, hintAmount);
       await worker.terminate();
       worker = null;
 
