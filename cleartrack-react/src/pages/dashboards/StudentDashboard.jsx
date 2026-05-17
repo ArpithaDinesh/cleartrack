@@ -364,11 +364,7 @@ export default function StudentDashboard() {
                   </div>
 
                   <div style={{borderTop: '1px solid #e2e8f0', paddingTop: 20}}>
-                    <label className="field-label">3. Payment Mode & Receipt</label>
-                    <div className="radio-grp" style={{marginBottom: 15}}>
-                      <label className="radio-opt"><input type="radio" name="tuition-mode" value="fully" defaultChecked /> Fully Paid</label>
-                      <label className="radio-opt"><input type="radio" name="tuition-mode" value="partially" /> Partially Paid</label>
-                    </div>
+                    <label className="field-label">3. Upload Receipt</label>
                     <div className="inner-grid">
                       <div>
                         <label className="field-label">Upload Receipt</label>
@@ -543,11 +539,7 @@ export default function StudentDashboard() {
                       </div>
 
                       <div style={{borderTop: '1px solid #e2e8f0', paddingTop: 20}}>
-                        <label className="field-label">4. Payment Mode & Receipt</label>
-                        <div className="radio-grp" style={{marginBottom: 15}}>
-                          <label className="radio-opt"><input type="radio" name="bus-mode" value="fully" defaultChecked /> Fully Paid</label>
-                          <label className="radio-opt"><input type="radio" name="bus-mode" value="partially" /> Partially Paid</label>
-                        </div>
+                        <label className="field-label">4. Upload Receipt</label>
                         <div className="inner-grid">
                           <div>
                             <label className="field-label">Upload Receipt</label>
@@ -665,11 +657,6 @@ export default function StudentDashboard() {
                   </div>
                   {hostelOpted && (
                     <div>
-                      <label className="field-label">Payment Mode</label>
-                      <div className="radio-grp">
-                        <label className="radio-opt"><input type="radio" name="hostel-mode" value="fully" /> Fully Paid</label>
-                        <label className="radio-opt"><input type="radio" name="hostel-mode" value="partially" defaultChecked /> Partially Paid</label>
-                      </div>
                       <div className="inner-grid">
                         <div>
                           <label className="field-label">Upload Receipt</label>
