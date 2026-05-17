@@ -190,7 +190,7 @@ export default function UploadReceipt() {
           <div className="logo-mark">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
           </div>
-          <div className="logo-text"><span>CLEARTRACK</span><small>Student Panel <span style={{opacity:0.5, fontSize:'10px'}}>v1.1.0</span></small></div>
+          <div className="logo-text"><span>CLEARTRACK</span><small>Student Panel</small></div>
         </div>
         <nav className="sidebar-nav">
           <span className="nav-section-label">Main Menu</span>

@@ -25,10 +25,10 @@ export default function AdminDashboard() {
   const [editingFee, setEditingFee] = useState('')
   const [selectedTuitionYear, setSelectedTuitionYear] = useState('1st Year')
   const [tuitionFeeStructure, setTuitionFeeStructure] = useState({
-    '1st Year': { meritReg: 0, meritFull: 0, tfw: 0, nri: 0 },
-    '2nd Year': { meritReg: 0, meritFull: 0, tfw: 0, nri: 0 },
-    '3rd Year': { meritReg: 0, meritFull: 0, tfw: 0, nri: 0 },
-    '4th Year': { meritReg: 0, meritFull: 0, tfw: 0, nri: 0 },
+    '1st Year': { meritReg: 0, meritFull: 0, tfw: 0, nri: 0, hostelFee: 0 },
+    '2nd Year': { meritReg: 0, meritFull: 0, tfw: 0, nri: 0, hostelFee: 0 },
+    '3rd Year': { meritReg: 0, meritFull: 0, tfw: 0, nri: 0, hostelFee: 0 },
+    '4th Year': { meritReg: 0, meritFull: 0, tfw: 0, nri: 0, hostelFee: 0 },
   })
   const [savedTuitionYears, setSavedTuitionYears] = useState([])
   const [isEditingTuition, setIsEditingTuition] = useState(false)
@@ -44,12 +44,19 @@ export default function AdminDashboard() {
             meritReg: f.meritReg, 
             meritFull: f.meritFull, 
             tfw: f.tfw, 
-            nri: f.nri 
+            nri: f.nri,
+            hostelFee: f.hostelFee || 0
           };
           saved.push(f.year);
         });
         setTuitionFeeStructure(structure);
         setSavedTuitionYears(saved);
+        
+        // Populate the hostel fee field with the current saved hostel fee value
+        const firstDoc = res.fees.find(f => f.hostelFee > 0) || res.fees[0];
+        if (firstDoc && firstDoc.hostelFee !== undefined) {
+          setFeeForm(p => ({ ...p, hostelFee: firstDoc.hostelFee }));
+        }
       }
     }).catch(console.error);
   }, []);
@@ -120,6 +127,31 @@ export default function AdminDashboard() {
       setFeeMsg('✓ Fee structure saved successfully!');
     }
     
+    setTimeout(() => setFeeMsg(''), 3000);
+  }
+
+  const handleSaveHostelFee = async (e) => {
+    e.preventDefault();
+    try {
+      const years = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
+      for (const yr of years) {
+        const existingYrFees = tuitionFeeStructure[yr];
+        await tuitionFeeAPI.updateFee({
+          year: yr,
+          ...existingYrFees,
+          hostelFee: Number(feeForm.hostelFee)
+        });
+      }
+      
+      const updatedStructure = { ...tuitionFeeStructure };
+      years.forEach(yr => {
+        updatedStructure[yr].hostelFee = Number(feeForm.hostelFee);
+      });
+      setTuitionFeeStructure(updatedStructure);
+      setFeeMsg('✓ Hostel fee updated successfully!');
+    } catch (err) {
+      setFeeMsg('❌ Failed to save hostel fee: ' + err.message);
+    }
     setTimeout(() => setFeeMsg(''), 3000);
   }
 
@@ -504,7 +536,7 @@ export default function AdminDashboard() {
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                     Hostel Fee Management
                   </h3>
-                  <form onSubmit={handleSaveFeeStructure}>
+                  <form onSubmit={handleSaveHostelFee}>
                     <div className="form-group" style={{marginBottom: 16}}>
                       <label>Amount (₹)</label>
                       <input type="number" min="0" value={feeForm.hostelFee} onChange={e=>setFeeForm(p=>({...p,hostelFee:e.target.value}))} placeholder="0" required/>

@@ -289,7 +289,7 @@ export default function TeacherDashboard() {
           </div>
         </main>
         <footer style={{ padding: '20px', textAlign: 'center', color: '#94a3b8', fontSize: '0.75rem', borderTop: '1px solid #e2e8f0' }}>
-          ClearTrack System v1.2.0 — Bulletproof Routing Active
+          ClearTrack System — Bulletproof Routing Active
         </footer>
       </div>
       <ProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />

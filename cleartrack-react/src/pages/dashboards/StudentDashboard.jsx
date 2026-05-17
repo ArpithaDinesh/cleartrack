@@ -69,6 +69,8 @@ export default function StudentDashboard() {
   const selectedSubLocation = busRoutes.find(r => r._id === selectedSubLocationId)
   const calculatedBusFee = selectedSubLocation ? (isHalfFee ? selectedSubLocation.fee / 2 : selectedSubLocation.fee) : 0
 
+  const calculatedHostelFee = studentYearFees ? (studentYearFees.hostelFee || 0) : 0
+
   const handleOCRProcess = async (feeType, file) => {
     if (!file) return;
     setOcrStates(prev => ({ ...prev, [feeType]: { ...prev[feeType], status: 'processing', message: 'Initializing OCR...' } }))
@@ -100,7 +102,7 @@ export default function StudentDashboard() {
       });
       
       const { data: { text } } = await worker.recognize(processedSrc);
-      const hintAmount = feeType === 'tuition' ? calculatedTuitionFee : feeType === 'bus' ? calculatedBusFee : 0;
+      const hintAmount = feeType === 'tuition' ? calculatedTuitionFee : feeType === 'bus' ? calculatedBusFee : feeType === 'hostel' ? calculatedHostelFee : 0;
       const ocrData = parseOCRFields(text, user?.fullName, hintAmount);
       
       // Directly fill the amount field with the selected fee if available
@@ -629,6 +631,12 @@ export default function StudentDashboard() {
                       <input type="radio" name="hostel-opt" value="not-opted" defaultChecked onChange={() => setHostelOpted(false)} /> Not Opted
                     </label>
                   </div>
+                  {hostelOpted && calculatedHostelFee > 0 && (
+                    <div style={{ marginTop: '12px', fontSize: '.85rem', color: 'var(--text-sub)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>Hostel Fee Amount:</span> 
+                      <span className="badge badge-warning" style={{ fontSize: '.8rem', padding: '3px 8px' }}>₹{calculatedHostelFee.toLocaleString('en-IN')}</span>
+                    </div>
+                  )}
                   {hostelOpted && (
                     <div>
                       <div className="inner-grid">

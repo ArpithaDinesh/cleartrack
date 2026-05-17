@@ -15,18 +15,19 @@ const getAllFees = async (req, res) => {
 // @route POST /api/tuition-fees/update
 const updateFee = async (req, res) => {
   try {
-    const { year, meritReg, meritFull, tfw, nri } = req.body;
+    const { year, meritReg, meritFull, tfw, nri, hostelFee } = req.body;
     
     let feeStructure = await TuitionFee.findOne({ year });
     
     if (feeStructure) {
-      feeStructure.meritReg = meritReg;
-      feeStructure.meritFull = meritFull;
-      feeStructure.tfw = tfw;
-      feeStructure.nri = nri;
+      if (meritReg !== undefined) feeStructure.meritReg = meritReg;
+      if (meritFull !== undefined) feeStructure.meritFull = meritFull;
+      if (tfw !== undefined) feeStructure.tfw = tfw;
+      if (nri !== undefined) feeStructure.nri = nri;
+      if (hostelFee !== undefined) feeStructure.hostelFee = hostelFee;
       await feeStructure.save();
     } else {
-      feeStructure = await TuitionFee.create({ year, meritReg, meritFull, tfw, nri });
+      feeStructure = await TuitionFee.create({ year, meritReg, meritFull, tfw, nri, hostelFee });
     }
     
     res.json({ success: true, feeStructure });
