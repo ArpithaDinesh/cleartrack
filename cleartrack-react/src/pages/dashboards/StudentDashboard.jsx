@@ -931,7 +931,7 @@ export default function StudentDashboard() {
                     )}
                   </tbody>
                 </table>
-                <div className="cf-footer">
+                <div className="cf-footer" style={{ justifyContent: 'center' }}>
                   {(() => {
                     const status = getOverallStatus();
                     if (status === 'approved') {
@@ -944,19 +944,6 @@ export default function StudentDashboard() {
                       return <span className="cf-stamp pending" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a', padding: '6px 16px', borderRadius: '20px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>⏳ Overall Status: Pending — Awaiting faculty review.</span>;
                     }
                   })()}
-                  <button 
-                    type="button" 
-                    className="btn btn-outline btn-sm" 
-                    disabled={getOverallStatus() !== 'approved'}
-                    onClick={() => window.print()}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="6 9 6 2 18 2 18 9" />
-                      <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-                      <rect x="6" y="14" width="12" height="8" />
-                    </svg>
-                    Print / Download
-                  </button>
                 </div>
               </div>
             </div>

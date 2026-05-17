@@ -3,6 +3,8 @@ const router = express.Router();
 const { protect } = require('../middleware/auth.middleware');
 const User = require('../models/User');
 
+const ClearanceRequest = require('../models/ClearanceRequest');
+
 // @desc  Get current user's profile
 router.get('/profile', protect, async (req, res) => {
   res.json({ success: true, user: req.user });
@@ -65,11 +67,31 @@ router.get('/my-students', protect, async (req, res) => {
     };
     const deptRegex = new RegExp(`^\\s*${getFuzzyDeptPattern(classDepartment)}`, 'i');
 
-    const students = await User.find({
+    const studentsRaw = await User.find({
       role: 'student',
       department: { $regex: deptRegex },
       classYear: { $regex: yearRegex }
-    }).select('fullName email phone universityNumber rollNumber admissionNumber section isActive');
+    }).select('fullName email phone universityNumber rollNumber admissionNumber section isActive isBusUser isHostelUser');
+
+    const students = await Promise.all(studentsRaw.map(async (student) => {
+      const requests = await ClearanceRequest.find({ student: student._id });
+      
+      const tuitionReq = requests.find(r => r.feeType === 'tuition');
+      const tuitionCleared = tuitionReq?.departmentApprovals?.find(a => a.department === 'class_teacher')?.status === 'approved';
+
+      const busReq = requests.find(r => r.feeType === 'bus');
+      const busCleared = !student.isBusUser || (busReq?.departmentApprovals?.find(a => a.department === 'class_teacher')?.status === 'approved');
+
+      const hostelReq = requests.find(r => r.feeType === 'hostel');
+      const hostelCleared = !student.isHostelUser || (hostelReq?.departmentApprovals?.find(a => a.department === 'class_teacher')?.status === 'approved');
+
+      const isFullyCleared = tuitionCleared && busCleared && hostelCleared;
+
+      return {
+        ...student.toObject(),
+        clearanceStatus: isFullyCleared ? 'clearance_granted' : 'pending'
+      };
+    }));
 
     res.json({ success: true, students });
   } catch (err) {

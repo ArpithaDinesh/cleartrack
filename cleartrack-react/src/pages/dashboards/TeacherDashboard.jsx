@@ -254,15 +254,14 @@ export default function TeacherDashboard() {
                     <th>Univ Number</th>
                     <th>Admission No</th>
                     <th>Clearance Status</th>
-                    <th style={{textAlign: 'right'}}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loadingStudents ? (
-                    <tr><td colSpan="5" style={{textAlign:'center', padding:24}}>Loading students...</td></tr>
+                    <tr><td colSpan="4" style={{textAlign:'center', padding:24}}>Loading students...</td></tr>
                   ) : students.length === 0 ? (
                     <tr>
-                      <td colSpan="5" style={{textAlign:'center', padding:40, color:'var(--text-sub)'}}>
+                      <td colSpan="4" style={{textAlign:'center', padding:40, color:'var(--text-sub)'}}>
                         <p>No students found for <strong>{user?.classDepartment} - {user?.classYear}</strong>.</p>
                         <p style={{fontSize:'.8rem'}}>Verify that students have registered with these exact details.</p>
                       </td>
@@ -274,11 +273,11 @@ export default function TeacherDashboard() {
                         <td style={{fontSize:'.85rem'}}>{s.universityNumber || '—'}</td>
                         <td style={{fontSize:'.85rem'}}>{s.admissionNumber || '—'}</td>
                         <td>
-                           {/* We could fetch individual status here, but for now just show account status */}
-                           <span className="badge badge-neutral">Registered</span>
-                        </td>
-                        <td style={{textAlign: 'right'}}>
-                           <button className="btn btn-outline btn-sm" disabled>Profile</button>
+                          {s.clearanceStatus === 'clearance_granted' ? (
+                            <span className="badge badge-success" style={{ fontWeight: 600 }}>Clearance Granted</span>
+                          ) : (
+                            <span className="badge badge-warning" style={{ fontWeight: 600 }}>Pending</span>
+                          )}
                         </td>
                       </tr>
                     ))
