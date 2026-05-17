@@ -803,11 +803,33 @@ export default function StudentDashboard() {
                     {/* ── Tuition Fee Row ── */}
                     {(() => {
                       const req = clearanceRequests.find(r => r.feeType === 'tuition');
-                      const amountDue = calculatedTuitionFee > 0 ? `₹${calculatedTuitionFee.toLocaleString()}` : '—';
-                      const amountPaid = req?.ocrData?.amount || '—';
                       
+                      // Check if approved
+                      const isApproved = req && (() => {
+                        const activeApprovals = req.departmentApprovals?.filter(a => a.status !== 'not_applicable') || [];
+                        return activeApprovals.length > 0 && activeApprovals.every(a => a.status === 'approved');
+                      })();
+
                       const pType = req?.ocrData?.paymentType || (selectedTuitionCategory ? (isHalfTuition ? 'half' : 'full') : null);
                       const paymentTypeLabel = pType === 'half' ? 'Half Payment' : (pType === 'full' ? 'Full Payment' : '—');
+
+                      let amountDueVal = baseTuitionAmount;
+                      if (isApproved) {
+                        if (pType === 'full') {
+                          amountDueVal = 0;
+                        } else if (pType === 'half') {
+                          amountDueVal = baseTuitionAmount / 2;
+                        }
+                      } else {
+                        if (pType === 'half') {
+                          amountDueVal = baseTuitionAmount / 2;
+                        } else {
+                          amountDueVal = baseTuitionAmount;
+                        }
+                      }
+
+                      const amountDue = baseTuitionAmount > 0 ? `₹${amountDueVal.toLocaleString()}` : '—';
+                      const amountPaid = req?.ocrData?.amount || '—';
                       
                       return (
                         <tr>
@@ -823,11 +845,34 @@ export default function StudentDashboard() {
                     {/* ── Bus Fee Row ── */}
                     {(busOpted || clearanceRequests.some(r => r.feeType === 'bus')) ? (() => {
                       const req = clearanceRequests.find(r => r.feeType === 'bus');
-                      const busAmountDue = calculatedBusFee > 0 ? `₹${calculatedBusFee.toLocaleString()}` : '—';
-                      const busAmountPaid = req?.ocrData?.amount || '—';
                       
+                      // Check if approved
+                      const isApproved = req && (() => {
+                        const activeApprovals = req.departmentApprovals?.filter(a => a.status !== 'not_applicable') || [];
+                        return activeApprovals.length > 0 && activeApprovals.every(a => a.status === 'approved');
+                      })();
+
                       const pType = req?.ocrData?.paymentType || (selectedSubLocation ? (isHalfFee ? 'half' : 'full') : null);
                       const paymentTypeLabel = pType === 'half' ? 'Half Payment' : (pType === 'full' ? 'Full Payment' : '—');
+
+                      const baseBusAmount = selectedSubLocation ? selectedSubLocation.fee : 0;
+                      let amountDueVal = baseBusAmount;
+                      if (isApproved) {
+                        if (pType === 'full') {
+                          amountDueVal = 0;
+                        } else if (pType === 'half') {
+                          amountDueVal = baseBusAmount / 2;
+                        }
+                      } else {
+                        if (pType === 'half') {
+                          amountDueVal = baseBusAmount / 2;
+                        } else {
+                          amountDueVal = baseBusAmount;
+                        }
+                      }
+
+                      const busAmountDue = baseBusAmount > 0 ? `₹${amountDueVal.toLocaleString()}` : '—';
+                      const busAmountPaid = req?.ocrData?.amount || '—';
                       
                       return (
                         <tr>
@@ -851,7 +896,19 @@ export default function StudentDashboard() {
                     {/* ── Hostel Fee Row ── */}
                     {(hostelOpted || clearanceRequests.some(r => r.feeType === 'hostel')) ? (() => {
                       const req = clearanceRequests.find(r => r.feeType === 'hostel');
-                      const hostelAmountDue = calculatedHostelFee > 0 ? `₹${calculatedHostelFee.toLocaleString()}` : '—';
+                      
+                      // Check if approved
+                      const isApproved = req && (() => {
+                        const activeApprovals = req.departmentApprovals?.filter(a => a.status !== 'not_applicable') || [];
+                        return activeApprovals.length > 0 && activeApprovals.every(a => a.status === 'approved');
+                      })();
+
+                      let amountDueVal = calculatedHostelFee;
+                      if (isApproved) {
+                        amountDueVal = 0;
+                      }
+
+                      const hostelAmountDue = calculatedHostelFee > 0 ? `₹${amountDueVal.toLocaleString()}` : '—';
                       const hostelAmountPaid = req?.ocrData?.amount || '—';
                       
                       return (
