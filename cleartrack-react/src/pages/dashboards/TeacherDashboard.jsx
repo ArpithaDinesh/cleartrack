@@ -58,12 +58,6 @@ export default function TeacherDashboard() {
         <header className="topbar">
           <div className="topbar-title">Teacher Dashboard</div>
           <div className="topbar-right">
-            <div className="topbar-badge" style={{ marginRight: '15px' }}>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '20px', height: '20px', color: '#64748b' }}>
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-              </svg>
-            </div>
             <div className="topbar-avatar" onClick={() => setShowDropdown(!showDropdown)} style={{cursor: 'pointer', position: 'relative'}}>
               {initials}
               {showDropdown && (
@@ -81,6 +75,41 @@ export default function TeacherDashboard() {
           </div>
         </header>
         <main className="page-content">
+          {/* Sleek Modern Welcome Banner */}
+          <div style={{
+            background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+            color: 'white',
+            borderRadius: '16px',
+            padding: '24px 32px',
+            marginBottom: '32px',
+            boxShadow: '0 10px 25px -5px rgba(59, 130, 246, 0.25)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '20px'
+          }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 800, color: 'white', letterSpacing: '-0.025em' }}>
+                Welcome back, {user?.fullName || 'Teacher'}!
+              </h2>
+              <p style={{ margin: '6px 0 0', opacity: 0.9, fontSize: '0.95rem' }}>
+                Class Coordinator for <strong style={{color:'#fef08a'}}>{user?.classDepartment || 'Unconfigured Department'} - {user?.classYear || 'Unconfigured Year'}</strong>
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.8 }}>Teacher ID</span>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fef08a' }}>{user?.staffId || '—'}</div>
+              </div>
+              <div style={{ width: '1px', height: '36px', background: 'rgba(255,255,255,0.2)' }}></div>
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.8 }}>My Dept</span>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fef08a' }}>{user?.department || '—'}</div>
+              </div>
+            </div>
+          </div>
+
           {/* Profile Completeness Check */}
           {(!user?.classDepartment || !user?.classYear) && user?.assignedDepartment === 'class_teacher' && (
             <div style={{ background: '#fffbeb', border: '1px solid #fde68a', padding: '15px', borderRadius: '10px', marginBottom: '20px', display: 'flex', gap: '15px', alignItems: 'center' }}>
@@ -93,13 +122,13 @@ export default function TeacherDashboard() {
             </div>
           )}
 
-          <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
             <h1>Faculty Overview</h1>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button className="btn btn-outline btn-sm" onClick={() => setShowDiagnostics(!showDiagnostics)}>
                 {showDiagnostics ? 'Hide Diagnostics' : 'Show Diagnostics'}
               </button>
-              <button className="btn btn-primary btn-sm" onClick={fetchData} disabled={refreshing}>
+              <button className="btn className=btn-primary btn-sm" style={{ background: 'var(--primary)', color: 'white' }} onClick={fetchData} disabled={refreshing}>
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px', animation: refreshing ? 'spin 1s linear infinite' : 'none' }}>
                   <path d="M21 12a9 9 0 1 1-6.21-8.58" /><path d="M22 2v6h-6" />
                 </svg>
@@ -132,36 +161,20 @@ export default function TeacherDashboard() {
             </div>
           )}
 
-          {/* Profile */}
-          <div className="profile-card" style={{flexDirection:'column',gap:0,marginBottom:28}}>
-            <div style={{display:'flex',alignItems:'center',gap:20}}>
-              <div className="profile-avatar">{initials}</div>
-              <div className="profile-info" style={{padding:0, flex: 1}}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h2 style={{ margin: 0 }}>{user?.fullName}</h2>
-                </div>
-                <p className="profile-id">Teacher ID: {user?.staffId}</p>
-                <div className="profile-tags" style={{marginTop:8}}>
-                  <span className="profile-tag">{user?.department || 'Department not set'}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Stats & Quick Actions */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24, marginBottom: 28 }}>
-            <div className="stat-card" style={{ cursor: 'pointer' }} onClick={() => navigate('/staff/pending')}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24, marginBottom: 32 }}>
+            <div className="stat-card" style={{ cursor: 'pointer', transition: 'transform 0.2s', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }} onClick={() => navigate('/staff/pending')}>
               <div className="stat-icon orange">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="17"/></svg>
               </div>
               <div className="stat-info">
                 <h3>{loading ? '…' : pending.length}</h3>
                 <p>Pending Reviews</p>
-                <small style={{ color: 'var(--primary)', fontWeight: 600 }}>Click to view all →</small>
+                <small style={{ color: 'var(--primary)', fontWeight: 600 }}>Click to review →</small>
               </div>
             </div>
             
-            <div className="stat-card">
+            <div className="stat-card" style={{ boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
               <div className="stat-icon blue">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               </div>
@@ -169,6 +182,17 @@ export default function TeacherDashboard() {
                 <h3>{loadingStudents ? '…' : students.length}</h3>
                 <p>Total Students</p>
                 <small style={{ color: 'var(--text-sub)' }}>{user?.classDepartment} • {user?.classYear}</small>
+              </div>
+            </div>
+
+            <div className="stat-card" style={{ boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+              <div className="stat-icon green" style={{ background: '#dcfce7', color: '#15803d' }}>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              </div>
+              <div className="stat-info">
+                <h3>{loadingStudents ? '…' : students.filter(s => s.clearanceStatus === 'clearance_granted').length}</h3>
+                <p>Clearance Granted</p>
+                <small style={{ color: '#16a34a', fontWeight: 600 }}>Cleared Successfully</small>
               </div>
             </div>
           </div>
@@ -187,104 +211,105 @@ export default function TeacherDashboard() {
             </div>
           )}
 
-          {/* Pending Requests List */}
-          <div className="card" style={{padding:0, overflow:'hidden', marginBottom: 28}}>
-            <div style={{padding:'18px 24px 14px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-              <h3 className="card-title" style={{margin:0}}>Recent Submissions (Requires Review)</h3>
-              <Link to="/staff/pending" className="btn btn-primary btn-sm">View All Pending</Link>
-            </div>
-            {loading ? <div style={{padding:32,textAlign:'center',color:'var(--text-sub)'}}>Loading requests…</div>
-            : pending.length === 0 ? (
-              <div style={{padding:40, textAlign:'center'}}>
-                <div style={{ fontSize: '2rem', marginBottom: 10 }}>🎉</div>
-                <p style={{color:'var(--success)', fontWeight:600, margin:0}}>No pending requests for your class.</p>
-                <p style={{fontSize:'.85rem', color:'var(--text-sub)', marginTop:4}}>Students from {user?.classDepartment} - {user?.classYear} will appear here when they submit for approval.</p>
-              </div>
-            ) : (
-              <div className="cr-list">
-                {pending.slice(0,5).map(r => {
-                  const stu = r.student || {}
-                  return (
-                    <div key={r._id} className="cr-item" onClick={() => navigate(`/staff/request/${r._id}`)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 20, padding: '16px 24px', borderBottom: '1px solid #f1f5f9', transition: 'background 0.2s' }}>
-                      {/* Receipt Thumbnail */}
-                      <div className="cr-receipt-preview" style={{ width: 60, height: 60, borderRadius: 8, background: '#f1f5f9', overflow: 'hidden', flexShrink: 0, border: '1px solid #e2e8f0', marginRight: 15 }}>
-                        {r.receiptFile?.filename ? (
-                          <img src={r.receiptFile?.base64Data || `${API_ROOT}/uploads/${r.receiptFile?.filename}`} alt="Receipt" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        ) : (
-                          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#94a3b8' }}>No Img</div>
-                        )}
-                      </div>
-                      
-                      {/* Student & Request Details */}
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-main)' }}>{stu.fullName || 'Unknown Student'}</div>
-                        <div style={{ fontSize: '.85rem', color: '#64748b', marginTop: 2 }}>
-                          {stu.universityNumber} • <span style={{ textTransform: 'capitalize', color: 'var(--primary)', fontWeight: 600 }}>{r.ocrData?.particulars || r.feeType + ' Fee'}</span>
-                          {r.ocrData?.bank && <span style={{ marginLeft: 8, color: '#94a3b8' }}>• {r.ocrData.bank}</span>}
-                        </div>
-                      </div>
-
-                      {/* OCR Extracted Amount */}
-                      <div style={{ textAlign: 'right', minWidth: '100px' }}>
-                        <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-main)' }}>{r.ocrData?.amount || '₹—'}</div>
-                        <div style={{ fontSize: '.75rem', color: '#94a3b8' }}>{r.submittedAt ? new Date(r.submittedAt).toLocaleDateString() : ''}</div>
-                      </div>
-
-                      {/* Action Button */}
-                      <div className="btn btn-outline btn-sm" style={{ padding: '6px 12px' }}>Review →</div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* My Students List */}
-          <div className="card" style={{padding:0, overflow:'hidden'}}>
-            <div style={{padding:'18px 24px 14px', borderBottom:'1px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
-              <h3 className="card-title" style={{margin:0}}>My Students ({user?.classDepartment} {user?.classYear})</h3>
-              <span style={{fontSize:'.85rem', color:'var(--text-sub)'}}>{students.length} Total Registered</span>
-            </div>
+          {/* Main Grid: My Students Directory & Action Required Split */}
+          <div className="teacher-grid-container" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '32px' }}>
             
-            <div className="table-wrap" style={{border:'none', borderRadius:0, boxShadow:'none'}}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Student Name</th>
-                    <th>Univ Number</th>
-                    <th>Admission No</th>
-                    <th>Clearance Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loadingStudents ? (
-                    <tr><td colSpan="4" style={{textAlign:'center', padding:24}}>Loading students...</td></tr>
-                  ) : students.length === 0 ? (
+            {/* Left Box: My Students Directory */}
+            <div className="card" style={{padding:0, overflow:'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)'}}>
+              <div style={{padding:'18px 24px 14px', borderBottom:'1px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+                <h3 className="card-title" style={{margin:0, fontSize: '1.1rem', fontWeight: 700}}>My Students ({user?.classDepartment} {user?.classYear})</h3>
+                <span style={{fontSize:'.85rem', color:'var(--text-sub)'}}>{students.length} Total Registered</span>
+              </div>
+              
+              <div className="table-wrap" style={{border:'none', borderRadius:0, boxShadow:'none'}}>
+                <table>
+                  <thead>
                     <tr>
-                      <td colSpan="4" style={{textAlign:'center', padding:40, color:'var(--text-sub)'}}>
-                        <p>No students found for <strong>{user?.classDepartment} - {user?.classYear}</strong>.</p>
-                        <p style={{fontSize:'.8rem'}}>Verify that students have registered with these exact details.</p>
-                      </td>
+                      <th>Student Name</th>
+                      <th>Univ Number</th>
+                      <th>Admission No</th>
+                      <th>Clearance Status</th>
                     </tr>
-                  ) : (
-                    students.map(s => (
-                      <tr key={s._id}>
-                        <td><strong>{s.fullName}</strong></td>
-                        <td style={{fontSize:'.85rem'}}>{s.universityNumber || '—'}</td>
-                        <td style={{fontSize:'.85rem'}}>{s.admissionNumber || '—'}</td>
-                        <td>
-                          {s.clearanceStatus === 'clearance_granted' ? (
-                            <span className="badge badge-success" style={{ fontWeight: 600 }}>Clearance Granted</span>
-                          ) : (
-                            <span className="badge badge-warning" style={{ fontWeight: 600 }}>Pending</span>
-                          )}
+                  </thead>
+                  <tbody>
+                    {loadingStudents ? (
+                      <tr><td colSpan="4" style={{textAlign:'center', padding:24}}>Loading students...</td></tr>
+                    ) : students.length === 0 ? (
+                      <tr>
+                        <td colSpan="4" style={{textAlign:'center', padding:40, color:'var(--text-sub)'}}>
+                          <p>No students found for <strong>{user?.classDepartment} - {user?.classYear}</strong>.</p>
+                          <p style={{fontSize:'.8rem'}}>Verify that students have registered with these exact details.</p>
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ) : (
+                      students.map(s => (
+                        <tr key={s._id}>
+                          <td><strong>{s.fullName}</strong></td>
+                          <td style={{fontSize:'.85rem'}}>{s.universityNumber || '—'}</td>
+                          <td style={{fontSize:'.85rem'}}>{s.admissionNumber || '—'}</td>
+                          <td>
+                            {s.clearanceStatus === 'clearance_granted' ? (
+                              <span className="badge badge-success" style={{ fontWeight: 600 }}>Clearance Granted</span>
+                            ) : (
+                              <span className="badge badge-warning" style={{ fontWeight: 600 }}>Pending</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
+
+            {/* Right Box: Action Required Pending Reviews */}
+            <div className="card" style={{padding:0, overflow:'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)'}}>
+              <div style={{padding:'18px 24px 14px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                <h3 className="card-title" style={{margin:0, fontSize: '1.1rem', fontWeight: 700}}>Recent Submissions</h3>
+                <Link to="/staff/pending" className="btn btn-primary btn-sm" style={{ padding: '4px 10px', fontSize: '.8rem' }}>View All</Link>
+              </div>
+              {loading ? <div style={{padding:32,textAlign:'center',color:'var(--text-sub)'}}>Loading requests…</div>
+              : pending.length === 0 ? (
+                <div style={{padding:40, textAlign:'center'}}>
+                  <div style={{ fontSize: '2rem', marginBottom: 10 }}>🎉</div>
+                  <p style={{color:'var(--success)', fontWeight:600, margin:0}}>No pending requests.</p>
+                  <p style={{fontSize:'.8rem', color:'var(--text-sub)', marginTop:4}}>All requests for your class are reviewed!</p>
+                </div>
+              ) : (
+                <div className="cr-list">
+                  {pending.slice(0,5).map(r => {
+                    const stu = r.student || {}
+                    return (
+                      <div key={r._id} className="cr-item" onClick={() => navigate(`/staff/request/${r._id}`)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 15, padding: '16px 20px', borderBottom: '1px solid #f1f5f9', transition: 'background 0.2s' }}>
+                        {/* Receipt Thumbnail */}
+                        <div className="cr-receipt-preview" style={{ width: 44, height: 44, borderRadius: 6, background: '#f1f5f9', overflow: 'hidden', flexShrink: 0, border: '1px solid #e2e8f0' }}>
+                          {r.receiptFile?.filename ? (
+                            <img src={r.receiptFile?.base64Data || `${API_ROOT}/uploads/${r.receiptFile?.filename}`} alt="Receipt" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: '#94a3b8' }}>No Img</div>
+                          )}
+                        </div>
+                        
+                        {/* Student & Request Details */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{stu.fullName || 'Unknown Student'}</div>
+                          <div style={{ fontSize: '.78rem', color: '#64748b', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            <span style={{ textTransform: 'capitalize', color: 'var(--primary)', fontWeight: 600 }}>{r.ocrData?.particulars || r.feeType + ' Fee'}</span>
+                          </div>
+                        </div>
+
+                        {/* OCR Extracted Amount */}
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-main)' }}>{r.ocrData?.amount || '₹—'}</div>
+                          <div style={{ fontSize: '.7rem', color: '#94a3b8' }}>Review →</div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
           </div>
         </main>
         <footer style={{ padding: '20px', textAlign: 'center', color: '#94a3b8', fontSize: '0.75rem', borderTop: '1px solid #e2e8f0' }}>

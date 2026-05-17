@@ -1320,3 +1320,12 @@ tbody tr:hover {
         flex-direction: column;
     }
 }
+
+@media (min-width: 1024px) {
+    .teacher-grid-container {
+        display: grid !important;
+        grid-template-columns: 1.6fr 1fr !important;
+        gap: 32px !important;
+        align-items: start !important;
+    }
+}
