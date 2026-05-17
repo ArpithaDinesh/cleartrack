@@ -32,6 +32,8 @@ export default function AdminDashboard() {
   })
   const [savedTuitionYears, setSavedTuitionYears] = useState([])
   const [isEditingTuition, setIsEditingTuition] = useState(false)
+  const [isEditingHostel, setIsEditingHostel] = useState(false)
+  const [hasSavedHostel, setHasSavedHostel] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -56,6 +58,9 @@ export default function AdminDashboard() {
         const firstDoc = res.fees.find(f => f.hostelFee > 0) || res.fees[0];
         if (firstDoc && firstDoc.hostelFee !== undefined) {
           setFeeForm(p => ({ ...p, hostelFee: firstDoc.hostelFee }));
+          if (firstDoc.hostelFee > 0) {
+            setHasSavedHostel(true);
+          }
         }
       }
     }).catch(console.error);
@@ -148,6 +153,8 @@ export default function AdminDashboard() {
         updatedStructure[yr].hostelFee = Number(feeForm.hostelFee);
       });
       setTuitionFeeStructure(updatedStructure);
+      setHasSavedHostel(true);
+      setIsEditingHostel(false);
       setFeeMsg('✓ Hostel fee updated successfully!');
     } catch (err) {
       setFeeMsg('❌ Failed to save hostel fee: ' + err.message);
@@ -537,11 +544,39 @@ export default function AdminDashboard() {
                     Hostel Fee Management
                   </h3>
                   <form onSubmit={handleSaveHostelFee}>
-                    <div className="form-group" style={{marginBottom: 16}}>
-                      <label>Amount (₹)</label>
-                      <input type="number" min="0" value={feeForm.hostelFee} onChange={e=>setFeeForm(p=>({...p,hostelFee:e.target.value}))} placeholder="0" required/>
-                    </div>
-                    <button type="submit" className="btn btn-primary btn-full" style={{marginTop:16}}>Update Hostel Fee</button>
+                    {hasSavedHostel && !isEditingHostel ? (
+                      <div style={{ marginBottom: 20 }}>
+                        <div className="view-field" style={{padding: '12px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '6px', marginBottom: 12}}>
+                          <label style={{fontSize: '.75rem', color: '#64748b', display: 'block', fontWeight: 500}}>Uniform Hostel Fee</label>
+                          <span style={{fontWeight: 700, fontSize: '1.25rem', color: 'var(--text-main)'}}>₹ {Number(feeForm.hostelFee || 0).toLocaleString('en-IN')}</span>
+                        </div>
+                        <button type="button" className="btn btn-outline btn-full" onClick={() => setIsEditingHostel(true)}>
+                          ⚙ Edit Fee Structure
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="form-group" style={{marginBottom: 16}}>
+                          <label>Amount (₹)</label>
+                          <input 
+                            type="number" 
+                            min="0" 
+                            value={feeForm.hostelFee} 
+                            onChange={e=>setFeeForm(p=>({...p,hostelFee:e.target.value}))} 
+                            placeholder="0" 
+                            required
+                          />
+                        </div>
+                        <button type="submit" className="btn btn-primary btn-full" style={{marginTop:16}}>
+                          {hasSavedHostel ? 'Save Changes' : 'Submit Fee Structure'}
+                        </button>
+                        {isEditingHostel && (
+                          <button type="button" className="btn btn-outline btn-full" style={{marginTop: 8}} onClick={() => setIsEditingHostel(false)}>
+                            Cancel
+                          </button>
+                        )}
+                      </>
+                    )}
                   </form>
                 </div>
               </div>

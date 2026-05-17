@@ -641,7 +641,14 @@ export default function StudentDashboard() {
                     <div>
                       <div className="inner-grid">
                         <div>
-                          <label className="field-label">Upload Receipt</label>
+                          <label className="field-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span>Upload Receipt</span>
+                            {calculatedHostelFee > 0 && (
+                              <span style={{ fontWeight: 600, color: 'var(--accent)', fontSize: '0.8rem' }}>
+                                (Required Amount: ₹{calculatedHostelFee.toLocaleString('en-IN')})
+                              </span>
+                            )}
+                          </label>
                           <label htmlFor="hostel-file" className="upload-zone">
                             <div className="upload-icon-wrap" style={{ background: '#ede9fe', color: 'var(--accent)' }}>
                               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
