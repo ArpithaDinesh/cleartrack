@@ -167,26 +167,25 @@ const getDepartmentPending = async (req, res) => {
         return res.json({ success: true, requests: [], message: 'Profile incomplete: No class assigned.' });
       }
 
-      // 1. Create a broad match for the teacher's class (Handling Fuzzy Depts and Year variations)
-      const yearPatterns = { '1': '(1st|First)', '2': '(2nd|Second)', '3': '(3rd|Third)', '4': '(4th|Fourth)' };
-      const yearNum = classYear.match(/\d/)?.[0];
-      const yearRegex = yearNum ? new RegExp(`^\\s*${yearPatterns[yearNum]}`, 'i') : new RegExp(`^\\s*${classYear}\\s*$`, 'i');
-      
-      // Fuzzy Dept: Match 'CS' with 'Computer Science', 'IT' with 'Information Technology', etc.
-      // We use a prefix match if the dept is short, or an inclusion match if it's long.
-      const deptPattern = classDepartment.length <= 3 
-        ? `^\\s*${classDepartment}` // Prefix match for short codes like CS, IT, ME
-        : classDepartment.split(' ')[0]; // Match first word for longer names
-      const deptRegex = new RegExp(deptPattern, 'i');
+      // Use exact matching since both student & teacher dropdowns use the same values (e.g. "CS", "1st Year")
+      // Case-insensitive trim for safety
+      const deptRegex = new RegExp(`^\\s*${classDepartment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i');
+      const yearRegex = new RegExp(`^\\s*${classYear.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i');
 
-      // 2. Find ALL students matching this class
+      // Find ALL students matching this class
       const studentIds = await User.find({
         role: 'student',
         department: { $regex: deptRegex },
         classYear: { $regex: yearRegex }
       }).distinct('_id');
 
-      // 3. Find ALL active requests from these students
+      console.log(`[ClassTeacher] dept='${classDepartment}' year='${classYear}' → matched ${studentIds.length} students`);
+
+      if (studentIds.length === 0) {
+        return res.json({ success: true, requests: [], message: 'No students found matching your class profile.' });
+      }
+
+      // Find ALL active requests (including draft that have been confirmed by student)
       const requests = await ClearanceRequest.find({
         student: { $in: studentIds },
         overallStatus: { $in: ['submitted', 'under_review', 'partially_approved'] },
@@ -194,6 +193,8 @@ const getDepartmentPending = async (req, res) => {
           $elemMatch: { department: 'class_teacher', status: 'pending' }
         }
       }).populate('student', 'fullName universityNumber rollNumber department classYear admissionNumber');
+
+      console.log(`[ClassTeacher] Found ${requests.length} pending requests`);
 
       return res.json({ success: true, requests });
     }
@@ -342,7 +343,7 @@ const submitDraft = async (req, res) => {
   }
 };
 
-// @desc  Student confirm OCR data
+// @desc  Student confirm OCR data AND submit the request for teacher review
 // @route PATCH /api/clearance/:id/confirm
 const confirmOCR = async (req, res) => {
   try {
@@ -354,15 +355,31 @@ const confirmOCR = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Access denied.' });
     }
 
+    // Update OCR fields with any student corrections
     const fields = ['name', 'department', 'particulars', 'amount', 'bank', 'date'];
     for (const f of fields) {
       if (req.body[f] !== undefined) request.ocrData[f] = req.body[f];
     }
     request.ocrData.studentConfirmed = true;
     request.ocrData.confirmedAt = new Date();
+
+    // CRITICAL FIX: Submit the request for teacher review if it's still a draft.
+    // Without this, requests would stay as 'draft' forever and teachers would never see them.
+    if (request.overallStatus === 'draft') {
+      request.overallStatus = 'submitted';
+      request.submittedAt = new Date();
+
+      await ApprovalLog.create({
+        clearanceRequest: request._id,
+        action: 'submitted',
+        performedBy: req.user._id,
+        newStatus: 'submitted'
+      });
+    }
+
     await request.save();
 
-    return res.json({ success: true, ocrData: request.ocrData });
+    return res.json({ success: true, ocrData: request.ocrData, overallStatus: request.overallStatus });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
