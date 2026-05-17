@@ -29,6 +29,7 @@ export default function StudentDashboard() {
   const [showDropdown, setShowDropdown] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [submitLoading, setSubmitLoading] = useState(false)
+  const [remarksModalContent, setRemarksModalContent] = useState(null)
 
   // Bus Fee States
   const [busRoutes, setBusRoutes] = useState([])
@@ -190,21 +191,66 @@ export default function StudentDashboard() {
     const req = clearanceRequests.find(r => r.feeType === feeType);
     if (!req) return <span className="badge badge-neutral">Not Submitted</span>;
 
-    // Status logic: pending until approved by teacher
-    const teacherApproval = req.departmentApprovals?.find(a => a.department === 'class_teacher');
-    const isApproved = teacherApproval?.status === 'approved';
+    // Check if any active approval is rejected
+    const rejectedApproval = req.departmentApprovals?.find(a => a.status === 'rejected');
+    if (rejectedApproval) {
+      return (
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <span className="badge badge-danger">Rejected</span>
+          <button 
+            type="button" 
+            className="btn btn-outline" 
+            style={{ padding: '2px 8px', fontSize: '0.68rem', borderColor: 'var(--danger)', color: 'var(--danger)', height: 'auto', background: 'transparent', cursor: 'pointer' }}
+            onClick={() => setRemarksModalContent(rejectedApproval.remarks || 'No remarks provided.')}
+          >
+            Remarks
+          </button>
+        </div>
+      );
+    }
 
-    if (!isApproved) {
+    // Check if all active approvals (excluding not_applicable) are approved
+    const activeApprovals = req.departmentApprovals?.filter(a => a.status !== 'not_applicable') || [];
+    const allApproved = activeApprovals.length > 0 && activeApprovals.every(a => a.status === 'approved');
+
+    if (!allApproved) {
       return <span className="badge badge-warning">Pending</span>;
     }
 
     // Approved -> Check if it was half or full
     const pType = req.ocrData?.paymentType || 'full';
     if (pType === 'half') {
-      return <span className="badge badge-warning">Half Paid</span>;
+      return <span className="badge badge-success">Approved (Half Paid)</span>;
     } else {
-      return <span className="badge badge-success">Fully Paid</span>;
+      return <span className="badge badge-success">Approved (Fully Paid)</span>;
     }
+  };
+
+  const getOverallStatus = () => {
+    const isBusOpted = busOpted || clearanceRequests.some(r => r.feeType === 'bus');
+    const isHostelOpted = hostelOpted || clearanceRequests.some(r => r.feeType === 'hostel');
+
+    const activeFees = ['tuition'];
+    if (isBusOpted) activeFees.push('bus');
+    if (isHostelOpted) activeFees.push('hostel');
+
+    const statuses = activeFees.map(feeType => {
+      const req = clearanceRequests.find(r => r.feeType === feeType);
+      if (!req) return 'not_submitted';
+
+      const rejectedApproval = req.departmentApprovals?.find(a => a.status === 'rejected');
+      if (rejectedApproval) return 'rejected';
+
+      const activeApprovals = req.departmentApprovals?.filter(a => a.status !== 'not_applicable') || [];
+      const allApproved = activeApprovals.length > 0 && activeApprovals.every(a => a.status === 'approved');
+      
+      return allApproved ? 'approved' : 'pending';
+    });
+
+    if (statuses.some(s => s === 'rejected')) return 'rejected';
+    if (statuses.some(s => s === 'not_submitted')) return 'pending_submission';
+    if (statuses.every(s => s === 'approved')) return 'approved';
+    return 'pending';
   };
 
   return (
@@ -757,7 +803,7 @@ export default function StudentDashboard() {
                     {/* ── Tuition Fee Row ── */}
                     {(() => {
                       const req = clearanceRequests.find(r => r.feeType === 'tuition');
-                      const amountDue = baseTuitionAmount > 0 ? `₹${baseTuitionAmount.toLocaleString()}` : '—';
+                      const amountDue = calculatedTuitionFee > 0 ? `₹${calculatedTuitionFee.toLocaleString()}` : '—';
                       const amountPaid = req?.ocrData?.amount || '—';
                       
                       const pType = req?.ocrData?.paymentType || (selectedTuitionCategory ? (isHalfTuition ? 'half' : 'full') : null);
@@ -775,9 +821,9 @@ export default function StudentDashboard() {
                     })()}
 
                     {/* ── Bus Fee Row ── */}
-                    {false ? (() => {
+                    {(busOpted || clearanceRequests.some(r => r.feeType === 'bus')) ? (() => {
                       const req = clearanceRequests.find(r => r.feeType === 'bus');
-                      const busAmountDue = selectedSubLocation ? `₹${selectedSubLocation.fee.toLocaleString()}` : '—';
+                      const busAmountDue = calculatedBusFee > 0 ? `₹${calculatedBusFee.toLocaleString()}` : '—';
                       const busAmountPaid = req?.ocrData?.amount || '—';
                       
                       const pType = req?.ocrData?.paymentType || (selectedSubLocation ? (isHalfFee ? 'half' : 'full') : null);
@@ -803,14 +849,15 @@ export default function StudentDashboard() {
                     )}
 
                     {/* ── Hostel Fee Row ── */}
-                    {false ? (() => {
+                    {(hostelOpted || clearanceRequests.some(r => r.feeType === 'hostel')) ? (() => {
                       const req = clearanceRequests.find(r => r.feeType === 'hostel');
+                      const hostelAmountDue = calculatedHostelFee > 0 ? `₹${calculatedHostelFee.toLocaleString()}` : '—';
                       const hostelAmountPaid = req?.ocrData?.amount || '—';
                       
                       return (
                         <tr>
                           <td>Hostel Fee</td>
-                          <td>—</td>
+                          <td>{hostelAmountDue}</td>
                           <td>{hostelAmountPaid}</td>
                           <td>Full Payment</td>
                           <td>{getFeeBadge('hostel')}</td>
@@ -828,8 +875,24 @@ export default function StudentDashboard() {
                   </tbody>
                 </table>
                 <div className="cf-footer">
-                  <span className="cf-stamp pending">⏳ Overall Status: Pending — Submit clearance request to proceed</span>
-                  <button type="button" className="btn btn-outline btn-sm" disabled>
+                  {(() => {
+                    const status = getOverallStatus();
+                    if (status === 'approved') {
+                      return <span className="cf-stamp success" style={{ background: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0', padding: '6px 16px', borderRadius: '20px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>✓ Overall Status: Approved — Clearance Granted!</span>;
+                    } else if (status === 'rejected') {
+                      return <span className="cf-stamp danger" style={{ background: '#fee2e2', color: '#b91c1c', border: '1px solid #fecaca', padding: '6px 16px', borderRadius: '20px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>✗ Overall Status: Rejected — Please review remarks and re-upload.</span>;
+                    } else if (status === 'pending_submission') {
+                      return <span className="cf-stamp pending" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0', padding: '6px 16px', borderRadius: '20px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>⏳ Overall Status: Pending — Please upload required receipts above.</span>;
+                    } else {
+                      return <span className="cf-stamp pending" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a', padding: '6px 16px', borderRadius: '20px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>⏳ Overall Status: Pending — Awaiting faculty review.</span>;
+                    }
+                  })()}
+                  <button 
+                    type="button" 
+                    className="btn btn-outline btn-sm" 
+                    disabled={getOverallStatus() !== 'approved'}
+                    onClick={() => window.print()}
+                  >
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="6 9 6 2 18 2 18 9" />
                       <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
@@ -846,6 +909,24 @@ export default function StudentDashboard() {
         </main>
       </div>
       <ProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
+
+      {/* Rejection Remarks Modal overlay */}
+      {remarksModalContent && (
+        <div className="modal-overlay" style={{position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999}}>
+          <div className="card" style={{width:'400px', padding:'24px', background:'white', borderRadius:'12px', boxShadow:'0 10px 25px rgba(0,0,0,0.15)'}}>
+            <h3 style={{margin: '0 0 16px 0', display:'flex', alignItems:'center', gap:8, color:'var(--danger)'}}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Rejection Remarks
+            </h3>
+            <p style={{background:'#fef2f2', border:'1px solid #fee2e2', padding:'16px', borderRadius:'8px', fontSize:'.9rem', color:'#991b1b', lineHeight:1.5, margin:'0 0 20px 0'}}>
+              "{remarksModalContent}"
+            </p>
+            <div style={{display:'flex', justifyContent:'flex-end'}}>
+              <button type="button" className="btn btn-primary" onClick={() => setRemarksModalContent(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
