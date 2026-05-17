@@ -301,6 +301,60 @@ img {
     transform: translateY(-1px);
 }
 
+.btn-approve {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.92rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition);
+    background: linear-gradient(135deg, var(--success), #047857);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+}
+
+.btn-approve:hover {
+    background: linear-gradient(135deg, #047857, #065f46);
+    box-shadow: 0 4px 14px rgba(5, 150, 105, 0.4);
+    transform: translateY(-1px);
+}
+
+.btn-approve:active {
+    transform: translateY(0);
+}
+
+.btn-reject {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.92rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition);
+    background: linear-gradient(135deg, var(--danger), #b91c1c);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+}
+
+.btn-reject:hover {
+    background: linear-gradient(135deg, #b91c1c, #991b1b);
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);
+    transform: translateY(-1px);
+}
+
+.btn-reject:active {
+    transform: translateY(0);
+}
+
 /* Auth footer */
 .auth-footer {
     text-align: center;

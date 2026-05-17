@@ -69,9 +69,12 @@ const registerStaffPublic = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email already registered.' });
     }
 
+    // Auto-assign 'class_teacher' role if classDepartment is provided but assignedDepartment is missing
+    const resolvedAssignedDept = assignedDepartment || (classDepartment ? 'class_teacher' : null);
+
     const user = await User.create({
       fullName, email, password, phone, role, staffId, department,
-      assignedDepartment: assignedDepartment || null,
+      assignedDepartment: resolvedAssignedDept,
       classDepartment: classDepartment || null,
       classYear: classYear || null
     });

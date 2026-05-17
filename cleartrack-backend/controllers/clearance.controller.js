@@ -145,9 +145,9 @@ const getRequest = async (req, res) => {
 // @route GET /api/clearance/department/pending
 const getDepartmentPending = async (req, res) => {
   try {
-    const dept = req.user.assignedDepartment;
+    const dept = (req.user.assignedDepartment || '').trim();
     if (!dept) {
-      return res.status(400).json({ success: false, message: 'No department assigned.' });
+      return res.status(400).json({ success: false, message: 'No department assigned to your profile. Please contact admin.' });
     }
 
     // Base query: MUST be submitted (not draft) and have a pending approval for this department

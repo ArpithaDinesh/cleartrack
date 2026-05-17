@@ -14,6 +14,15 @@ router.patch('/profile', protect, async (req, res) => {
     const allowed = ['fullName', 'phone', 'section', 'universityNumber', 'rollNumber', 'admissionNumber', 'department', 'classYear', 'staffId', 'assignedDepartment', 'classDepartment'];
     const updates = {};
     allowed.forEach(k => { if (req.body[k] !== undefined) updates[k] = req.body[k]; });
+
+    // Auto-fix: if staff sets classDepartment but has no assignedDepartment, auto-set to class_teacher
+    if (req.user.role === 'staff' && updates.classDepartment && !updates.assignedDepartment) {
+      const current = await User.findById(req.user._id).select('assignedDepartment');
+      if (!current.assignedDepartment || current.assignedDepartment === '') {
+        updates.assignedDepartment = 'class_teacher';
+      }
+    }
+
     const user = await User.findByIdAndUpdate(req.user._id, updates, { new: true, runValidators: true });
     res.json({ success: true, user });
   } catch (err) {
@@ -35,16 +44,9 @@ router.get('/my-students', protect, async (req, res) => {
       return res.json({ success: true, students: [] });
     }
 
-    // High-Flexibility matching (Trims spaces, handles fuzzy depts and year variations)
-    const yearPatterns = { '1': '(1st|First)', '2': '(2nd|Second)', '3': '(3rd|Third)', '4': '(4th|Fourth)' };
-    const yearNum = classYear.match(/\d/)?.[0];
-    const yearRegex = yearNum ? new RegExp(`^\\s*${yearPatterns[yearNum]}`, 'i') : new RegExp(`^\\s*${classYear}\\s*$`, 'i');
-    
-    // Fuzzy Dept Match
-    const deptPattern = classDepartment.length <= 3 
-      ? `^\\s*${classDepartment}` 
-      : classDepartment.split(' ')[0];
-    const deptRegex = new RegExp(deptPattern, 'i');
+    // Use exact matching (same as getDepartmentPending) since dropdowns use the same values
+    const deptRegex = new RegExp(`^\\s*${classDepartment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i');
+    const yearRegex = new RegExp(`^\\s*${classYear.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i');
 
     const students = await User.find({
       role: 'student',
