@@ -62,7 +62,7 @@ export default function LoginAdmin() {
               <input
                 type="email"
                 id="email"
-                placeholder="e.g. admin@college.edu"
+                placeholder="Enter your email"
                 required
                 autoFocus
                 value={email}

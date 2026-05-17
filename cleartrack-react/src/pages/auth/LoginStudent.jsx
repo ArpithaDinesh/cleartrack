@@ -58,7 +58,7 @@ export default function LoginStudent() {
               <input
                 type="email"
                 id="email"
-                placeholder="e.g. student@college.edu"
+                placeholder="Enter your email"
                 required
                 autoFocus
                 value={email}
