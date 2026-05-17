@@ -12,7 +12,8 @@ export default function RegisterStudent() {
   const [form, setForm] = useState({
     fullName: '', phone: '', email: '',
     admissionNumber: '', department: '', classYear: '',
-    rollNumber: '', universityNumber: '', password: '', confirmPassword: ''
+    rollNumber: '', universityNumber: '', password: '', confirmPassword: '',
+    section: '', isBusUser: false, isHostelUser: false
   })
 
   const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }))
@@ -29,16 +30,16 @@ export default function RegisterStudent() {
     setLoading(true)
     try {
       await authAPI.registerStudent({
-        fullName: form.fullName.trim(),
-        email: form.email.trim(),
+        fullName: (form.fullName || '').trim(),
+        email: (form.email || '').trim(),
         password: form.password,
-        phone: form.phone.trim(),
-        universityNumber: form.universityNumber.trim(),
-        rollNumber: form.rollNumber.trim(),
-        admissionNumber: form.admissionNumber.trim(),
+        phone: (form.phone || '').trim(),
+        universityNumber: (form.universityNumber || '').trim(),
+        rollNumber: (form.rollNumber || '').trim(),
+        admissionNumber: (form.admissionNumber || '').trim(),
         department: (form.department || '').trim(),
         classYear: (form.classYear || '').trim(),
-        section: form.section.trim(),
+        section: (form.section || '').trim(),
         isBusUser: form.isBusUser,
         isHostelUser: form.isHostelUser
       })
@@ -82,9 +83,20 @@ export default function RegisterStudent() {
               <input type="email" id="email" placeholder="student@college.edu.in" required value={form.email} onChange={set('email')} />
             </div>
 
-            <div className="form-group">
-              <label htmlFor="admission_no">Admission Number <span style={{ color: 'var(--primary)', fontSize: '.7rem' }}>(Unique)</span></label>
-              <input type="text" id="admission_no" placeholder="e.g. ADM2024-0042" required value={form.admissionNumber} onChange={set('admissionNumber')} />
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="admission_no">Admission Number <span style={{ color: 'var(--primary)', fontSize: '.7rem' }}>(Unique)</span></label>
+                <input type="text" id="admission_no" placeholder="e.g. ADM2024-0042" required value={form.admissionNumber} onChange={set('admissionNumber')} />
+              </div>
+              <div className="form-group">
+                <label htmlFor="section">Section</label>
+                <select id="section" value={form.section} onChange={set('section')}>
+                  <option value="">Select Section (optional)</option>
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                  <option value="C">C</option>
+                </select>
+              </div>
             </div>
 
             <div className="form-row">
