@@ -65,7 +65,7 @@ export default function ClearanceStatus() {
                   <div style={{display:'flex', alignItems:'center', gap:10}}>
                     <p style={{margin:0}}>Request #{latest.requestNumber} · Submitted {latest.submittedAt ? new Date(latest.submittedAt).toLocaleDateString() : '—'}</p>
                     {latest.receiptFile?.filename && (
-                      <a href={`${API_ROOT}/uploads/${latest.receiptFile?.filename}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline" style={{padding:'2px 10px', fontSize:'.7rem', background:'rgba(255,255,255,0.8)'}}>
+                      <a href={latest.receiptFile?.base64Data || `${API_ROOT}/uploads/${latest.receiptFile?.filename}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline" style={{padding:'2px 10px', fontSize:'.7rem', background:'rgba(255,255,255,0.8)'}}>
                         View Bill
                       </a>
                     )}

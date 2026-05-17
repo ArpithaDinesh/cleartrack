@@ -133,11 +133,11 @@ export default function RequestDetail() {
                   <div className="card" style={{padding:0, overflow:'hidden'}}>
                     <div style={{padding:'16px 20px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
                       <h3 className="card-title" style={{margin:0}}>Uploaded Receipt</h3>
-                      <a href={`${API_ROOT}/uploads/${req.receiptFile?.filename}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline">Full Resolution</a>
+                      <a href={req.receiptFile?.base64Data || `${API_ROOT}/uploads/${req.receiptFile?.filename}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline">Full Resolution</a>
                     </div>
                     <div style={{background:'#f1f5f9', padding:10, textAlign:'center'}}>
                       <img 
-                        src={`${API_ROOT}/uploads/${req.receiptFile?.filename}`} 
+                        src={req.receiptFile?.base64Data || `${API_ROOT}/uploads/${req.receiptFile?.filename}`} 
                         alt="Receipt" 
                         style={{maxWidth:'100%', borderRadius:4, boxShadow:'0 2px 10px rgba(0,0,0,0.1)'}} 
                       />

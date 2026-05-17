@@ -57,6 +57,16 @@ const submitRequest = async (req, res) => {
     const requestNumber = `CLR-${Date.now()}-${uuidv4().substr(0, 6).toUpperCase()}`;
     const approvals = buildApprovals(feeType, req.user);
 
+    let base64Data = '';
+    try {
+      if (req.file && fs.existsSync(req.file.path)) {
+        const fileBuffer = fs.readFileSync(req.file.path);
+        base64Data = `data:${req.file.mimetype};base64,${fileBuffer.toString('base64')}`;
+      }
+    } catch (fsErr) {
+      console.warn('Failed to read uploaded receipt file for Base64 serialization:', fsErr.message);
+    }
+
     const request = await ClearanceRequest.create({
       student: req.user._id,
       requestNumber,
@@ -69,7 +79,8 @@ const submitRequest = async (req, res) => {
         originalName: req.file.originalname,
         mimetype: req.file.mimetype,
         size: req.file.size,
-        path: req.file.path
+        path: req.file.path,
+        base64Data: base64Data
       },
       departmentApprovals: approvals,
       overallStatus: 'draft',

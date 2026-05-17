@@ -39,7 +39,7 @@ export default function OCRConfirm() {
         const req = data.request || {};
         const d = req.ocrData || {};
         
-        const imgUrl = req.receiptFile?.filename ? `${API_ROOT}/uploads/${req.receiptFile.filename}` : '';
+        const imgUrl = req.receiptFile?.base64Data || (req.receiptFile?.filename ? `${API_ROOT}/uploads/${req.receiptFile.filename}` : '');
 
         if (d.ocrStatus === 'completed') {
           applyOcrData(d, d.rawText, imgUrl);

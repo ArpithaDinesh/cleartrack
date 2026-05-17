@@ -60,7 +60,8 @@ const clearanceRequestSchema = new mongoose.Schema({
     originalName: String,
     mimetype: String,
     size: Number,
-    path: String
+    path: String,
+    base64Data: String
   },
   ocrData: ocrDataSchema,
   departmentApprovals: [departmentApprovalSchema],
