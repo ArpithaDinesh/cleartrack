@@ -377,8 +377,8 @@ export default function StudentDashboard() {
                           </div>
                           <h4>{tuitionFile ? tuitionFile.name : 'Click to upload receipt'}</h4>
                           <p>JPG, PNG, PDF — max 10 MB</p>
-                          <input type="file" id="tuition-file" accept="image/*,.pdf" onChange={e => setTuitionFile(e.target.files[0])} />
                         </label>
+                        <input type="file" id="tuition-file" accept="image/*,.pdf" style={{ display: 'none' }} onChange={e => setTuitionFile(e.target.files[0])} />
                         <button type="button" className="btn btn-primary btn-full" style={{ marginTop: '10px' }} 
                           disabled={!tuitionFile || ocrStates.tuition.status === 'processing' || ocrStates.tuition.status === 'success'}
                           onClick={() => handleOCRProcess('tuition', tuitionFile)}>
@@ -411,12 +411,7 @@ export default function StudentDashboard() {
 
                           {ocrStates.tuition.status === 'success' && ocrStates.tuition.ocrData && (
                               <div className="ocr-fields">
-                                {ocrStates.tuition.ocrData.amount && (
-                                  <div style={{gridColumn:'1/-1', background:'rgba(37,99,235,0.05)', padding:'4px 8px', borderRadius:4, fontSize:'.7rem', color:'var(--primary)', marginBottom:5, display:'flex', alignItems:'center', gap:4}}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
-                                    <strong>Applied Selected Amount:</strong> {ocrStates.tuition.ocrData.amount}
-                                  </div>
-                                )}
+
                                 <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Student Name</label><span>{ocrStates.tuition.ocrData.name || '—'}</span></div>
                                 <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Department</label><span>{ocrStates.tuition.ocrData.department || '—'}</span></div>
                                 <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Particulars</label><span>{ocrStates.tuition.ocrData.particulars || '—'}</span></div>
@@ -552,8 +547,8 @@ export default function StudentDashboard() {
                               </div>
                               <h4>{busFile ? busFile.name : 'Click to upload receipt'}</h4>
                               <p>JPG, PNG, PDF — max 10 MB</p>
-                              <input type="file" id="bus-file" accept="image/*,.pdf" onChange={e => setBusFile(e.target.files[0])} />
                             </label>
+                            <input type="file" id="bus-file" accept="image/*,.pdf" style={{ display: 'none' }} onChange={e => setBusFile(e.target.files[0])} />
                             <button type="button" className="btn btn-primary btn-full" style={{ marginTop: '10px' }} 
                               disabled={!busFile || ocrStates.bus.status === 'processing' || ocrStates.bus.status === 'success'}
                               onClick={() => handleOCRProcess('bus', busFile)}>
@@ -579,12 +574,7 @@ export default function StudentDashboard() {
 
                               {ocrStates.bus.status === 'success' && ocrStates.bus.ocrData && (
                                 <div className="ocr-fields">
-                                  {ocrStates.bus.ocrData.amount && (
-                                    <div style={{gridColumn:'1/-1', background:'rgba(37,99,235,0.05)', padding:'4px 8px', borderRadius:4, fontSize:'.7rem', color:'var(--primary)', marginBottom:5, display:'flex', alignItems:'center', gap:4}}>
-                                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
-                                      <strong>Applied Selected Amount:</strong> {ocrStates.bus.ocrData.amount}
-                                    </div>
-                                  )}
+
                                   <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Student Name</label><span>{ocrStates.bus.ocrData.name || '—'}</span></div>
                                   <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Department</label><span>{ocrStates.bus.ocrData.department || '—'}</span></div>
                                   <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Particulars</label><span>{ocrStates.bus.ocrData.particulars || '—'}</span></div>
@@ -669,8 +659,8 @@ export default function StudentDashboard() {
                             </div>
                             <h4>{hostelFile ? hostelFile.name : 'Click to upload receipt'}</h4>
                             <p>JPG, PNG, PDF — max 10 MB</p>
-                            <input type="file" id="hostel-file" accept="image/*,.pdf" onChange={e => setHostelFile(e.target.files[0])} />
                           </label>
+                          <input type="file" id="hostel-file" accept="image/*,.pdf" style={{ display: 'none' }} onChange={e => setHostelFile(e.target.files[0])} />
                           <button type="button" className="btn btn-primary btn-full" style={{ marginTop: '10px' }} 
                             disabled={!hostelFile || ocrStates.hostel.status === 'processing' || ocrStates.hostel.status === 'success'}
                             onClick={() => handleOCRProcess('hostel', hostelFile)}>
@@ -696,12 +686,7 @@ export default function StudentDashboard() {
 
                             {ocrStates.hostel.status === 'success' && ocrStates.hostel.ocrData && (
                               <div className="ocr-fields">
-                                {ocrStates.hostel.ocrData.amount && (
-                                  <div style={{gridColumn:'1/-1', background:'rgba(37,99,235,0.05)', padding:'4px 8px', borderRadius:4, fontSize:'.7rem', color:'var(--primary)', marginBottom:5, display:'flex', alignItems:'center', gap:4}}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
-                                    <strong>Applied Selected Amount:</strong> {ocrStates.hostel.ocrData.amount}
-                                  </div>
-                                )}
+
                                 <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Student Name</label><span>{ocrStates.hostel.ocrData.name || '—'}</span></div>
                                 <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Department</label><span>{ocrStates.hostel.ocrData.department || '—'}</span></div>
                                 <div className="ocr-field" style={{ gridColumn: '1 / -1' }}><label>Particulars</label><span>{ocrStates.hostel.ocrData.particulars || '—'}</span></div>
