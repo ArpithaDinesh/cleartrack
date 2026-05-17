@@ -83,20 +83,9 @@ export default function RegisterStudent() {
               <input type="email" id="email" placeholder="student@college.edu.in" required value={form.email} onChange={set('email')} />
             </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="admission_no">Admission Number <span style={{ color: 'var(--primary)', fontSize: '.7rem' }}>(Unique)</span></label>
-                <input type="text" id="admission_no" placeholder="e.g. ADM2024-0042" required value={form.admissionNumber} onChange={set('admissionNumber')} />
-              </div>
-              <div className="form-group">
-                <label htmlFor="section">Section</label>
-                <select id="section" value={form.section} onChange={set('section')}>
-                  <option value="">Select Section (optional)</option>
-                  <option value="A">A</option>
-                  <option value="B">B</option>
-                  <option value="C">C</option>
-                </select>
-              </div>
+            <div className="form-group">
+              <label htmlFor="admission_no">Admission Number</label>
+              <input type="text" id="admission_no" placeholder="e.g. 23BITTLY202" required value={form.admissionNumber} onChange={set('admissionNumber')} />
             </div>
 
             <div className="form-row">
@@ -129,10 +118,10 @@ export default function RegisterStudent() {
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="rollno">Roll Number</label>
-                <input type="text" id="rollno" placeholder="e.g. CS2024001" required value={form.rollNumber} onChange={set('rollNumber')} />
+                <input type="text" id="rollno" required value={form.rollNumber} onChange={set('rollNumber')} />
               </div>
               <div className="form-group">
-                <label htmlFor="univ_no">University Number <span style={{ color: 'var(--primary)', fontSize: '.7rem' }}>(Unique ID)</span></label>
+                <label htmlFor="univ_no">University Number</label>
                 <input type="text" id="univ_no" placeholder="e.g. TLY23IT013" required value={form.universityNumber} onChange={set('universityNumber')} />
               </div>
             </div>
