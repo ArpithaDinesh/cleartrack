@@ -505,21 +505,7 @@ export default function AdminDashboard() {
                     Hostel Fee Management
                   </h3>
                   <form onSubmit={handleSaveFeeStructure}>
-                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14, marginBottom: 16}}>
-                      <div className="form-group"><label>Department</label>
-                        <select value={feeForm.department} onChange={e=>setFeeForm(p=>({...p,department:e.target.value}))} required>
-                          <option value="" disabled>Select department</option>
-                          <option value="IT">IT</option><option value="CS">CS</option><option value="EC">EC</option><option value="EEE">EEE</option><option value="ME">ME</option><option value="CE">CE</option><option value="MBA">MBA</option><option value="MCA">MCA</option>
-                        </select>
-                      </div>
-                      <div className="form-group"><label>Class/Year</label>
-                        <select value={feeForm.classYear} onChange={e=>setFeeForm(p=>({...p,classYear:e.target.value}))} required>
-                          <option value="" disabled>Select year</option>
-                          <option value="1st Year">1st Year</option><option value="2nd Year">2nd Year</option><option value="3rd Year">3rd Year</option><option value="4th Year">4th Year</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="form-group">
+                    <div className="form-group" style={{marginBottom: 16}}>
                       <label>Amount (₹)</label>
                       <input type="number" min="0" value={feeForm.hostelFee} onChange={e=>setFeeForm(p=>({...p,hostelFee:e.target.value}))} placeholder="0" required/>
                     </div>
