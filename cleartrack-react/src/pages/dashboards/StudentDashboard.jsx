@@ -209,11 +209,11 @@ export default function StudentDashboard() {
       );
     }
 
-    // Check if all active approvals (excluding not_applicable) are approved
-    const activeApprovals = req.departmentApprovals?.filter(a => a.status !== 'not_applicable') || [];
-    const allApproved = activeApprovals.length > 0 && activeApprovals.every(a => a.status === 'approved');
+    // Status logic: once the teacher (class_teacher) approves, show the status as approved!
+    const teacherApproval = req.departmentApprovals?.find(a => a.department === 'class_teacher');
+    const isApproved = teacherApproval?.status === 'approved';
 
-    if (!allApproved) {
+    if (!isApproved) {
       return <span className="badge badge-warning">Pending</span>;
     }
 
@@ -241,10 +241,10 @@ export default function StudentDashboard() {
       const rejectedApproval = req.departmentApprovals?.find(a => a.status === 'rejected');
       if (rejectedApproval) return 'rejected';
 
-      const activeApprovals = req.departmentApprovals?.filter(a => a.status !== 'not_applicable') || [];
-      const allApproved = activeApprovals.length > 0 && activeApprovals.every(a => a.status === 'approved');
+      const teacherApproval = req.departmentApprovals?.find(a => a.department === 'class_teacher');
+      const isApproved = teacherApproval?.status === 'approved';
       
-      return allApproved ? 'approved' : 'pending';
+      return isApproved ? 'approved' : 'pending';
     });
 
     if (statuses.some(s => s === 'rejected')) return 'rejected';
@@ -806,8 +806,8 @@ export default function StudentDashboard() {
                       
                       // Check if approved
                       const isApproved = req && (() => {
-                        const activeApprovals = req.departmentApprovals?.filter(a => a.status !== 'not_applicable') || [];
-                        return activeApprovals.length > 0 && activeApprovals.every(a => a.status === 'approved');
+                        const teacherApproval = req.departmentApprovals?.find(a => a.department === 'class_teacher');
+                        return teacherApproval?.status === 'approved';
                       })();
 
                       const pType = req?.ocrData?.paymentType || (selectedTuitionCategory ? (isHalfTuition ? 'half' : 'full') : null);
@@ -848,8 +848,8 @@ export default function StudentDashboard() {
                       
                       // Check if approved
                       const isApproved = req && (() => {
-                        const activeApprovals = req.departmentApprovals?.filter(a => a.status !== 'not_applicable') || [];
-                        return activeApprovals.length > 0 && activeApprovals.every(a => a.status === 'approved');
+                        const teacherApproval = req.departmentApprovals?.find(a => a.department === 'class_teacher');
+                        return teacherApproval?.status === 'approved';
                       })();
 
                       const pType = req?.ocrData?.paymentType || (selectedSubLocation ? (isHalfFee ? 'half' : 'full') : null);
@@ -899,8 +899,8 @@ export default function StudentDashboard() {
                       
                       // Check if approved
                       const isApproved = req && (() => {
-                        const activeApprovals = req.departmentApprovals?.filter(a => a.status !== 'not_applicable') || [];
-                        return activeApprovals.length > 0 && activeApprovals.every(a => a.status === 'approved');
+                        const teacherApproval = req.departmentApprovals?.find(a => a.department === 'class_teacher');
+                        return teacherApproval?.status === 'approved';
                       })();
 
                       let amountDueVal = calculatedHostelFee;
