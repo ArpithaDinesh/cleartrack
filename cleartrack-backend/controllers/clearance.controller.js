@@ -167,10 +167,26 @@ const getDepartmentPending = async (req, res) => {
         return res.json({ success: true, requests: [], message: 'Profile incomplete: No class assigned.' });
       }
 
-      // Use exact matching since both student & teacher dropdowns use the same values (e.g. "CS", "1st Year")
-      // Case-insensitive trim for safety
-      const deptRegex = new RegExp(`^\\s*${classDepartment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i');
-      const yearRegex = new RegExp(`^\\s*${classYear.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i');
+      // High-Flexibility matching (handles variations like "4th Year" vs "Fourth year", CS vs Computer Science)
+      const yearPatterns = { '1': '(1st|First|1)', '2': '(2nd|Second|2)', '3': '(3rd|Third|3)', '4': '(4th|Fourth|4)' };
+      const yearNum = classYear.match(/\d/)?.[0] || 
+                      (classYear.toLowerCase().includes('first') ? '1' : 
+                       classYear.toLowerCase().includes('second') ? '2' : 
+                       classYear.toLowerCase().includes('third') ? '3' : 
+                       classYear.toLowerCase().includes('fourth') ? '4' : null);
+      const yearRegex = yearNum ? new RegExp(`^\\s*${yearPatterns[yearNum]}`, 'i') : new RegExp(`^\\s*${classYear}\\s*$`, 'i');
+
+      const getFuzzyDeptPattern = (dept) => {
+        const d = dept.trim().toUpperCase();
+        if (d === 'CS' || d.includes('COMPUTER')) return '(CS|Computer\\s*Science)';
+        if (d === 'IT' || d.includes('INFORMATION')) return '(IT|Information\\s*Technology)';
+        if (d === 'ME' || d.includes('MECHANICAL')) return '(ME|Mechanical)';
+        if (d === 'CE' || d.includes('CIVIL')) return '(CE|Civil)';
+        if (d === 'EC' || d.includes('ELECTRONICS')) return '(EC|Electronics)';
+        if (d === 'EEE' || d.includes('ELECTRICAL')) return '(EEE|Electrical)';
+        return dept.split(' ')[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      };
+      const deptRegex = new RegExp(`^\\s*${getFuzzyDeptPattern(classDepartment)}`, 'i');
 
       // Find ALL students matching this class
       const studentIds = await User.find({
