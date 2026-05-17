@@ -433,23 +433,12 @@ export default function StudentDashboard() {
                               onClick={() => handleConfirmDetails('tuition')}>
                               ✓ Confirm Details
                             </button>
-                            <button type="button" className="btn btn-outline" style={{ fontSize: '.8rem', padding: '8px 10px' }} 
-                              disabled={ocrStates.tuition.status === 'processing'}
-                              onClick={() => { setTuitionFile(null); setOcrStates(prev => ({...prev, tuition: {status: 'idle', ocrData: null, requestId: null, message: ''}})) }}>
-                              ↺ Re-upload
-                            </button>
                           </div>
                           <button type="button" className="btn btn-primary btn-full" style={{ marginTop: '10px', fontSize: '.85rem', fontWeight: 600 }}
                             disabled={ocrStates.tuition.status !== 'confirmed' || submitLoading}
                             onClick={() => handleSubmitFee('tuition')}>
                             {submitLoading ? 'Submitting...' : '🚀 Final Submit for Approval'}
                           </button>
-                          {rawOcrText && (
-                            <div style={{marginTop: 10, padding: 8, background: '#f8fafc', color: '#64748b', fontSize: '.65rem', borderRadius: 6, border: '1px solid #e2e8f0', whiteSpace: 'pre-wrap', maxHeight: '100px', overflow: 'auto'}}>
-                              <strong>🔍 RAW OCR OUTPUT:</strong><br/>
-                              {rawOcrText}
-                            </div>
-                          )}
                           {ocrStates.tuition.status === 'confirmed' && (
                             <div style={{marginTop: 10, padding: 8, background: '#fffbeb', color: '#92400e', fontSize: '.75rem', borderRadius: 6, border: '1px solid #fde68a', textAlign: 'center'}}>
                               ⚠️ One step left! Click the button above to send to your teacher.
@@ -596,11 +585,6 @@ export default function StudentDashboard() {
                                   onClick={() => handleConfirmDetails('bus')}>
                                   ✓ Confirm Details
                                 </button>
-                                <button type="button" className="btn btn-outline" style={{ fontSize: '.8rem', padding: '8px 10px' }} 
-                                  disabled={ocrStates.bus.status === 'processing'}
-                                  onClick={() => { setBusFile(null); setOcrStates(prev => ({...prev, bus: {status: 'idle', ocrData: null, requestId: null, message: ''}})) }}>
-                                  ↺ Re-upload
-                                </button>
                               </div>
                               <button type="button" className="btn btn-primary btn-full" style={{ marginTop: '10px', fontSize: '.85rem', fontWeight: 600 }}
                                 disabled={ocrStates.bus.status !== 'confirmed' || submitLoading}
@@ -707,11 +691,6 @@ export default function StudentDashboard() {
                                 disabled={ocrStates.hostel.status !== 'success'}
                                 onClick={() => handleConfirmDetails('hostel')}>
                                 ✓ Confirm Details
-                              </button>
-                              <button type="button" className="btn btn-outline" style={{ fontSize: '.8rem', padding: '8px 10px' }} 
-                                disabled={ocrStates.hostel.status === 'processing'}
-                                onClick={() => { setHostelFile(null); setOcrStates(prev => ({...prev, hostel: {status: 'idle', ocrData: null, requestId: null, message: ''}})) }}>
-                                ↺ Re-upload
                               </button>
                             </div>
                             <button type="button" className="btn btn-primary btn-full" style={{ marginTop: '10px', fontSize: '.85rem', fontWeight: 600 }}

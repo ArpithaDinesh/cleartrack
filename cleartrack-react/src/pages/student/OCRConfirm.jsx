@@ -142,21 +142,9 @@ export default function OCRConfirm() {
                       <label>Payment Date</label>
                       <input type="text" value={ocr.date} onChange={e=>handleChange('date', e.target.value)} placeholder="DD/MM/YYYY" style={{width:'100%', padding:'10px 14px', border:'1.5px solid var(--border)', borderRadius:8}}/>
                     </div>
-
-                    <div style={{marginTop:10}}>
-                      <button type="button" onClick={()=>setShowRaw(!showRaw)} style={{background:'none', border:'none', color:'var(--primary)', fontSize:'.85rem', cursor:'pointer', padding:0}}>
-                        {showRaw ? 'hide' : 'show'} raw extracted text
-                      </button>
-                      {showRaw && (
-                        <pre style={{marginTop:10, padding:12, background:'#f8fafc', borderRadius:8, border:'1px solid var(--border)', fontSize:'.75rem', whiteSpace:'pre-wrap', maxHeight:150, overflowY:'auto', color:'#64748b'}}>
-                          {rawText}
-                        </pre>
-                      )}
-                    </div>
                   </div>
 
                   <div style={{display:'flex',gap:12,justifyContent:'flex-end',marginTop:32}}>
-                    <Link to="/upload-receipt" className="btn btn-outline" style={{padding:'10px 24px'}}>Re-upload</Link>
                     <button type="submit" className="btn btn-primary" disabled={confirming} style={{padding:'10px 24px'}}>
                       {confirming ? 'Submitting...' : '✓ Finish Verification'}
                     </button>
