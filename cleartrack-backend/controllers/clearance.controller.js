@@ -335,23 +335,25 @@ const submitDraft = async (req, res) => {
     const request = await ClearanceRequest.findOne({ 
       _id: req.params.id, 
       student: req.user._id,
-      overallStatus: 'draft'
+      overallStatus: { $in: ['draft', 'submitted'] }
     });
 
     if (!request) {
       return res.status(404).json({ success: false, message: 'Draft request not found.' });
     }
 
-    request.overallStatus = 'submitted';
-    request.submittedAt = new Date();
-    await request.save();
+    if (request.overallStatus === 'draft') {
+      request.overallStatus = 'submitted';
+      request.submittedAt = new Date();
+      await request.save();
 
-    await ApprovalLog.create({
-      clearanceRequest: request._id,
-      action: 'submitted',
-      performedBy: req.user._id,
-      newStatus: 'submitted'
-    });
+      await ApprovalLog.create({
+        clearanceRequest: request._id,
+        action: 'submitted',
+        performedBy: req.user._id,
+        newStatus: 'submitted'
+      });
+    }
 
     res.json({ success: true, request });
   } catch (err) {
